@@ -1,0 +1,30 @@
+#!/bin/zsh
+# claude shim for runner.py mock tests. Reads the -p prompt (argv[2]),
+# fakes the minimal side effects each stage needs, prints a result JSON.
+# Mimics real headless behavior: without --dangerously-skip-permissions
+# (or with CLAUDE_SHIM_DENY=1), permission-gated work silently does NOT
+# happen and the session still exits 0 — the measured live failure mode.
+if [[ " $* " != *" --dangerously-skip-permissions "* || -n "$CLAUDE_SHIM_DENY" ]]; then
+  print '{"total_cost_usd":0.01,"num_turns":1,"duration_api_ms":100,"permission_denials":[{"tool_name":"Write"},{"tool_name":"Bash"}],"usage":{"input_tokens":1,"output_tokens":1}}'
+  exit 0
+fi
+prompt="$2"
+case "$prompt" in
+  Read*)  # planner: emit CLAUDE.md, specs/, tasks.json (left dirty on purpose)
+    print "conventions: stdlib only" > CLAUDE.md
+    mkdir -p specs
+    print "# t1 spec — write hello.py printing hello" > specs/t1.md
+    print '[{"id":"t1","spec":"specs/t1.md","checks":["test -f hello.py"]}]' > tasks.json
+    ;;
+  /plan-review*)  # reviewer: amend a spec + write the report
+    print "PINNED: hello means exactly hello (not Hello)" >> specs/t1.md
+    print "# plan-review report: 1 confirmed finding" > plan-review-report.md
+    ;;
+  Implement*)  # implementer: create the artifact the check wants (left dirty)
+    print "print('hello')" > hello.py
+    ;;
+  /code-review*|/simplify*)  # clean pass: no findings applied, tree untouched
+    ;;
+esac
+print '{"total_cost_usd":0.01,"num_turns":2,"duration_api_ms":1000,"usage":{"input_tokens":10,"output_tokens":5,"cache_read_input_tokens":0,"cache_creation_input_tokens":0}}'
+exit 0
