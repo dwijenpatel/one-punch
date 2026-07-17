@@ -199,15 +199,23 @@ name the outcome-impact that justifies it (this list is the budget, not a floor)
 
 ## 6. Build list (ordered; each item small and standalone)
 
-1. **`tech-plan` skill** — WRITTEN v0 (`plugin/skills/tech-plan/SKILL.md`); needs its
-   first live trial. Adapts: spec-interview (routing), superpowers writing-plans
-   (format), feature-dev (architecture options pattern).
+1. **`tech-plan` skill** — WRITTEN v0 (`plugin/skills/tech-plan/SKILL.md`); FIRST LIVE
+   TRIAL 2026-07-17 (goodhart-sim: PRD → 4-task plan, 0 operator questions, lean
+   plan-review 0-confirmed). Adapts: spec-interview (routing), superpowers
+   writing-plans (format), feature-dev (architecture options pattern).
 2. **Runner evolution** (each a small mechanical delta to the existing runner):
-   status-file contract + routing; two-verdict reviewer stage (adapted template, file
-   handoffs); determinacy-tag model routing; churn budget 3 + diff-size trajectory on
-   the ledger; root-cause note required on escalation; fix-wave closure dispatch.
-3. **Oracle-stage adaptation**: author prompt consumes PRD acceptance criteria alongside
-   specs (machinery exists from the experiment).
+   status-file contract — DONE 2026-07-17 (schema'd done|blocked honesty channel;
+   blocked halts with the worker's reason; done+no-commit halts as contradiction;
+   malformed falls back to git-state inference; mock scenarios 11–12). Remaining:
+   two-verdict reviewer stage (adapted template, file handoffs); determinacy-tag model
+   routing; churn budget 3 + diff-size trajectory on the ledger; root-cause note
+   required on escalation; fix-wave closure dispatch.
+3. **Oracle-stage adaptation** — DONE 2026-07-17, stronger than planned: instead of
+   prompt-level blindness, the author session runs in a clone checked out at the
+   pre-implementation `build-base` sha (the built code does not exist there —
+   blindness by construction); authors from `--oracle-source` (default `docs/prd.md`)
+   + specs; runner executes the suite against the built tree; red → exit 3 as merge
+   evidence, not a halt (mock scenarios 13–14).
 4. **Skill packaging** — DONE: this repo is the marketplace; plan-review + tech-plan
    ship as the `one-punch` plugin (install: README).
 5. Nothing else. Preflight/ratification tooling, walls, and the blind merge gate stay

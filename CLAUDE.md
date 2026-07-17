@@ -10,9 +10,10 @@
 - **After any runner change:** `python3 -m py_compile runner/runner.py` and
   `zsh runner/tests/mock_suite.zsh` — all scenarios must pass. The mock suite's claude
   shim mimics headless deny-by-default; keep it faithful when adding stages.
-- **Runner control flow reads git state and file existence only** — never model prose.
-  Telemetry parses structured JSON fields; a parse failure must never affect control
-  flow.
+- **Runner control flow reads git state, file existence, and the schema'd worker
+  status-file `outcome` field only** — never model prose. Telemetry parses structured
+  JSON fields; a parse failure (including a malformed status file, which falls back to
+  git-state inference) must never affect control flow.
 - **Skills stay self-contained and portable:** no repo-relative references inside
   `plugin/skills/*/SKILL.md` — they get installed into arbitrary repos.
 - **Operator shell is zsh:** no bare `=`-prefixed words; explicit arrays for loops;

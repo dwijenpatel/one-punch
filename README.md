@@ -50,14 +50,19 @@ as-is from elsewhere: `product-management:write-spec` and `product-brainstorming
 
 ## Status (v0.1)
 
-- ✅ Skills: `tech-plan` (written, needs first live trial), `plan-review` (live-fired:
-  10 confirmed findings blind, $23.87 full tier / lean tier available).
+- ✅ Skills: `tech-plan` (first live trial 2026-07-17: goodhart-sim, 0 operator
+  questions), `plan-review` (live-fired full tier: 10 confirmed blind, $23.87; lean
+  tier live-fired: 2 raised → 0 confirmed, clean).
 - ✅ Runner: migrated from the outrigger nocode trial, live-hardened (headless
-  permission bypass, ledger git-exclusion, resume-correct closure base, silent-no-op
-  guards, per-session spend telemetry). Mock suite: `zsh runner/tests/mock_suite.zsh`.
-- ⬜ Runner deltas (design §6.2, in order): status-file worker contract; two-verdict
-  task review; determinacy-tier model routing; churn budget 3 + diff-size trajectory;
-  root-cause note on escalation; fix-wave closure dispatch.
-- ⬜ Oracle stage: adapt the outrigger author machinery to consume PRD acceptance
-  criteria.
-- ⬜ First end-to-end run (a real one-liner, all six stages).
+  permission bypass, ledger git-exclusion, resume-correct closure base incl.
+  `--skip-plan` run-base, silent-no-op guards, per-session spend telemetry, pid-unique
+  rundirs). Mock suite (15 scenarios): `zsh runner/tests/mock_suite.zsh`.
+- ✅ Status-file worker contract (schema'd done|blocked; blocked = penalty-free halt
+  with the worker's reason; done+no-commit = contradiction halt).
+- ✅ Oracle stage: blind-by-construction — author session in a clone at the
+  pre-implementation sha, authors from `--oracle-source` (default `docs/prd.md`);
+  suite runs against the built tree; red → exit 3 (merge evidence, not a halt).
+- ⬜ Runner deltas remaining (design §6.2): two-verdict task review; determinacy-tier
+  model routing; churn budget 3 + diff-size trajectory; root-cause note on
+  escalation; fix-wave closure dispatch.
+- ⬜ First end-to-end run (a real one-liner, all six stages) — goodhart-sim in flight.

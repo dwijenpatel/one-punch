@@ -20,14 +20,24 @@ Pipeline:
             after, so arm B's task-phase tree differs from arm A's ONLY by
             the spec amendments + report. --stop-after-plan halts at the
             post-plan fork point.
-  per task  fresh implement session -> /code-review <effort> --fix
+  per task  fresh implement session (carries the STATUS CONTRACT: the worker
+            writes .runner/status/<label>.json outcome done|blocked; blocked
+            halts with the worker's own reason — penalty-free honesty channel;
+            done with no commit halts as a contradiction; missing/malformed
+            falls back to git-state inference) -> /code-review <effort> --fix
             (mechanical churn rule: pass leaves tree dirty = findings existed;
             runner commits them and reviews again; a 2nd dirty pass =
             churning -> revert task, re-implement fresh at the escalate
             model; churn again -> HALT) -> /simplify -> runner re-runs the
             task's checks itself (red = revert the simplify commit, note it,
             continue) -> next task.
-  closure   run every task's checks, then one whole-diff report-only review.
+  closure   run every task's checks, one whole-diff report-only review, then
+            the ORACLE: a blind author writes an acceptance suite in a clone
+            checked out at the pre-implementation sha (--oracle-source, default
+            docs/prd.md, is its contract; the built code does not exist there,
+            so blindness is by construction); the runner executes that suite
+            against the built tree. Green -> in the banner; red -> exit 3
+            (evidence for the operator's merge decision, not a halt).
 
 Stop semantics: any session failure, timeout, or post-escalation churn halts
 the run (exit 1) with state on the ledger; re-running skips completed tasks
@@ -56,6 +66,36 @@ IMPLEMENT_PROMPT = (
     "Implement {spec} exactly. It is self-contained; do not re-decide anything "
     "it pins. Run its checks ({checks}), fix until green, then commit ALL "
     "changes (git add -A && git commit). Work not committed does not exist."
+)
+# The worker status contract (design §6.2 delta 1, from the superpowers
+# implementer contract): a schema'd, penalty-free honesty channel. The runner
+# reads ONLY the outcome field; anything else is telemetry. Blocked halts the
+# run for the operator — the worker never has to fake green to finish.
+STATUS_CONTRACT = (
+    " Finally, report status: write {status_path} (the directory exists) "
+    'containing exactly {{"task": "{task_id}", "outcome": "done"}} if the spec '
+    'is implemented and its checks are green, or {{"task": "{task_id}", '
+    '"outcome": "blocked", "blocked_reason": "<one short sentence>"}} if you '
+    "cannot finish honestly (missing information, contradictory spec, "
+    "environment failure). Reporting blocked is penalty-free and brings the "
+    "operator; a false done is the only failing move. Do not git-add this file."
+)
+ORACLE_PROMPT = (
+    "You are a blind acceptance-test author. This working tree is the project "
+    "BEFORE any implementation existed: the product authority is {src} (its "
+    "acceptance criteria are your contract) and the ratified plan specs are the "
+    "interface truth. Author an independent acceptance suite that a correct "
+    "implementation must pass and a wrong or gamed one must fail — test the "
+    "acceptance criteria through the public interfaces the plan pins, never "
+    "implementation details. Standard library only; unittest; put the tests in "
+    "oracle_tests/ with an __init__.py; they must run as "
+    "`python3 -m unittest discover -s oracle_tests -t . -q` from the repo "
+    "root. The implementation is absent HERE by design (that is your "
+    "blindness) — you cannot run the suite green now; verify syntax with "
+    "python3 -m py_compile and check imports against the specs' pinned module "
+    "paths instead. Never weaken an assert to dodge uncertainty; if a "
+    "criterion is untestable from the specs alone, record it in "
+    "oracle_tests/UNTESTABLE.md with the reason. No commit is needed."
 )
 PLAN_PROMPT = (
     "Read {plan}. Plan how to build it: break the work into however many "
@@ -121,9 +161,13 @@ class Runner:
         self.repo = os.path.abspath(os.path.expanduser(args.repo))
         self.args = args
         ts = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-        self.rundir = os.path.join(self.repo, ".runner", ts)
+        # pid suffix: two runs in the same wall-clock second (a fast re-run,
+        # a mock suite) must never share a rundir — the oracle clone lands here.
+        self.rundir = os.path.join(self.repo, ".runner", f"{ts}-{os.getpid()}")
         os.makedirs(self.rundir, exist_ok=True)
         self.ledger_path = os.path.join(self.repo, ".runner", "ledger.jsonl")
+        self.status_dir = os.path.join(self.repo, ".runner", "status")
+        os.makedirs(self.status_dir, exist_ok=True)
         # .runner/ must stay invisible to git: sessions run `git add -A`
         # (which would track the ledger) and the runner runs `reset --hard` /
         # `clean -fd` (which would roll back or delete it once tracked).
@@ -161,20 +205,52 @@ class Runner:
         return False
 
     def plan_base(self):
-        """Base sha for the closure whole-diff review: the post-plan sha from
-        the ledger, so a RESUMED run's closure still spans every task instead
-        of only the tasks after the halt."""
+        """Base sha for the closure whole-diff review: the post-plan sha
+        ("planned") or, for --skip-plan runs, the first-run start sha
+        ("run-base") — either way a RESUMED run's closure still spans every
+        task instead of only the tasks after the halt."""
         base = None
         if os.path.exists(self.ledger_path):
             for line in open(self.ledger_path, encoding="utf-8"):
                 r = json.loads(line)
-                if r.get("stage") == "planned":
+                if r.get("stage") in ("planned", "run-base"):
                     base = r.get("sha")
         return base or head(self.repo)
 
-    def claude(self, label, prompt, model, effort):
-        """One fresh headless session. Only exit code and git state are used
-        for control flow; the full JSON result (incl. usage) is archived.
+    def build_base(self):
+        """Base sha for the ORACLE clone: the last pre-implementation sha
+        (post-plan-review, before the first task) — specs are final there and
+        the implementation does not exist, so the test author's blindness is
+        by construction, not by instruction."""
+        base = None
+        if os.path.exists(self.ledger_path):
+            for line in open(self.ledger_path, encoding="utf-8"):
+                r = json.loads(line)
+                if r.get("stage") == "build-base":
+                    base = r.get("sha")
+        return base or self.plan_base()
+
+    def read_status(self, label):
+        """Schema'd worker status (.runner/status/<label>.json). Returns the
+        dict only when outcome is a known value; missing or malformed returns
+        None and control flow falls back to git-state inference — a status
+        hiccup must never crash the run, only un-inform it."""
+        p = os.path.join(self.status_dir, f"{label}.json")
+        if not os.path.exists(p):
+            return None
+        try:
+            d = json.load(open(p, encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            d = None
+        if not (isinstance(d, dict) and d.get("outcome") in ("done", "blocked")):
+            self.ledger({"stage": "status-malformed", "label": label})
+            return None
+        return d
+
+    def claude(self, label, prompt, model, effort, cwd=None):
+        """One fresh headless session (in the repo, or cwd — the oracle clone).
+        Only exit code, git state, and the schema'd status file are used for
+        control flow; the full JSON result (incl. usage) is archived.
         Effort travels as the launcher-verified --effort flag; auto-memory is
         off so 'fresh session' means fresh; the session runs in its own
         process group so a timeout kills its subagents too."""
@@ -191,7 +267,7 @@ class Runner:
                 "--dangerously-skip-permissions"]
         print(f"    session {label} ({model}@{effort})", flush=True)
         t0 = time.monotonic()
-        proc = subprocess.Popen(argv, cwd=self.repo, text=True, env=env,
+        proc = subprocess.Popen(argv, cwd=cwd or self.repo, text=True, env=env,
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                 stdin=subprocess.DEVNULL, start_new_session=True)
         try:
@@ -293,6 +369,58 @@ class Runner:
         self.commit_dirty("plan-review: uninstall skill")
         self.ledger({"stage": "plan-review-done", "sha": head(self.repo)})
 
+    def oracle_stage(self, base_sha):
+        """S5's independent verdict: a blind author writes an acceptance suite
+        in a clone checked out at the pre-implementation sha (the built code
+        does not exist there — blindness by construction, no walls needed),
+        then the runner executes that suite against the BUILT tree. Returns
+        True (green) / False (red) / None (skipped: no oracle source)."""
+        src = self.args.oracle_source
+        # Cheap pre-flight: does the oracle source exist at the base sha?
+        # (git cat-file, no clone spent on the skip path.)
+        if sh(["git", "cat-file", "-e", f"{base_sha}:{src}"],
+              self.repo).returncode != 0:
+            self.ledger({"stage": "oracle-skipped",
+                         "reason": f"no {src} at build base"})
+            print(f"  oracle: SKIPPED — no {src} at the build base "
+                  "(pass --oracle-source to point at the product authority)",
+                  flush=True)
+            return None
+        clone = os.path.join(self.rundir, "oracle-clone")
+        r = sh(["git", "clone", "-q", "--no-hardlinks", self.repo, clone],
+               self.repo)
+        if r.returncode != 0:
+            raise Halt(f"oracle: clone failed: {r.stderr.strip()[-300:]}")
+        r = sh(["git", "checkout", "-q", base_sha], clone)
+        if r.returncode != 0:
+            raise Halt(f"oracle: checkout of base {base_sha[:12]} failed")
+        self.claude("oracle-author", ORACLE_PROMPT.format(src=src),
+                    self.args.review_model, self.args.review_effort, cwd=clone)
+        otests = os.path.join(clone, "oracle_tests")
+        if not os.path.isdir(otests):
+            raise Halt("oracle: author session wrote no oracle_tests/ "
+                       f"(see {self.rundir}/oracle-author.json)")
+        dst = os.path.join(self.repo, "oracle_tests")
+        if os.path.exists(dst):
+            shutil.rmtree(dst)  # stale copy from a previous halted run
+        shutil.copytree(otests, dst)
+        res = subprocess.run(
+            "python3 -m unittest discover -s oracle_tests -t . -q",
+            shell=True, cwd=self.repo, capture_output=True, text=True,
+            timeout=600, stdin=subprocess.DEVNULL)
+        shutil.copytree(dst, os.path.join(self.rundir, "oracle_tests"))
+        with open(os.path.join(self.rundir, "oracle-run.txt"), "w",
+                  encoding="utf-8") as fh:
+            fh.write(res.stdout + res.stderr)
+        shutil.rmtree(dst)  # verdict recorded; the built tree stays clean
+        green = res.returncode == 0
+        self.ledger({"stage": "oracle", "green": green,
+                     "exit": res.returncode, "base": base_sha})
+        if not green:
+            print("  oracle: RED — tail:\n" + (res.stdout + res.stderr)[-800:],
+                  flush=True)
+        return green
+
     def build_task(self, task):
         pre = head(self.repo)
         reset_clean(self.repo)
@@ -312,11 +440,26 @@ class Runner:
                              "reason": "review still applying fixes after "
                                        f"{self.args.max_review_passes} passes"})
                 reset_clean(self.repo, pre)
-            self.claude(f"{task['id']}-implement-{label}", impl_prompt,
-                        model, effort)
+            slabel = f"{task['id']}-implement-{label}"
+            spath = os.path.join(self.status_dir, f"{slabel}.json")
+            if os.path.exists(spath):
+                os.remove(spath)  # a stale status must never speak for a new session
+            self.claude(slabel, impl_prompt + STATUS_CONTRACT.format(
+                status_path=f".runner/status/{slabel}.json",
+                task_id=task["id"]), model, effort)
             committed = self.commit_dirty(
                 f"implement ({task['id']}) [runner-committed leftovers]")
-            if head(self.repo) == pre and not committed:
+            status = self.read_status(slabel)
+            if status and status["outcome"] == "blocked":
+                reason = status.get("blocked_reason") or "(no reason given)"
+                self.ledger({"stage": "worker-blocked", "task": task["id"],
+                             "tier": label, "reason": reason})
+                raise Halt(f"{task['id']}: worker reports BLOCKED: {reason}")
+            no_commit = head(self.repo) == pre and not committed
+            if no_commit and status and status["outcome"] == "done":
+                raise Halt(f"{task['id']}: worker status says done but no "
+                           "commit exists — contradiction, not trusting either")
+            if no_commit:
                 raise Halt(f"{task['id']}: implement session produced no commit")
             if not self.review_fix_cycle(task, label, rng):
                 break
@@ -369,6 +512,10 @@ class Runner:
                 raise Halt(f"manifest entry malformed: {t}")
             if not os.path.exists(os.path.join(self.repo, t["spec"])):
                 raise Halt(f"manifest spec missing: {t['spec']}")
+        # --skip-plan runs have no "planned" record; pin the closure/diff base
+        # at first-run start so a RESUME does not degrade it to mid-build HEAD.
+        if not self.ledger_has("planned") and not self.ledger_has("run-base"):
+            self.ledger({"stage": "run-base", "sha": head(self.repo)})
 
         if self.args.stop_after_plan:
             print("PLAN COMPLETE — manifest validated. This is the A/B fork "
@@ -385,6 +532,11 @@ class Runner:
                   "build.", flush=True)
             print(self.spend_summary(), flush=True)
             return
+
+        # Pin the oracle's blindness point: specs final (post-plan-review),
+        # implementation not yet begun. Recorded once; resume keeps it.
+        if not self.ledger_has("build-base"):
+            self.ledger({"stage": "build-base", "sha": head(self.repo)})
 
         done = self.done_tasks()
         chain_base = self.plan_base()
@@ -405,10 +557,23 @@ class Runner:
         self.claude("closure-review",
                     f"/code-review {self.args.review_effort} {chain_base}...HEAD",
                     self.args.review_model, self.args.review_effort)
+        oracle_green = None
+        if not self.args.no_oracle:
+            print("=== oracle (blind acceptance suite)", flush=True)
+            oracle_green = self.oracle_stage(self.build_base())
         self.ledger({"stage": "closure", "sha": head(self.repo)})
-        print("RUN COMPLETE — all tasks built, checks green, closure review "
-              f"archived under {self.rundir}", flush=True)
+        if oracle_green is False:
+            print("RUN COMPLETE — but ORACLE RED: the built tree fails the "
+                  "blind acceptance suite (suite + output archived under "
+                  f"{self.rundir}). The merge decision is the operator's, "
+                  "made with this in hand.", flush=True)
+            print(self.spend_summary(), flush=True)
+            return 3
+        oracle_note = {True: ", oracle GREEN", None: ""}[oracle_green]
+        print(f"RUN COMPLETE — all tasks built, checks green{oracle_note}, "
+              f"closure review archived under {self.rundir}", flush=True)
         print(self.spend_summary(), flush=True)
+        return 0
 
     def spend_summary(self):
         """Roll up the ledger's session records: count, wall, cost, split by
@@ -457,6 +622,12 @@ def main():
     ap.add_argument("--escalate-effort", default="xhigh")
     ap.add_argument("--max-review-passes", type=int, default=2)
     ap.add_argument("--timeout-s", type=int, default=3600)
+    ap.add_argument("--oracle-source", default="docs/prd.md",
+                    help="product-authority file the blind oracle authors "
+                         "from (relative to repo root; missing at the build "
+                         "base = oracle SKIPPED)")
+    ap.add_argument("--no-oracle", action="store_true",
+                    help="skip the blind-oracle verification stage")
     ap.add_argument("--yes", action="store_true")
     args = ap.parse_args()
     if not args.yes:
@@ -465,8 +636,7 @@ def main():
         return 2
     runner = Runner(args)
     try:
-        runner.run()
-        return 0
+        return runner.run() or 0
     except Halt as exc:
         print(f"HALT: {exc}", file=sys.stderr)
         print(runner.spend_summary(), file=sys.stderr)

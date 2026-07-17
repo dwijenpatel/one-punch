@@ -21,7 +21,29 @@ case "$prompt" in
     print "# plan-review report: 1 confirmed finding" > plan-review-report.md
     ;;
   Implement*)  # implementer: create the artifact the check wants (left dirty)
-    print "print('hello')" > hello.py
+    # Status contract: extract the status path the prompt pins, honor it the
+    # way the shim's mode dictates (obedient / blocked / liar).
+    sp=$(print -r -- "$prompt" | grep -oE '\.runner/status/[^" ]+\.json' | head -1)
+    if [[ -n "$CLAUDE_SHIM_BLOCK" ]]; then
+      [[ -n "$sp" ]] && mkdir -p "${sp:h}" && \
+        print '{"task":"t1","outcome":"blocked","blocked_reason":"spec contradicts CLAUDE.md rule 3"}' > "$sp"
+    elif [[ -n "$CLAUDE_SHIM_LIAR" ]]; then
+      [[ -n "$sp" ]] && mkdir -p "${sp:h}" && \
+        print '{"task":"t1","outcome":"done"}' > "$sp"
+    else
+      print "print('hello')" > hello.py
+      [[ -n "$sp" ]] && mkdir -p "${sp:h}" && \
+        print '{"task":"t1","outcome":"done"}' > "$sp"
+    fi
+    ;;
+  "You are a blind"*)  # oracle author: write the acceptance suite (clone cwd)
+    mkdir -p oracle_tests
+    : > oracle_tests/__init__.py
+    if [[ -n "$CLAUDE_SHIM_ORACLE_RED" ]]; then
+      print 'import unittest\nclass T(unittest.TestCase):\n    def test_criterion(self):\n        self.fail("acceptance criterion unmet")' > oracle_tests/test_oracle.py
+    else
+      print 'import unittest, os\nclass T(unittest.TestCase):\n    def test_hello_exists(self):\n        self.assertTrue(os.path.exists("hello.py"))' > oracle_tests/test_oracle.py
+    fi
     ;;
   /code-review*|/simplify*)  # clean pass: no findings applied, tree untouched
     ;;

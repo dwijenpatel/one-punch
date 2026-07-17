@@ -111,4 +111,74 @@ grep -q '"stage": "plan-review-done"' armD/.runner/ledger.jsonl || fail "no plan
 grep -q '"stage": "task-done"' armD/.runner/ledger.jsonl && fail "a task built despite stop flag"
 [[ -f armD/hello.py ]] && fail "implement ran despite stop flag"
 
+--- "11: worker BLOCKED status -> clean halt carrying the worker's reason"
+cp -R seed armE
+set +e
+CLAUDE_SHIM_BLOCK=1 python3 "$RUNNER" --repo "$PWD/armE" --yes > armE.log 2>&1
+rc=$?
+set -e
+[[ $rc -eq 1 ]] || fail "blocked worker exited $rc, want 1"
+grep -q "worker reports BLOCKED: spec contradicts CLAUDE.md rule 3" armE.log || fail "blocked reason not surfaced"
+grep -q '"stage": "worker-blocked"' armE/.runner/ledger.jsonl || fail "no worker-blocked record"
+[[ -f armE/hello.py ]] && fail "blocked worker still produced the artifact"
+grep -q '"stage": "task-done"' armE/.runner/ledger.jsonl && fail "task marked done despite block"
+
+--- "12: liar status (done, no commit) -> contradiction halt"
+cp -R seed armF
+set +e
+CLAUDE_SHIM_LIAR=1 python3 "$RUNNER" --repo "$PWD/armF" --yes > armF.log 2>&1
+rc=$?
+set -e
+[[ $rc -eq 1 ]] || fail "liar worker exited $rc, want 1"
+grep -q "says done but no commit exists" armF.log || fail "contradiction not surfaced"
+
+--- "13: oracle authors blind at build-base, suite runs green against built tree"
+mkdir seedO && cd seedO && git init -q
+print "the design doc" > design-draft.md
+mkdir -p docs && print "# PRD: acceptance criteria A1-A9" > docs/prd.md
+git add -A && git -c user.email=t@t -c user.name=t commit -qm seed
+cd ..
+python3 "$RUNNER" --repo "$PWD/seedO" --plan design-draft.md --yes > seedO.log
+grep -q "RUN COMPLETE" seedO.log || fail "oracle-green run did not complete"
+grep -q "oracle GREEN" seedO.log || fail "no oracle GREEN in banner"
+grep -q '"stage": "oracle", "green": true' seedO/.runner/ledger.jsonl || fail "no green oracle record"
+[[ -d seedO/oracle_tests ]] && fail "oracle_tests left in the built tree"
+[[ -n "$(git -C seedO status --porcelain)" ]] && fail "built tree left dirty by oracle"
+ls seedO/.runner/*/oracle_tests/test_oracle.py >/dev/null 2>&1 || fail "oracle suite not archived"
+clone_impl=(seedO/.runner/*/oracle-clone/hello.py(N))
+[[ ${#clone_impl} -eq 0 ]] || fail "oracle clone contains the implementation (blindness broken)"
+
+--- "14: oracle RED -> exit 3, verdict is evidence not a halt"
+mkdir seedR && cd seedR && git init -q
+print "the design doc" > design-draft.md
+mkdir -p docs && print "# PRD: acceptance criteria A1-A9" > docs/prd.md
+git add -A && git -c user.email=t@t -c user.name=t commit -qm seed
+cd ..
+set +e
+CLAUDE_SHIM_ORACLE_RED=1 python3 "$RUNNER" --repo "$PWD/seedR" --plan design-draft.md --yes > seedR.log 2>&1
+rc=$?
+set -e
+[[ $rc -eq 3 ]] || fail "oracle-red run exited $rc, want 3"
+grep -q "ORACLE RED" seedR.log || fail "no ORACLE RED banner"
+grep -q '"stage": "oracle", "green": false' seedR/.runner/ledger.jsonl || fail "no red oracle record"
+grep -q '"stage": "task-done"' seedR/.runner/ledger.jsonl || fail "tasks should still have built"
+
+--- "15: --skip-plan records run-base; plan_base derives from it, not HEAD"
+mkdir seedS && cd seedS && git init -q
+mkdir -p specs && cp ../seed/specs/t1.md specs/t1.md && cp ../seed/tasks.json tasks.json
+git add -A && git -c user.email=t@t -c user.name=t commit -qm seed
+basesha=$(git rev-parse HEAD)
+cd ..
+python3 "$RUNNER" --repo "$PWD/seedS" --skip-plan --yes > seedS.log
+grep -q "RUN COMPLETE" seedS.log || fail "skip-plan run did not complete"
+grep -q '"stage": "run-base"' seedS/.runner/ledger.jsonl || fail "no run-base record"
+derived=$(python3 -c "
+import sys, argparse
+sys.path.insert(0, '$(dirname $RUNNER)')
+import runner
+r = runner.Runner(argparse.Namespace(repo='$PWD/seedS'))
+print(r.plan_base())")
+[[ "$derived" == "$basesha" ]] || fail "plan_base $derived != run-base $basesha"
+[[ "$derived" != "$(git -C seedS rev-parse HEAD)" ]] || fail "plan_base degenerated to post-build HEAD"
+
 --- "ALL MOCK TESTS PASS"
