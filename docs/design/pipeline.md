@@ -225,6 +225,15 @@ name the outcome-impact that justifies it (this list is the budget, not a floor)
 
 ## Appendix: evidence anchors
 
+- **First end-to-end validation (2026-07-17, `~/repos/goodhart-sim`)**: all six stages
+  live on a real one-liner; 0 interview questions; lean plan-review 0-confirmed;
+  4/4 tasks, one sonnet→opus escalation self-recovered, zero halt doors opened;
+  blind oracle (clone-at-build-base) 40/40; closure review caught a contract
+  narrowing introduced by `/simplify` that the oracle was structurally blind to
+  (behavior-neutral attr removal, no test pinned it) — first live datum for the
+  two-verdict review delta, and names a new failure mode: **simplify is spec-blind**.
+  Spend $31.32/105 min. Ledger: goodhart-sim `.runner/20260717T224312Z-84879/`.
+
 - Three-arm experiment (gate 0-catch at 5.9×; 1=1=1 spec-seam defect; oracle-author
   misreads): outrigger repo: `docs/research/internal/longhorizon-value/runs/` + `runs/CORRECTIONS.md`.
 - Review-probe (code review misses spec-level defects, both cells): outrigger repo: `runs/review-probe/PROBE.md`.

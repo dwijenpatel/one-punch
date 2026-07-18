@@ -62,7 +62,17 @@ as-is from elsewhere: `product-management:write-spec` and `product-brainstorming
 - ✅ Oracle stage: blind-by-construction — author session in a clone at the
   pre-implementation sha, authors from `--oracle-source` (default `docs/prd.md`);
   suite runs against the built tree; red → exit 3 (merge evidence, not a halt).
+- ✅ **First end-to-end run — 2026-07-17, goodhart-sim** (a Goodhart's-Law visual
+  simulator, one-liner → merged main): PRD ratified → tech-plan (4 tasks, 0
+  questions) → lean plan-review (0 confirmed) → walk-away build (4/4 tasks, one
+  escalation self-recovered, zero halts) → closure review (2 real findings, 0
+  critical) → blind oracle **40/40 green** → operator merge. Build spend $31.32 /
+  105 min / 19 sessions (sonnet implement $3.43, opus review+verify $27.90).
+  Notable: the oracle missed a behavior-neutral contract narrowing the closure
+  review caught (`/simplify` removed a spec-mandated attr the tests never pinned) —
+  layered instruments earning their seats, and a live datum that **simplify is
+  spec-blind** (candidate delta: pass the task spec into the simplify prompt).
 - ⬜ Runner deltas remaining (design §6.2): two-verdict task review; determinacy-tier
-  model routing; churn budget 3 + diff-size trajectory; root-cause note on
-  escalation; fix-wave closure dispatch.
-- ⬜ First end-to-end run (a real one-liner, all six stages) — goodhart-sim in flight.
+  model routing (live datum: code-complete implement 68s/$0.45 + clean review vs the
+  fussiest contract task churning to escalation); churn budget 3 + diff-size
+  trajectory; root-cause note on escalation; fix-wave closure dispatch.
