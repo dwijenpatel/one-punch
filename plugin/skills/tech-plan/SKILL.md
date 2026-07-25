@@ -133,6 +133,30 @@ Present for ratification (Gate G2a): the plan summary, the decision log, your �
 question outcomes, and the task list with tiers. On an explicit yes, record
 `ratified-by` and the date in plan.md. Any later edit voids ratification.
 
+**Every review request ships the command that performs it.** A gate that says "review
+the plan", names a bare commit SHA, or points at a directory has handed the operator your
+job — locating the material — at the exact moment their attention is the scarce resource
+the whole protocol is built to conserve. So a ratification request carries a runnable
+command *and* the exact file paths, never one or the other:
+
+```
+sed -n '/^## Decision log/,/^## Tasks/p' docs/plans/<date>-<name>/plan.md   # what to approve
+cat tasks.json                                                             # what will run
+```
+
+At **re**-ratification the diff is the artifact, so lead with what changed and only then
+offer the full text:
+
+```
+git show <sha> --stat                                                      # files touched
+sed -n '/^## Amendments/,/^## Ratification/p' docs/plans/<date>-<name>/plan.md
+git show <sha>                                                             # full text
+```
+
+Write the amendment summary into plan.md as a table — was / now / why it mattered — so the
+second command answers the question without the operator reading a prose diff. A diff shows
+what changed; only the table shows why it was wrong.
+
 Recommend — do not run — the next stage: `/plan-review` (report-only) over the plan
 before build spend; its confirmed findings amend the plan and re-ratification is a diff
 read, not a re-interview. Never assert your own plan is unambiguous; the adversarial

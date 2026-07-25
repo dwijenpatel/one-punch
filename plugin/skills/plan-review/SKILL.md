@@ -1,6 +1,6 @@
 ---
 name: plan-review
-description: Adversarial review of plan/spec PROSE before implementation — find → verify → filter-hard, aimed at spec defects: sentences admitting divergent readings, cross-spec seam contradictions, unpinned observable behavior, checks that cannot adjudicate their contracts, silently broken local conventions. Writes plan-review-report.md with concrete divergence pairs and proposed rewrites; --fix applies confirmed rewrites to the spec files. Use before ratifying or implementing a plan, or when invoked as /plan-review [--fix] [paths].
+description: "Adversarial review of plan/spec PROSE before implementation — find → verify → filter-hard, aimed at spec defects: sentences admitting divergent readings, cross-spec seam contradictions, unpinned observable behavior, checks that cannot adjudicate their contracts, silently broken local conventions. Writes plan-review-report.md with concrete divergence pairs and proposed rewrites; --fix applies confirmed rewrites to the spec files. Use before ratifying or implementing a plan, or when invoked as /plan-review [--fix] [paths]."
 ---
 
 # plan-review — adversarial spec reading, pre-implementation
@@ -60,9 +60,8 @@ finding, and the disagreeing translations ARE its divergence pair. This catches 
 single hunt-for-ambiguity pass misses: readers who misread a trap sentence each
 believe their reading is *the* reading — divergence is detected by comparing honest
 readings, never by asking one reader to doubt. Three translators, not two, is
-deliberate: for a trap read the majority way ~80% of the time, a 2-way diff exposes
-divergence on ~32% of readings pairs while a 3-way exposes ~48% — the third reader
-buys recall, not just tie-breaks.
+deliberate: the third reader buys recall, not just tie-breaks (measured rates: the
+Tiers note above).
 
 **Cross-spec seam finder (×1).** For every interface one task provides and another
 consumes: does the consumer restate the interface (module path, signature, exact
@@ -127,7 +126,17 @@ suggests the other reading. A refutation without a quoted sentence is invalid.
   never stated (scope invention); anything outside the artifacts under review; "the
   spec could say more" without a concrete divergence pair.
 - Write the report to **`plan-review-report.md` in the repo root** — always write the
-  file, even for zero findings (headless callers read files, not stdout). Per finding:
+  file, even for zero findings (headless callers read files, not stdout). When you hand
+  the report to a human, **ship the command that reads it**, not just the path — a
+  findings count alone forces them to go hunting for the material you already know the
+  location of:
+  ```
+  sed -n '/^## F1/,/^# Negative space/p' plan-review-report.md   # the findings
+  sed -n '/^# Negative space/,$p'        plan-review-report.md   # what was refuted, and why
+  ```
+  The second command is not optional courtesy. A findings list without the refutations
+  reads as "the reviewer found seven problems"; with them it reads as "the reviewer tested
+  fifteen and seven survived", which is the only version that supports a decision. Per finding:
   location; both readings as concrete behavior; what was checked and why it does not
   resolve them; and a **proposed rewrite** that (a) pins the intended reading with an
   executable-style example — exact input → exact output, (b) adds a negative example
