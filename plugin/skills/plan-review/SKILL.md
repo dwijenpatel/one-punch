@@ -163,8 +163,21 @@ sentence, since no sentence can make a false claim true.
 
 - Keep CONFIRMED. Keep PLAUSIBLE only when the divergence would flip an acceptance
   check's outcome. Dedupe by (file, section), keeping the sharpest divergence pair.
-  Cap the report at 10 findings; if the cap bites, say so explicitly — never truncate
-  silently.
+  **Report every kept finding in full — there is no cap.** An earlier revision capped the
+  report at 10 findings: the cap bound in 100% of the rounds it applied to (26 and 21
+  confirmed), so it truncated rather than tracked, and what it compressed is exactly the
+  material the amendment author needs — the report file is the handoff artifact for a
+  fresh fixing session, and a below-cap row without its probe transcript and rewrite
+  starves that session. Quality control is the finding contract plus adversarial
+  verification, never a count limit.
+- **Open the report with a ranked executive tier** — the operator's scarce resource is
+  decision points, not report length. The tier is: the one-sentence headline; then at
+  most ~10 one-line entries, most severe first; and an explicit flag on every finding
+  that needs an **OPERATOR DECISION** (a product judgment, a stated exception to a
+  repo rule, a schema or scope change) rather than an editor. Those flagged findings
+  are the only ones the human must read before saying "fix the rest" — measured: a
+  21-finding round contained exactly one. Group the full findings beneath the tier by
+  kind: operator-decision first, then blockers, then mechanical.
 - **Do-not-flag** (false-positive suppression): unobservable implementation freedoms;
   wording or style that changes no observable output; requirements the design doc
   never stated (scope invention); anything outside the artifacts under review; "the
