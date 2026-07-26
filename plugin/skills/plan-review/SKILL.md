@@ -1,19 +1,21 @@
 ---
 name: plan-review
-description: "Adversarial review of plan/spec PROSE before implementation — find → verify → filter-hard, aimed at spec defects: sentences admitting divergent readings, cross-spec seam contradictions, unpinned observable behavior, checks that cannot adjudicate their contracts, silently broken local conventions. Writes plan-review-report.md with concrete divergence pairs and proposed rewrites; --fix applies confirmed rewrites to the spec files. Use before ratifying or implementing a plan, or when invoked as /plan-review [--fix] [paths]."
+description: "Adversarial review of plan/spec PROSE before implementation — find → verify → filter-hard, aimed at spec defects: sentences admitting divergent readings, cross-spec seam contradictions, unpinned observable behavior, checks that cannot adjudicate their contracts, silently broken local conventions, and substrate claims about external systems that are simply false (probed by execution, since a false sentence has only one reading and no ambiguity instrument can see it). Writes plan-review-report.md with divergence pairs, probe transcripts, and proposed rewrites; --fix applies confirmed rewrites to the spec files. Use before ratifying or implementing a plan, after any amendment round that changes mechanism prose, or when invoked as /plan-review [--fix] [lean] [paths]."
 ---
 
 # plan-review — adversarial spec reading, pre-implementation
 
 `/plan-review [--fix] [lean] [plan artifacts…]`
 
-**Tiers.** Default is the full shape below (3 translators + 4 angle finders +
+**Tiers.** Default is the full shape below (3 translators + 5 angle finders +
 grouped verification). With `lean` in the arguments, run a reduced shape: **2
 translators + 2 merged finders** (seams+conventions as one agent, oracle-fitness+
 under-determination as the other) + grouped verification. Lean costs roughly half
 and is blunter — the 2-way translator diff exposes an 80/20 trap on ~32% of pair
 readings vs ~48% for 3-way. Use lean for small plans (≲8 specs), cheap early passes,
 or re-review after amendments; use the default when the plan gates real build spend.
+**The substrate-truth finder runs in both tiers** — it is the cheapest agent here and the
+only one that can see a false-but-unambiguous sentence, so it is never the one you drop.
 
 You are reviewing **plan prose, not code** — nothing under review executes. The target
 defect class: a spec sentence that admits two defensible readings. Whichever implementer
@@ -30,6 +32,15 @@ without a divergence pair is not a finding; drop it. This rule is what separates
 adversarial reading from style critique. False positives are this tool's #1 product
 risk: every surfaced finding spends ratifier attention or (in `--fix` mode) rewrites
 someone's spec.
+
+**Exactly one exception: the falsified substrate claim.** A sentence asserting how an
+external system behaves — a framework default, middleware ordering, a tool's pattern
+syntax — can be simply *false*, and a false sentence has only one reading. It therefore
+passes every ambiguity instrument in this skill by construction, which is precisely why it
+is the class that survives to production. Its finding contract is **a probe transcript
+instead of a divergence pair**: the command, the trimmed output, the version, and the plan
+sentence it contradicts. Nothing else is admitted without a divergence pair — do not use
+this exception to smuggle in style critique about wording you dislike.
 
 ## Phase 0 — Gather scope
 
@@ -92,6 +103,30 @@ prose ("unlike the other stages…") or it is a probable drafting error whose tw
 readings are "the pattern holds" vs "the break is intended". Also flag quiet
 deviations from the repo's CLAUDE.md conventions.
 
+**Substrate-truth finder (×1) — runs in BOTH tiers, and is not optional.** Enumerate every
+sentence asserting external behavior: framework defaults, middleware or hook ordering,
+what a library call returns, a tool's pattern syntax and exit codes, path resolution,
+which attribute or setting a framework actually reads. For each, **execute a minimal probe
+against the installed version** — install it in a scratch directory if absent; read the
+source; run the command. Report a claim the probe contradicts as a *falsified claim* with
+its transcript. Also probe the plan's own acceptance checks: run each against a
+deliberately-wrong implementation and against the artifact the plan itself ships verbatim,
+because a check that rejects its own spec's code, or accepts the violation it names, is
+the same defect wearing different clothes.
+
+Aim this hardest at four places, all measured to be where it pays: **(a) settings and
+constants presented as pinned values** — they interact, so probe the shipped combination
+rather than each alone; **(b) any prose added by an amendment**, which is the least-reviewed
+text in the plan and reads as authoritative because it reads as a correction; **(c)
+fixes**, since a fix asserting "setting this makes the framework do X" is exactly as likely
+to be wrong as what it replaced; and **(d) anything the plan says about the test
+environment**, where local servers and temp directories differ from production in ways the
+plan's own examples quietly assume away.
+
+This finder exists because the divergence-pair contract, by design, cannot see falsehood —
+across two measured rounds on one plan, every blocker was an unambiguous sentence about
+someone else's system, and each was caught only by running it.
+
 ## Phase 2 — Adversarial verify (parallel, one verifier per location group)
 
 Group candidates by (file, section) and launch one verifier per **group**, not per
@@ -114,6 +149,15 @@ rate for a careful reader taking the minority reading of a trap sentence is roug
 in 5, and that fraction ships as defective implementations and defective tests alike.
 A general-engineering default does not refute when the plan's own local pattern
 suggests the other reading. A refutation without a quoted sentence is invalid.
+
+**Verifiers must execute, not only read.** Where a candidate rests on external behavior or
+on a check's exit code, re-probe it independently rather than trusting the finder's
+transcript — finders overstate, and a verifier that only reads prose cannot tell an
+overstatement from a defect. Two things this catches, both measured: a finder's premise
+that misread the framework (refute it, with the correcting transcript), and a real defect
+whose stated consequence was wrong (confirm it, with the consequence fixed). A **falsified
+substrate claim** is refuted only by a probe showing the plan is right — never by a
+sentence, since no sentence can make a false claim true.
 
 ## Phase 3 — Filter hard, then report
 
@@ -145,6 +189,17 @@ suggests the other reading. A refutation without a quoted sentence is invalid.
   healthy prose. End the report with the negative space: how many candidates were
   REFUTED or dropped, and by which angle — a zero-findings verdict must show what was
   checked to earn trust.
+
+Findings from the substrate-truth finder carry **the probe transcript in place of the two
+readings** — command, trimmed output, version, and the sentence contradicted — plus a
+rewrite that states the true behavior and cites the probe. Report the version the probes
+ran against: they are true of one version at one moment, and a dependency bump silently
+invalidates the report's whole substrate section.
+
+When the reviewed plan has been **amended since its last review**, say so in the report and
+report the split — how many findings landed in amendment prose versus original prose. That
+ratio is the operator's evidence for whether amendments need their own review gate; it read
+as *nearly all* on the one plan where it has been measured.
 
 **Default mode is report-only** — plan prose belongs to its author and ratifier;
 propose, don't touch. With **`--fix`**: apply the confirmed rewrites directly to the
