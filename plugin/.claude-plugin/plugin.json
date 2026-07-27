@@ -1,5 +1,5 @@
 {
   "name": "one-punch",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Thin HITL pipeline deltas over mattpocock-skills: spike (facts by execution) and contract-review (one adversarial pass over compiled contracts)."
 }

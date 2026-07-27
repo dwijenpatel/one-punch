@@ -115,11 +115,52 @@ evidence does **not** support is total-spec authoring: its one end-to-end succes
 framework-coupled plan produced the four-round record above. The v1 pipeline text,
 runner, and evidence appendix: git history `762edda` and earlier.
 
-## 6. First trial
+## 6. First trial — completed 2026-07-27, successful
 
-The retrieval-fetcher (evidence-kit) runs through v2 end to end as its first live
-trial: destination → decision map (most decisions already resolved and spike-verified
-by the v1 rounds — the map imports them as closed tickets rather than re-litigating) →
-tickets → TDD build → two-axis review. The trial's honest question is whether the back
-half (tickets/TDD/review) reaches merged, oracle-quality code at a fraction of v1's
-review spend.
+The retrieval-fetcher (evidence-kit) ran through v2 end to end: 9 tickets
+(local-markdown tracker, `.scratch/`), every one red→green TDD, **104 tests, zero
+review rounds during the build**, ending in a live run committed to the private lake
+(4 hosts, 8 attempts, all 200 first try, politeness verified from the manifest and
+logs rather than asserted). Tickets 03–09 landed in a single session.
+
+What the trial establishes, and what it does not:
+
+- **Confirmed:** execution is the only competent reviewer of mechanism. The build
+  surfaced two substrate facts no prose round could have found — a graceful SIGINT
+  drains scrapy's downloader slot queue (so a small-seed interrupt leaves nothing to
+  resume), and scrapy's exact-`3.0s` pacing makes a `>= 3.0` wall-clock assert a coin
+  flip (measured 2.9992s). Both were found and fixed inside one red/green cycle.
+- **Confirmed:** the `contract`-tier annotation does real work. The one ticket so
+  tagged (the robots seam) required reading the installed source, exactly as the tag
+  warned; the code-complete tickets transcribed with zero divergence.
+- **Caveat, stated plainly:** the trial ran on a pre-paid spec — the v1 plan at its
+  final amended state, i.e. ~40 spikes' worth of probed facts and worked examples.
+  It validates the back half (tickets → TDD → review). The front half (destination →
+  decision map → compiled contract, from a cold start) is untested until the next
+  fresh effort.
+- **Untriggered:** `contract-review` was never invoked — nothing new was
+  contract-shaped. Its re-earn clause stands at zero invocations, neither passed nor
+  failed.
+
+## 7. Ticket craft inherited from v1 (earned in the trial)
+
+These v1 spec conventions were used ticket-by-ticket in the trial and pulled their
+weight; they are v2's house style for ticket bodies, applied by whoever writes tickets
+(they are deltas *on top of* `/to-tickets`, not a replacement for it):
+
+1. **Determinacy annotation.** Tag a ticket `code-complete` (the spec contains the
+   code; implementation is transcription + testing) or `contract` (pinned behavior,
+   the seam must be read from the installed substrate at build time). The tag is
+   advice to the implementer, not routing — v1's model-routing use is dead.
+2. **Acceptance fences that cannot rot.** Every test promised in prose is gated by a
+   name-grep in the ticket's checks; every negative grep is paired with a `test -f`
+   on its target so it can never pass vacuously against a path that stopped existing.
+3. **Error models pin message *substrings*, never whole sentences** — exact-message
+   asserts reject correct rephrasings; substring pins keep oracle and implementation
+   from diverging.
+4. **Worked examples carry exact values** and are written to be lifted into tests
+   verbatim. A placeholder that matches two structurally different values is a
+   defect in the ticket.
+5. **Repo conventions are numbered and quotable** (the repo's CLAUDE.md); a
+   convention that lives only in a ticket is requested of one implementer and
+   enforced on none.

@@ -69,3 +69,7 @@ mechanism and belongs in code, not that the contract needs round two.
 
 <!-- artifact · date · confirmed · operator-kept -->
 - (none yet under v2)
+- 2026-07-27 status note (not an invocation): the v2 first trial
+  (retrieval-fetcher) compiled no new contract — its spec was inherited — so this
+  skill was never pointed at anything. Clause untriggered; the two-invocation
+  count starts at the first real compiled contract.

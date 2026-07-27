@@ -46,4 +46,8 @@ Then `/setup-matt-pocock-skills` once per repo (tracker, triage labels, docs loc
 - ✅ Pipeline v2 ratified 2026-07-27; composes mattpocock-skills 1.2.0.
 - ✅ Removed: runner, mock suite, tasks.json contract, tech-plan, plan-review (→
   demoted to contract-review), determinacy-tier routing, oracle stage.
-- ⬜ First live trial: the evidence-kit retrieval fetcher, end to end.
+- ✅ First live trial completed 2026-07-27: the evidence-kit retrieval fetcher, 9
+  tickets, all TDD, 104 tests, zero review rounds, live run committed. Validates
+  the back half (tickets → TDD → review); the front half from a cold start is the
+  next trial. Earned v1 ticket craft recorded in pipeline.md §7; contract-review's
+  re-earn clause untriggered (no contract was compiled).
