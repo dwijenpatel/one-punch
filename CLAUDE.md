@@ -1,22 +1,20 @@
 # one-punch — working rules
 
-- **Authority:** [docs/design/pipeline.md](docs/design/pipeline.md). Changes to pipeline
-  *behavior* (runner control flow, gate semantics, skill contracts) require either
-  evidence measured in the outrigger lab (`~/repos/outrigger` — the evidence base this
-  design cites) or a named trial in this repo's records. Refactors and fixes with
-  mock-suite coverage need no new evidence.
+- **Authority:** [docs/design/pipeline.md](docs/design/pipeline.md) (v2). Changes cite
+  what prompted them — a session, a measurement, a trial — in the commit message. No
+  heavier evidence gate: at this maturity, big corrections beat small ones, and the
+  repo's history is the ledger.
+- **Compose, don't paraphrase.** one-punch is a thin layer over the
+  `mattpocock-skills` plugin (wayfinder, grilling, prototype, to-spec, to-tickets, tdd,
+  code-review, …). Never copy or restate those skills' content into this repo — deltas
+  only, as one-punch's own skills. Paraphrases drift.
 - **Git:** never commit directly to `main` — feature branch → commit → `--ff-only`
-  merge → delete branch. (Initial scaffold excepted.)
-- **After any runner change:** `python3 -m py_compile runner/runner.py` and
-  `zsh runner/tests/mock_suite.zsh` — all scenarios must pass. The mock suite's claude
-  shim mimics headless deny-by-default; keep it faithful when adding stages.
-- **Runner control flow reads git state, file existence, and the schema'd worker
-  status-file `outcome` field only** — never model prose. Telemetry parses structured
-  JSON fields; a parse failure (including a malformed status file, which falls back to
-  git-state inference) must never affect control flow.
-- **Skills stay self-contained and portable:** no repo-relative references inside
-  `plugin/skills/*/SKILL.md` — they get installed into arbitrary repos.
+  merge → delete branch.
+- **Skills stay self-contained and portable:** no repo-relative references, machine
+  paths, or project names inside `plugin/skills/*/SKILL.md` — they get installed into
+  arbitrary repos.
+- **Provisional skills carry their re-earn test in their own file** (currently:
+  `contract-review`). When the test says delete, delete — don't renegotiate in the
+  moment.
 - **Operator shell is zsh:** no bare `=`-prefixed words; explicit arrays for loops;
   macOS lacks `realpath -m`.
-- Sessions spending real quota (live pipeline runs) are operator-directed only — never
-  wired into tests or CI.

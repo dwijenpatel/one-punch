@@ -1,248 +1,125 @@
-# One-liner → code-complete: the pipeline design
+# one-punch v2 — decisions by execution, contracts by compilation
 
-**Status:** LIVING copy — this document is one-punch's design authority and evolves
-with the repo. The frozen capstone record lives at
-`outrigger docs/design/one-liner-to-code-complete.md@3ebe595`. **Date:** 2026-07-17.
-**Provenance:** closes the outrigger/eaitl experiment arc. Every stage below either
-carries a measured number from that arc ([evidence appendix](#appendix-evidence-anchors))
-or names the practice corpus it adopts (Claude Code built-ins, superpowers v6.1.1, the
-cowork plugins — surveys in outrigger `docs/research/internal/longhorizon-value/`:
-`plugin-corpus-survey.md`, `claude-code-artifacts.md`).
+**Status:** LIVING copy — this document is one-punch's design authority.
+**Date:** 2026-07-27. **Supersedes:** the v1 pipeline (`one-liner → PRD → tech-plan →
+plan-review → runner → verification`), preserved in git history at `762edda` and
+summarized in the provenance section below. v1's frozen capstone remains at
+`outrigger docs/design/one-liner-to-code-complete.md@3ebe595`; outrigger is untouched
+by this redesign and its runner references are historical.
 
-## 0. Principles (each one paid for)
+## 0. Why v2 (the evidence that forced it)
 
-1. **Determinacy at the source beats detection downstream.** The experiment's only
-   shipped defect — in all three arms and the oracle — was spec ambiguity; every
-   downstream instrument (gate $131, review probes ×2) missed it. Money spent making
-   plans unambiguous outperforms money spent catching ambiguity's consequences.
-2. **Instruments own disjoint defect classes.** PRD/interview catches operator-intent
-   gaps; plan-review catches spec incoherence; per-task review catches implementation
-   defects + spec drift; the independent oracle catches what review can't execute;
-   whole-branch review catches cross-task issues. No instrument substitutes for another
-   — this is measured, not aesthetic.
-3. **Completion is granted by artifacts, never claimed by agents.** Exit 0 lies
-   (permission-denied planner: $1.65, 16 turns, zero files, "grant write access");
-   "agent reports success" is insufficient (superpowers' verification table, our earned
-   banners). Control flow reads git state and file existence only.
-4. **Humans appear only at high-leverage ambiguity.** Four gates (below). Everything
-   else runs walk-away; a pipeline that pings its operator between tasks has failed.
-5. **Token economics = tiering + cache-stable file contracts + fresh short sessions.**
-   The cheapest correct model per role; briefs as files (not pasted history — a measured
-   42k-char dispatch was 99% paste); stable prompt prefixes so caches hit; fresh
-   per-task sessions keep contexts small and error-compounding bounded.
-6. **Every stage is standalone and composable** (file contracts in, file contracts out,
-   exit codes). Any stage can run alone; no stage requires another's existence.
+v1 was built for **headless fleet execution by cheap, context-free implementers**. That
+premise demanded total specs — plans that need no judgment — which relocated
+implementation-grade debugging into prose, the one medium with no interpreter. The
+retrieval-fetcher plan (evidence-kit, 2026-07-25→27) measured the consequence: **four
+adversarial review rounds, 79 confirmed findings applied, five amendments — and every
+amendment minted new defects at ~0.5–0.8× the rate it fixed them**, because fixes were
+new unverified claims about an external system, written in English. The blockers each
+round sat in the previous round's fixes. Two skill retrofits mid-flight (probe ledgers,
+fence execution) each arrived exactly one round after the defect class they would have
+caught. Root cause, compressed: *correctness of executable behavior was being
+established through prose review instead of through execution.* Full analysis: the
+5-whys in the evidence-kit session records; the four review reports in
+`evidence-kit docs/plans/2026-07-25-retrieval-fetcher/plan-review-report-round{1..4}.md`.
 
-## 1. Stage map
+Two premise changes, both operator-ratified 2026-07-27:
 
-| # | Stage | Instrument | Attended? | Cost anchor |
-|---|-------|-----------|-----------|-------------|
-| S0 | Divergent brainstorm (optional) | `product-management:product-brainstorming` (as-is) | yes | interactive |
-| S1 | PRD | `product-management:write-spec` (as-is) + blocking-Q gate | **yes — Gate G1** | interactive |
-| S2 | Technical plan | **`tech-plan` (new skill — the one big authoring item)** | **yes — Gate G2a** (≤3 consolidated questions + ratification) | ~$3–6 |
-| S3 | Adversarial plan review | `/plan-review` (ours, as-is; lean/full tiers) | **G2b** only if findings | $10–24 full / ~half lean |
-| S4 | Execution loop | **pipeline runner (evolve ours)** driving per-task implement → two-verdict review → simplify | no — halt doors only (**G3**) | ~$3–9/task |
-| S5 | End-state verification | independent test-authored oracle + `/code-review` whole-branch + arbitration | **G4**: merge decision (+ arbitration if disputes) | oracle ~$4–6/task-family; review $4–7 |
+1. **The AFK-fleet goal is dead.** one-punch designs for a HITL operator.
+2. **Prototypes beat specs.** A question about how anything external behaves is
+   answered by code that runs, never by prose that asserts.
 
-Scope rule (superpowers' decompose lesson + our 15-task surprise): if the PRD phases the
-work, **one pipeline instance per phase** — S2 plans only the phase in front of it.
+v2 therefore composes the **mattpocock-skills** plugin (installed from
+`github.com/mattpocock/skills`; local clone `~/repos/skills`) — wayfinder, grilling,
+domain-modeling, prototype, research, to-spec, to-tickets, tdd, code-review — and adds
+only two small deltas of its own. We compose rather than paraphrase: paraphrases drift.
 
-## 2. Stage specs
+## 1. Principles (v2)
 
-### S0 — Brainstorm (optional, attended)
-Run only when the one-liner is genuinely open ("do something about onboarding"). The
-skill's discipline: 5–7 distinct approaches before evaluating any, one do-the-opposite,
-one remove-something, anti-early-convergence. Output feeds S1 as context. Skip freely.
+1. **Mechanism truth comes from execution, never prose.** A claim about an external
+   system enters a contract only via a spike transcript. (v1's probe apparatus,
+   collapsed to its useful residue.)
+2. **Decisions are serialized, one at a time, with the human.** No batch ratification
+   of documents that resolve twenty interacting questions at once — that is where v1's
+   amendment churn lived.
+3. **Contracts are compiled, not interviewed.** A spec is the synthesis of decisions
+   already resolved (and spike-verified where behavioral) — written at the end of
+   deciding, not the start.
+4. **Fog of war.** Don't pin what can't be seen yet. The retrieval-fetcher plan pinned
+   robots-failure semantics before any code existed to say what was pinnable; three
+   rounds paid for it.
+5. **Verification cost scales with the change, not the artifact.** Per-slice TDD and
+   two-axis diff review, never whole-artifact re-review rounds. Prose artifacts get at
+   most one adversarial pass, ever.
+6. **Instruments hold their seats on current evidence.** Anything carried over from v1
+   is provisional and carries an explicit re-earn test in its own file. v1's measured
+   wins do not transfer across a medium change.
 
-### S1 — PRD (attended; Gate G1)
-`write-spec` as shipped: conversational elicitation, goals-as-outcomes, **non-goals with
-rationale** (the scope fence), P0/P1/P2 with P2s as architectural insurance, success
-metrics with measurement methods, **open questions tagged owner + blocking/non-blocking**.
-**Gate G1 (mechanical convention, no machinery):** every *blocking* open question is
-answered or explicitly waived by the human, in the PRD text, before S2 starts. The PRD
-is the product authority for everything downstream.
+## 2. The pipeline
 
-### S2 — Technical plan (`tech-plan`, the new skill; Gate G2a)
-Synthesizes the three planning corpora into one skill. Inputs: PRD (authority), repo
-conventions, any prior design docs (reference; conflicts → ask, don't pick).
+All stages HITL unless marked. Tracker-backed (run `/setup-matt-pocock-skills` once per
+repo — tracker, triage labels, docs location).
 
-- **Question policy** (our measured protocol: 14/10 baseline turns → 2): derive all
-  craft decisions on the record; ask the human only product-boundary and one-way-door
-  questions, **consolidated into ≤3 early exchanges**; >3 genuine questions = the PRD
-  wasn't ready, bounce to S1.
-- **Conventions → root CLAUDE.md**, numbered and quotable — the only surface review
-  passes enforce (measured: conventions in specs are requested, never enforced).
-- **Plan format** (superpowers `writing-plans`, adopted nearly whole): Global
-  Constraints header with exact values copied verbatim; per-task **Interfaces:
-  Consumes/Produces** blocks with exact signatures; **No Placeholders** (named
-  plan-failures: "TBD", "handle edge cases", "similar to task N"); exact file paths;
-  worked examples with exact values; task sizing = one reviewable diff, "smallest unit
-  worth a fresh reviewer's gate".
-- **Hybrid determinacy tiers, tagged per task** (the synthesis' core economic move):
-  - `code-complete` — the plan embeds the actual test + implementation code
-    (superpowers style). Kills the divergent-readings class for that task; implementer
-    is transcription+testing on the **cheapest** model tier.
-  - `contract` — pinned interfaces + worked examples + error model, implementation
-    freedom inside (our spec style). Mid-tier implementer + review carries more weight.
-  Mechanical/leaf tasks default `code-complete`; judgment/integration tasks `contract`.
-  The tag drives S4's model routing.
-- **Self-review** (authoring-time, free): spec coverage, placeholder scan, cross-task
-  type consistency, and the **ambiguity self-check** — "could any sentence be read two
-  ways? pick one and write it down" (pull-idea #7).
-- **Gate G2a:** human ratifies the plan (approve-before-effect; ratification voids on
-  any post-hoc edit).
-
-### S3 — Plan review (ours; Gate G2b only when findings exist)
-`/plan-review` as built and measured (first firing: 10 confirmed findings blind,
-including a worked-example oracle the plan's own algorithm could not reach; one known
-recall miss — it is a net, not a guarantee). Attended mode: report-only, human ratifies
-rewrites (that IS Gate G2b — skipped when the report is clean). Unattended mode:
-`--fix` with recorded pin precedence. Tier by stakes: `lean` for small plans/re-reviews,
-full when the plan gates real build spend. Findings that survive verification void G2a's
-ratification: re-ratify after amendments (cheap — a diff read, not a re-interview).
-
-### S4 — Execution loop (machinery; halt doors = Gate G3)
-The pipeline runner — our nocode runner evolved (already live-hardened: permission
-bypass, ledger git-exclusion, closure-base-from-ledger, silent-no-op guards, spend
-telemetry per session). Per task, all fresh headless sessions:
-
-1. **Implement** at the tier the task's determinacy tag names. The worker prompt
-   carries the superpowers implementer contract: the task brief as a file
-   ("your requirements — exact values verbatim"); TDD iron law with **RED/GREEN
-   evidence in the report file** (command + output both phases); focused tests while
-   iterating, full suite once pre-commit; self-review before reporting; "never
-   silently produce work you're unsure about"; escalation is penalty-free.
-   **Status contract as a file** (`.status.json`: DONE | DONE_WITH_CONCERNS |
-   NEEDS_CONTEXT | BLOCKED + concerns) — the runner parses structure, never prose.
-   Routing: NEEDS_CONTEXT → re-dispatch with the missing context; BLOCKED-reasoning →
-   escalate one model tier; BLOCKED-plan-wrong → **halt (G3)**.
-2. **Two-verdict task review** (pull-idea #2; adapted from superpowers'
-   task-reviewer template): reviewer gets brief + report + diff-package **as files**;
-   verdict 1 = spec compliance (**Missing / Extra / Misunderstood** — catches both
-   under-building and the unrequested `--json` flag class); verdict 2 = code quality
-   (Critical/Important/Minor). "Do Not Trust the Report" stance; **⚠️
-   cannot-verify-from-diff** items route to the runner, which holds cross-task context
-   (pull-idea #5). Dispatch hygiene: constraints copied verbatim as the attention lens;
-   **never pre-judge findings** in the dispatch — class-level FP suppression lives in
-   the reviewer's own instructions, instance-level suppression is forbidden
-   (pull-idea #6). Fixes: churn meter as measured, budget 3 passes (our 2-pass rule
-   false-alarmed on a converging 93→8-line series), dirty-pass diff sizes recorded so
-   convergence is visible; churn → fresh re-implement at escalated tier **with a
-   root-cause note** (systematic-debugging: no fixes without root cause), churn again →
-   halt (G3).
-3. **Simplify** (built-in `/simplify`), trust-but-verify: checks re-run by the runner,
-   red → mechanical revert, noted on the ledger.
-4. Ledger append (resume-correct; the superpowers-convergent design), next task.
-
-Closure: every task's checks; findings from the whole-branch review dispatched as **one
-fix wave with the complete list** — never one fixer per finding (pull-idea #4; their
-measured: a per-finding fix wave cost more than all tasks combined).
-
-### S5 — End-state verification (Gate G4)
-- **Independent oracle**: blind test author writes an executable suite from the specs +
-  PRD acceptance criteria (machinery exists; measured: the only instrument that caught
-  the shared defect — and also measured: oracle authors misread ambiguous specs, which
-  S2/S3 determinacy directly mitigates). Disagreements → per-test **arbitration**
-  (measured protocol); genuine spec-level disputes go to the human.
-- **Whole-branch `/code-review`** at high effort (measured: complementary to the
-  oracle over disjoint classes; spec-blind and spec-fed cells both add value).
-- **Finishing gate (G4)**: verify-tests-before-presenting-options
-  (finishing-a-development-branch), then the human takes the merge/PR decision with
-  the oracle report, review findings, and spend rollup in hand. Completion is this
-  gate's grant — nothing upstream may declare success.
-
-## 3. Worker & reviewer contracts (the enforcement layer)
-
-- Status file contract (above) — machine-parsed, prose-free control flow.
-- TDD evidence contract: RED/GREEN command+output in the report file; reviewers do not
-  re-run suites on trust; a fix dispatch re-runs the covering tests and appends results.
-- Verification iron law in every worker prompt: no completion claims without fresh
-  command evidence; pristine test output (warnings are findings).
-- Review-reception rule for fix workers: if ANY finding is unclear, fix NOTHING until
-  clarified — partial understanding produces wrong fixes; push back with technical
-  reasoning rather than performative agreement.
-- File handoffs everywhere: briefs, reports, diff packages, findings lists. Nothing
-  bulk is ever pasted into a prompt; nothing bulk returns in a final message.
-
-## 4. Model routing & token economics
-
-| Role | Default tier | Rationale / measured anchor |
+| Stage | Instrument | Notes |
 |---|---|---|
-| Brainstorm / PRD / tech-plan | top tier | judgment-dense, attended, once per pipeline (~$3–6 plan) |
-| plan-review | top tier, `lean` unless build-gating | $23.87 full / est. ~half lean at 15-spec scale |
-| Implement, `code-complete` tasks | cheapest tier | transcription+testing; "turn count beats token price" — floor rises if turns balloon |
-| Implement, `contract` tasks | mid tier | measured: prose-spec implementers below mid-tier churned 2/2 |
-| Task reviewer | mid tier, scale to diff risk | $1.3–1.6/pass measured at top tier — routing cuts this |
-| Escalation implementer | +1 tier from current | with root-cause note |
-| Simplify | mid/top | ~$1/task measured |
-| Oracle author | top tier | $4.07/suite measured; blind |
-| Whole-branch review / arbitration | top tier | $4–7 measured; the "most capable model for final review" rule |
+| **Destination** | `/grilling` (+ `/domain-modeling`) | Name what *done* looks like — a working tool, a decision, a corpus change, a spec-for-handoff. Minutes, not hours. Scope is fixed here. |
+| **Decision map** | `/wayfinder` | Decisions as tickets, one resolved per session. Fog stays in Not-yet-specified. Out-of-scope is a ledger, not a fence built upfront. |
+| **— resolve: product judgment** | `/grilling` | The human's decisions, one question at a time, recommendation attached. |
+| **— resolve: behavior/substrate** | **`/one-punch:spike`** or `/prototype` | Executed code answers it. Spike = AFK fact-finding (what is true); prototype = HITL reaction (does this feel right). |
+| **— resolve: external facts** | `/research` (subagent) | Primary sources, findings as a cited file. |
+| **Contract** (only when the effort is big enough to hand off or gate) | `/to-spec` | Compiled from Decisions-so-far. Decisions and seams, **no mechanism**: no file paths, no code except spike/prototype-born snippets trimmed to the decision-rich parts. Small efforts skip straight to tickets. |
+| **Contract review** (optional, on-demand) | **`/one-punch:contract-review`** | Demoted from v1's plan-review. One round, contract surfaces only; mechanism-shaped findings convert to spike tickets, never prose amendments. Carries its own delete-if re-earn test. |
+| **Tickets** | `/to-tickets` | Tracer-bullet vertical slices, blocking edges, quiz-the-human approval. Wide refactors go expand–contract. |
+| **Build** (per ticket, frontier order) | `/implement` + `/tdd` | Seams pre-agreed with the human; red→green; typecheck often; full suite once at the end. |
+| **Review** (per ticket or branch) | `/code-review` | Two axes — Standards and Spec — parallel subagents, reported side by side. The human takes the merge decision. |
 
-Cache rules: per-stage prompt templates are byte-stable (same prefix every session);
-all variable content arrives via `Read` of files (briefs/reports/diffs) so repeated
-context is cache-served; sessions are fresh-per-task and end when the task ends —
-long-lived contexts pay quadratic re-read costs and compound errors. Telemetry ledger
-records cost/turns/cache tokens per session (built) — the pipeline's own economics stay
-measured, per-run, by default.
+**What replaced what:** brainstorm+PRD interview → destination + decision map (the PRD
+is now `/to-spec` output, compiled late, optional). tech-plan → decision map + spikes +
+to-tickets. plan-review → contract-review (demoted). The runner, tasks.json contract,
+status files, determinacy-tier routing, oracle stage, mock suite → tickets + TDD + diff
+review + the human. Per-ticket acceptance criteria absorb the role machine checks
+played; where shell-runnable checks already exist (the retrieval-fetcher plan's 140)
+they paste into tickets nearly verbatim.
 
-## 5. Human-gate policy (exhaustive)
+## 3. one-punch's own two skills
 
-| Gate | When | Human does |
-|---|---|---|
-| G1 | PRD blocking questions | answer or waive, in the PRD |
-| G2a/G2b | plan ratification / confirmed plan-review findings | ratify; adjudicate rewrites |
-| G3 | halt doors: post-escalation churn; BLOCKED-plan-wrong; adjudication of oracle-defect stops | judge; amend plan via recorded channel; resume |
-| G4 | finish: merge/PR decision (+ arbitration disputes) | decide, with evidence in hand |
+- **`spike`** — settle a substrate or design question by executing throwaway code;
+  output is a probe transcript (command · trimmed output · versions · date) recorded on
+  the decision ticket. The one hard rule inherited from v1's measurements: *a claim
+  about how an external system behaves enters a contract only via a spike transcript.*
+- **`contract-review`** — adversarial divergence-pair review of a *compiled contract*,
+  scoped to contract surfaces (schemas, one-way doors, error models, invariants, stated
+  deviations). Explicitly not a pipeline stage; the operator points it at an artifact,
+  once. Its file carries the re-earn clause: two consecutive invocations with zero
+  findings the operator judges worth fixing → delete the skill.
 
-Everything else is walk-away by construction. Any new human touchpoint added later must
-name the outcome-impact that justifies it (this list is the budget, not a floor).
+## 4. Human-touchpoint policy
 
-## 6. Build list (ordered; each item small and standalone)
+The human appears at: destination naming; every grilling answer; prototype reactions;
+seam agreement before TDD; ticket-breakdown approval; contract ratification when a
+contract exists; merge decisions. This is more touchpoints than v1's four gates and
+that is the point — v1 concentrated human attention into rare, heavyweight batch
+ratifications of large prose artifacts, which is exactly where its defects pooled.
+Frequent, small, one-question decisions are cheaper per unit of attention and leave no
+25KB artifact to re-review.
 
-1. **`tech-plan` skill** — WRITTEN v0 (`plugin/skills/tech-plan/SKILL.md`); FIRST LIVE
-   TRIAL 2026-07-17 (goodhart-sim: PRD → 4-task plan, 0 operator questions, lean
-   plan-review 0-confirmed). Adapts: spec-interview (routing), superpowers
-   writing-plans (format), feature-dev (architecture options pattern).
-2. **Runner evolution** (each a small mechanical delta to the existing runner):
-   status-file contract — DONE 2026-07-17 (schema'd done|blocked honesty channel;
-   blocked halts with the worker's reason; done+no-commit halts as contradiction;
-   malformed falls back to git-state inference; mock scenarios 11–12). Remaining:
-   two-verdict reviewer stage (adapted template, file handoffs); determinacy-tag model
-   routing; churn budget 3 + diff-size trajectory on the ledger; root-cause note
-   required on escalation; fix-wave closure dispatch.
-3. **Oracle-stage adaptation** — DONE 2026-07-17, stronger than planned: instead of
-   prompt-level blindness, the author session runs in a clone checked out at the
-   pre-implementation `build-base` sha (the built code does not exist there —
-   blindness by construction); authors from `--oracle-source` (default `docs/prd.md`)
-   + specs; runner executes the suite against the built tree; red → exit 3 as merge
-   evidence, not a halt (mock scenarios 13–14).
-4. **Skill packaging** — DONE: this repo is the marketplace; plan-review + tech-plan
-   ship as the `one-punch` plugin (install: README).
-5. Nothing else. Preflight/ratification tooling, walls, and the blind merge gate stay
-   available in outrigger for high-stakes profiles but are **not** in this pipeline's
-   default path (measured: the gate caught 0 real defects at 5.9× cost on well-specified
-   work; it returns only under weak-spec/high-stakes conditions, by explicit choice).
+## 5. Provenance (v1, and what its evidence still supports)
 
-## Appendix: evidence anchors
+v1's outrigger arc measured real things that remain true and are inherited: spec
+ambiguity survives every downstream instrument (hence grilling one question at a time,
+and contracts that record decisions rather than prose that invites readings);
+completion claims are worthless without artifacts (hence TDD red/green evidence and
+diff review); conventions live in CLAUDE.md or they are enforced on no one. What v1's
+evidence does **not** support is total-spec authoring: its one end-to-end success
+(goodhart-sim, 2026-07-17, $31.32) was a small greenfield build; the first
+framework-coupled plan produced the four-round record above. The v1 pipeline text,
+runner, and evidence appendix: git history `762edda` and earlier.
 
-- **First end-to-end validation (2026-07-17, `~/repos/goodhart-sim`)**: all six stages
-  live on a real one-liner; 0 interview questions; lean plan-review 0-confirmed;
-  4/4 tasks, one sonnet→opus escalation self-recovered, zero halt doors opened;
-  blind oracle (clone-at-build-base) 40/40; closure review caught a contract
-  narrowing introduced by `/simplify` that the oracle was structurally blind to
-  (behavior-neutral attr removal, no test pinned it) — first live datum for the
-  two-verdict review delta, and names a new failure mode: **simplify is spec-blind**.
-  Spend $31.32/105 min. Ledger: goodhart-sim `.runner/20260717T224312Z-84879/`.
+## 6. First trial
 
-- Three-arm experiment (gate 0-catch at 5.9×; 1=1=1 spec-seam defect; oracle-author
-  misreads): outrigger repo: `docs/research/internal/longhorizon-value/runs/` + `runs/CORRECTIONS.md`.
-- Review-probe (code review misses spec-level defects, both cells): outrigger repo: `runs/review-probe/PROBE.md`.
-- plan-review first firing (10 confirmed blind incl. unreachable worked-oracle; recall
-  miss; $23.87/31.6 min): `eaitl-nocode-B/plan-review-report.md` + nocode-trial README.
-- Runner live incidents (headless deny-by-default exit-0; ledger `git add -A`/`clean`
-  hazard; churn false-alarm on converging 93→8; 2/2 Sonnet prose-spec escalations):
-  nocode-trial README + runner.py comments + arm-A ledger.
-- Interview compression (14/10 → 2 turns, 0 escapes across 11 ratified specs): spec
-  cascade records, outrigger repo: `docs/design/evidence-based-harness.md` D7.
-- Practice corpora: outrigger repo: `plugin-corpus-survey.md` (superpowers §§2–4, 7; cowork plugins §6;
-  pull-ideas 1–7), claude-code-artifacts.md (built-ins, headless facts, probe numbers).
+The retrieval-fetcher (evidence-kit) runs through v2 end to end as its first live
+trial: destination → decision map (most decisions already resolved and spike-verified
+by the v1 rounds — the map imports them as closed tickets rather than re-litigating) →
+tickets → TDD build → two-axis review. The trial's honest question is whether the back
+half (tickets/TDD/review) reaches merged, oracle-quality code at a fraction of v1's
+review spend.

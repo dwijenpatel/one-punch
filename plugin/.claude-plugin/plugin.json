@@ -1,5 +1,5 @@
 {
   "name": "one-punch",
-  "version": "0.1.0",
-  "description": "Pipeline skills for one-liner → code-complete: tech-plan and plan-review."
+  "version": "0.2.0",
+  "description": "Thin HITL pipeline deltas over mattpocock-skills: spike (facts by execution) and contract-review (one adversarial pass over compiled contracts)."
 }
