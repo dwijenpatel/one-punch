@@ -249,6 +249,22 @@ including a fix that set a flag the framework never reads. So:
 - Every amended substrate claim gets a probe row before the amendment is presented.
 - Every fix ships a **regression check that fails against the defect it repairs** —
   demonstrate the red, not just the green.
+- **Every fence an amendment adds or edits is transcribed and executed as shipped** —
+  probing the fix's *idea* is not probing its *text*. Measured on one plan: an amendment
+  round whose every claim carried a probe row still shipped two blockers inside its own
+  fences — an `__init__` that never created an attribute its sibling methods used
+  (every request died), and a test harness whose stub was silently swallowed by the
+  framework's own `except` (the flagship test unsatisfiable) — because the ideas had
+  been probed live while the fences themselves had never run. Extract the amended fence
+  verbatim into a scratch tree and run it; for a harness or sketch fence that needs the
+  framework, drive it through the documented entry point it prescribes, not through
+  internal seams. And a **"(probed: …)" annotation inside a fence may quote only a
+  measurement of that exact fence text through that documented path** — the same round
+  shipped a probe citation that had been measured only via internals the spec never
+  described, i.e. a false measured claim wearing a probe's clothes.
 - An amendment round that adds or changes mechanism prose earns a `lean` re-review, and the
   cost is small against what it catches (measured: 13 confirmed findings at roughly half
-  the full tier's spend, nearly all of them in the amendment prose itself).
+  the full tier's spend, nearly all of them in the amendment prose itself; a later round
+  under the fence-execution rule above still confirmed 16, two-thirds of them seams
+  *between* amendment-added rules — the re-review is what sees across rules that were
+  each individually probed).
