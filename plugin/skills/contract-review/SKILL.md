@@ -68,7 +68,9 @@ mechanism and belongs in code, not that the contract needs round two.
 ## Invocation ledger
 
 <!-- artifact · date · confirmed · operator-kept -->
-- (none yet under v2)
+- cerebras-knowledge-base `.scratch/kb-design/spec.md` · 2026-08-02 · 10 confirmed
+  (+1 plausible dropped, 4 spike conversions) · 10 kept and applied. First real
+  invocation under v2; re-earn clause: passed round one (kept > 0).
 - 2026-07-27 status note (not an invocation): the v2 first trial
   (retrieval-fetcher) compiled no new contract — its spec was inherited — so this
   skill was never pointed at anything. Clause untriggered; the two-invocation
