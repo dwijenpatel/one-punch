@@ -161,7 +161,36 @@ stages, driven by intent tags, default OFF (vibe-coding stays vibe-coding).
 - **Inverted review:** operator reviews the agent's PR first; agent grades the
   review against defects it knows are present.
 - **LEARNING.md ledger** (Tier 1 private by default): gaps, drills completed,
-  re-measure dates; the agent schedules re-measures.
+  re-measure dates, waivers; the agent schedules re-measures.
+
+**Gating model (operator-ratified direction, 2026-08-07): implementation
+progress is GATED on measured, verified learning.** "Understanding is granted
+by artifacts, never claimed by the operator" — the outrigger principle applied
+to the human. Mechanism:
+
+- **Assessment tickets (`L-NN`) as tracker-native blockers**: implementation
+  tickets in learning-tagged domains carry `Blocked by: L-NN`; the harness and
+  the agent already refuse blocked tickets. An L-ticket resolves ONLY via a
+  committed assessment artifact: pre-registered rubric + bar, transcript,
+  grade at/above bar.
+- **Grader separation**: rubric and bar written before the mock; grading by a
+  fresh session blind to the coaching history. Coach and examiner are never
+  the same context.
+- **Transfer-only testing**: never assessed on the drilled material itself.
+- **Load-bearing assessment (strongest form)**: gates that ARE work the
+  project needs — mutation-tested operator-authored test suites (agent seeds
+  N known defects; operator's suite must catch >= k), prediction-first game
+  days (the system's behavior is the answer key), operator-authored runbooks
+  verified by literal execution. In tagged domains, operator-implements
+  tickets sit on the critical path: circumvention then cannot produce a
+  finished implementation at all.
+- **Waiver protocol (the honest limit)**: the agent never fakes a pass; bypass
+  exists only as a loud recorded waiver (committed WAIVED WITHOUT PASSING
+  ledger entry, named in every subsequent milestone summary). Converts silent
+  drift into explicit self-override.
+- **Anti-death-spiral**: fail -> targeted drills -> retest on a DIFFERENT
+  task; two fails -> forced explicit choice (waive on the record, or descope
+  the milestone). Gates sized to what the milestone actually exercised.
 - **Composition note:** upstream `productivity/teach` already does multi-
   session stateful teaching; one-punch composes (invokes it with
   project-sourced material) rather than paraphrasing it. The deltas one-punch
@@ -182,6 +211,9 @@ stages, driven by intent tags, default OFF (vibe-coding stays vibe-coding).
    leaning: evidence first.)
 2. §7: which candidate mechanisms make the cut for v3 vs. stay listed as
    options? Socratic inversion and measure/drill/re-measure look strongest.
+   Gating model ratified in direction 2026-08-07; open sub-questions: who sets
+   the bar per gate (operator at intent time vs. per-milestone), and the
+   learning-budget expression (hours per milestone vs. N operator tickets).
 3. §1: exact question set for intent elicitation (draft when finalizing).
 4. §6: propose-consent UX — how loud should ceremony proposals be?
 5. Packaging: which items become skills vs. pipeline.md amendments vs. harness
