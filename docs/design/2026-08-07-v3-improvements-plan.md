@@ -58,6 +58,32 @@ changes no decision you can foresee.
 intents are private. Intent shared is design leverage; intent withheld is
 priced-in risk, not failure. Hence §2.
 
+## 1b. Evidence pass (evidence-kit, early and eager)
+
+**Operator direction 2026-08-08:** high upfront research investment has
+repeatedly shown very high ROI — whole projects avoided by forking prior art,
+core decisions changed by compelling evidence. v3 makes this explicit:
+
+- **An evidence pass runs at the front of every non-trivial effort**, between
+  intent and the decision map: prior art and FORK-OR-BUILD scan (must be
+  answered before the map is charted — the kb effort never explicitly asked
+  it), benchmarks, domain evidence, related-domain survey.
+- **Research routes through the evidence-kit method** (repos/evidence-kit:
+  graded holdings with warrant x decay per claim, Tier-A-only load-bearing,
+  separate promotion pass, corrections ledger, pinned mirrors) instead of
+  ad-hoc docs/research/*.md files. Evidence from kb: the NIP-34 mis-claim and
+  buzz's stale rate-limit doc were both warrant/decay failures the kit
+  catches by construction.
+- **Unification**: one-punch's spike rule ("mechanism claims enter contracts
+  only via spike transcripts") is the execution-warrant special case of
+  evidence-kit's warrant system; spike transcripts file into the corpus as
+  directly-verified holdings. One rule, all claim types.
+- **Privacy**: the distilled corpus lives in the `.private/` overlay (like
+  INTENT); publishable extracts are promoted deliberately via the sanitized-
+  derivation rule. Decision-map tickets cite corpus claims by tier.
+- **Recheck schedules feed the retro loop** (§8): facts that rot get re-
+  verified or struck on the same cadence retros run.
+
 ## 2. Intent privacy (structural, fails closed)
 
 - **Private overlay repo:** `.private/` in the main repo, gitignored in the
@@ -143,7 +169,18 @@ never replaces, `/to-tickets` ticket bodies.
 - Quality is measured, not asserted: per-(tool, model, tag) outcome ledger
   (verify pass rate, spec-verdict findings, cost, turns) continuously updates
   the routing table. Seeded from existing evidence: outrigger's routing
-  anchors + the kb Qwen/Sonnet experiment.
+  anchors + the kb Qwen/Sonnet experiment. Ledger stats are recency-weighted
+  so old evidence fades as vendors ship new versions.
+- **Within-tier exploration (operator direction 2026-08-08): epsilon-greedy
+  bandit.** Default: exploit the tier's best-by-ledger candidate; with
+  probability epsilon (~0.10-0.15), route to the tier's least-sampled
+  candidate so no model goes unexercised and calibration drift is caught.
+  Constraints: critical/T0 tickets NEVER explore (always best-known);
+  exploration only on low/medium-size tickets; the usage governor filters
+  first; every outcome is ledgered. Cross-tier "auditions" (trialing a model
+  one tier up to gather promotion evidence) are not bandit-driven — the retro
+  proposes them and the operator approves, consistent with the
+  demote/promote asymmetry.
 
 **Quality tiers (operator-ratified 2026-08-08, except T2 pending):**
 
@@ -346,6 +383,7 @@ section:**
 | §5 tags, routing, verification, plan-probe/trap-notes | pipeline.md amendment extending the §7 ticket-craft list; harness skill references the routing table |
 | §6 orchestrator proposals | pipeline.md note (one paragraph); consider upstreaming to mattpocock-skills later — out of v3 scope |
 | §7 learning mode + gates | New one-punch skill `learning-gates` (L-ticket conventions, rubric + LEARNING.md templates, waiver protocol; composes upstream `teach`, never paraphrases it) |
+| §1b evidence pass | pipeline.md stage amendment + composition note in the `intent` skill; evidence-kit itself stays external (composed, not vendored); spike skill amended to file transcripts as execution-warrant holdings |
 | Effort lifecycle: tracker default + committed state + `resume` | pipeline.md amendment + harness skill `resume` entry point |
 | `retro` loop | New one-punch skill `retro` (evidence-memo template, outcome-report format, amendment-proposal protocol; files memos in one-punch docs/evidence/) |
 | Blind oracle for `critical` tickets | NOT built in v3 (Q1 resolved: evidence-first). ckb's first critical ticket runs top-tier implementer + spec-verdict review; if a defect ships through that, the oracle earns its seat with evidence. Revisit clause recorded here. |
