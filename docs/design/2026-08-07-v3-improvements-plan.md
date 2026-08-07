@@ -150,12 +150,21 @@ never replaces, `/to-tickets` ticket bodies.
 Fable 5 is EXCLUDED from headless execution permanently — operator-interaction
 sessions only (cost; and it is the ceiling, reserved for judgment).
 
-| Tier | Floor meaning | Candidates |
-|---|---|---|
-| T0 | critical tickets | Opus 5 @ high (claude_p) · GPT-5.6-Sol @ high (codex_p) |
-| T1 | contract tickets | Sonnet 5 @ high · grok 4.5 @ high · GPT-5.6-Terra @ high |
-| T2 | code-complete tickets | PENDING operator confirmation — proposed: the T1 models at medium effort (Sonnet 5 @ med, GPT-5.6-Terra @ med, grok 4.5 @ med) |
-| T3 | trivial/mechanical only | Haiku 4.5 · mini + local qwen3.6 |
+| Tier | Candidates (operator-ratified 2026-08-08) |
+|---|---|
+| T0 | Opus 5 @ high (claude_p) · GPT-5.6-Sol @ high (codex_p) |
+| T1 | Sonnet 5 @ max · grok 4.5 @ max · GPT-5.6-Terra @ max |
+| T2 | Sonnet 5 @ medium · grok 4.5 @ medium · GPT-5.6-Terra @ medium |
+| T3 | GPT-5.6-Luna @ max |
+| T4 | Haiku 4.5 |
+| T5 | mini + local qwen 3.6 |
+
+Tag -> floor mapping (derived; operator to confirm): critical -> T0 ·
+contract -> T1 · code-complete -> T3 · trivial/mechanical -> T5. The
+in-between tiers (T2, T4) are graded landing spots: ledger demotions, operator
+routing overrides, and governor fallback when a floor tier's providers are all
+cooling and the tag permits (floors stay hard — fallback goes UP freely, DOWN
+never).
 
 Ledger asymmetry (ratified): measured outcomes auto-DEMOTE a model from a
 tier; only the operator PROMOTES. A lucky streak cannot lift a model without
