@@ -40,6 +40,20 @@ compression optimizes question count and would delete these questions.
 - Intent licenses out-of-frame proposals (upstream contributions, publication
   timing, article outlines) — always proposed, never executed unilaterally.
 
+**Draft question set (Q3 resolved — refine at finalization):**
+1. Why this project, and why now? What happens if it never ships?
+2. Who, besides you, will see or use the result — users, readers, employers,
+   communities, specific companies?
+3. Describe the best realistic month-after-success. What changed?
+4. Any second-order happy paths worth designing for? Longshots welcome.
+5. What adjacent futures must we not foreclose? What outcome would make this
+   effort a regret?
+6. Which domains here do you want to build real expertise in, versus delegate
+   entirely? (feeds §7 tags, budget, and gates)
+Each answer gets a privacy tier (§2) at capture time. Follow-up rule: pull the
+thread wherever an answer implies undeclared goals; stop when a new answer
+changes no decision you can foresee.
+
 **Honest limit, stated in the skill:** elicitation works only with candor; some
 intents are private. Intent shared is design leverage; intent withheld is
 priced-in risk, not failure. Hence §2.
@@ -130,6 +144,11 @@ work looks ceremony-shaped; the human's yes is the invocation. Fixes the recall
 failure (kb never ran grill-with-docs — nobody remembered it existed) while
 preserving process sovereignty. Discipline skills remain freely model-invoked.
 
+**Proposal UX (Q4 resolved):** one line, at natural pauses only ("this looks
+map-sized — enter wayfinder?"); at most one ceremony proposal per turn; never
+mid-ceremony; a declined proposal is not re-raised until circumstances
+materially change.
+
 ## 7. Operator learning mode (brainstorm — OPEN, under discussion)
 
 **Problem:** agentic coding lets the operator watch competent decisions happen
@@ -191,13 +210,35 @@ to the human. Mechanism:
 - **Anti-death-spiral**: fail -> targeted drills -> retest on a DIFFERENT
   task; two fails -> forced explicit choice (waive on the record, or descope
   the milestone). Gates sized to what the milestone actually exercised.
+- **Bar-setting (ratified 2026-08-07)**: the TARGET is set once at intent time
+  (binding; cannot be quietly lowered); the RUBRIC is written per-milestone as
+  gates are cut, pre-registered before each assessment.
+- **Learning budget (ratified 2026-08-07)**: expressed as N operator-implements
+  tickets per effort — tracker-visible and self-enforcing, not self-reported
+  hours.
+- **Mechanism cut for v3 (proposed)**: IN — Socratic inversion,
+  measure/drill/re-measure, game days, the gating model. Options available but
+  not built as machinery — inverted review, teach-back gates (both usable
+  ad hoc without new tooling). Nothing else.
 - **Composition note:** upstream `productivity/teach` already does multi-
   session stateful teaching; one-punch composes (invokes it with
   project-sourced material) rather than paraphrasing it. The deltas one-punch
   owns: intent tagging, stage hooks, project-sourced drills, operator-
   implements routing, the measure/re-measure protocol.
 
-## 8. Out of scope for v3 (recorded to keep the fence honest)
+## 8. Packaging plan (Q5 — proposed)
+
+| Item | Ships as |
+|---|---|
+| §1 intent elicitation + §2 privacy overlay | New one-punch skill `intent` (effort-opening ceremony; INTENT.md + overlay setup templates in references/) |
+| §3 decision memos | pipeline.md amendment (usage discipline over /grilling inside wayfinder resolution) |
+| §4 worker harness | New one-punch skill `worker-harness` (runner skeleton, mini + hardened claude -p launcher recipes as reference templates; portable, no machine paths) |
+| §5 tags, routing, verification, plan-probe/trap-notes | pipeline.md amendment extending the §7 ticket-craft list; harness skill references the routing table |
+| §6 orchestrator proposals | pipeline.md note (one paragraph); consider upstreaming to mattpocock-skills later — out of v3 scope |
+| §7 learning mode + gates | New one-punch skill `learning-gates` (L-ticket conventions, rubric + LEARNING.md templates, waiver protocol; composes upstream `teach`, never paraphrases it) |
+| Blind oracle for `critical` tickets | NOT built in v3 (Q1 resolved: evidence-first). ckb's first critical ticket runs top-tier implementer + spec-verdict review; if a defect ships through that, the oracle earns its seat with evidence. Revisit clause recorded here. |
+
+## 9. Out of scope for v3 (recorded to keep the fence honest)
 
 - Reviving the v1 total-spec runner (dead; the harness in §4 is deliberately
   minimal).
@@ -206,15 +247,11 @@ to the human. Mechanism:
 
 ## Open questions (running list)
 
-1. §5: does the blind-oracle instrument for `critical` tickets earn its seat in
-   v3, or does ckb's first ACL ticket generate the evidence first? (Operator
-   leaning: evidence first.)
-2. §7: which candidate mechanisms make the cut for v3 vs. stay listed as
-   options? Socratic inversion and measure/drill/re-measure look strongest.
-   Gating model ratified in direction 2026-08-07; open sub-questions: who sets
-   the bar per gate (operator at intent time vs. per-milestone), and the
-   learning-budget expression (hours per milestone vs. N operator tickets).
-3. §1: exact question set for intent elicitation (draft when finalizing).
-4. §6: propose-consent UX — how loud should ceremony proposals be?
-5. Packaging: which items become skills vs. pipeline.md amendments vs. harness
-   templates?
+1. ~~Blind oracle~~ — resolved (evidence-first; see §8 revisit clause).
+2. §7 mechanism cut — proposed in §7; awaiting operator ratification.
+3. ~~Intent question set~~ — drafted in §1; refine at finalization.
+4. ~~Proposal UX~~ — resolved in §6.
+5. §8 packaging table — proposed; awaiting operator ratification.
+6. Finalization checklist: operator reads the full doc top to bottom, ratifies
+   §7 cut + §8 table + §1 question set, then v3 execution begins (skills
+   authored on this branch, pipeline.md amended, ledgered).
