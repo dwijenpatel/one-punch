@@ -235,7 +235,22 @@ hands-on IS a goal — it just isn't stated, so no process serves it.
 current level, target, preferred modes. Learning mode is an overlay on existing
 stages, driven by intent tags, default OFF (vibe-coding stays vibe-coding).
 
-**Candidate mechanisms (to refine):**
+**Learning goals are TYPED; the mechanism menu differs by type (refined
+2026-08-08 against the operator's real ckb goals — the one-loop-fits-all
+framing over-indexed on the interview-prep example):**
+
+| Goal type | Primary mechanism | Assessment / gate |
+|---|---|---|
+| Conceptual understanding (e.g. buzz architecture, what makes it agent-first) | Build against it + write the explainer (the intended article section IS the artifact — load-bearing by construction) | Blind-graded draft + short spoken Q&A |
+| Tradeoff mastery (e.g. vector search vs KG vs organized docs; embedding options; code-vs-prose) | Operator OWNS the project's eval harness: designs the experiment matrix, interprets results. Prediction-first: write down expected winner + why before each run; divergence is the curriculum, reality is the answer key | Defend the tradeoff writeup to a blind grader; article as capstone |
+| Skill acquisition from near-zero (e.g. Rust basics) | Operator-implements tickets on a difficulty gradient (start low/med code-complete — ideal newbie material — climb toward contract), agent as reviewer/pair | TREND gate: N merged tickets with agent-review findings-per-ticket declining; measured by existing review machinery |
+| Gap-closing against a bar (e.g. interview prep) | Baseline mock -> gap map -> drill blocks -> transfer re-measure (the full loop; this is where it applies, not the default) | Re-measure at/above pre-registered bar, blind-graded |
+
+Prediction-first is the unifying assessment primitive wherever the project can
+supply an answer key (eval runs, game days, incident behavior): cheap,
+project-native, ungameable.
+
+**Candidate mechanisms (menu; select per goal type):**
 - **Socratic inversion at decision points** (tagged domains only): the agent
   presents the decision and asks the operator to reason first, then critiques —
   deliberately un-compressing §3 where the tedium is the product.
