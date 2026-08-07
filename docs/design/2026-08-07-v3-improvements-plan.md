@@ -159,12 +159,29 @@ sessions only (cost; and it is the ceiling, reserved for judgment).
 | T4 | Haiku 4.5 |
 | T5 | mini + local qwen 3.6 |
 
-Tag -> floor mapping (derived; operator to confirm): critical -> T0 ·
-contract -> T1 · code-complete -> T3 · trivial/mechanical -> T5. The
-in-between tiers (T2, T4) are graded landing spots: ledger demotions, operator
-routing overrides, and governor fallback when a floor tier's providers are all
-cooling and the tag permits (floors stay hard — fallback goes UP freely, DOWN
-never).
+Tag x size -> floor mapping (operator-directed 2026-08-08): tickets carry a
+Size estimate (low / medium / high / very-high), set at ticket-cutting time by
+/to-tickets alongside the determinacy tag.
+
+| Tag | Size | Floor |
+|---|---|---|
+| critical | any | T0 |
+| contract | high, very-high | T1 |
+| contract | low, medium | T2 |
+| code-complete | high, very-high | T3 |
+| code-complete | low, medium | T4 |
+| trivial/mechanical | any | T5 |
+
+Supporting rules:
+- **Failure-driven escalation** (outrigger's BLOCKED-reasoning pattern): a
+  failed attempt retries ONE tier up, with restored debris and a root-cause /
+  trap note — so an underestimated Size self-corrects instead of burning
+  retries at the wrong tier. Two escalated failures -> park for operator.
+- **Size audit in the ledger**: actual turns/cost per ticket are recorded
+  against the Size estimate; systematic underestimation is a visible,
+  correctable pattern, not a vibe.
+- T2/T4 remain landing spots for demotions and operator overrides in addition
+  to their floor roles; floors stay hard, fallback goes up freely, down never.
 
 Ledger asymmetry (ratified): measured outcomes auto-DEMOTE a model from a
 tier; only the operator PROMOTES. A lucky streak cannot lift a model without
