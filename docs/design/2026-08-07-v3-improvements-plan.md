@@ -145,18 +145,21 @@ never replaces, `/to-tickets` ticket bodies.
   the routing table. Seeded from existing evidence: outrigger's routing
   anchors + the kb Qwen/Sonnet experiment.
 
-**Initial quality tiers — DRAFT, operator to review and refine before
-finalization** (evolves with the ledger, new models, and price changes):
+**Quality tiers (operator-ratified 2026-08-08, except T2 pending):**
 
-| Tier | Floor meaning | Candidates (draft) | Evidence anchors |
-|---|---|---|---|
-| T0 | critical tickets | Fable 5 (attended), Opus 5 high via claude_p, [operator to place: codex top model @ high] | outrigger: "most capable model for final review"; kb: contract/ACL class |
-| T1 | contract tickets | Sonnet 5 high via claude_p (measured: 1-pass, ~zero findings, $3.03), [operator to place: codex mid/high, grok top] | kb Sonnet experiment; outrigger: sub-mid-tier churned 2/2 on prose specs |
-| T2 | code-complete tickets | Sonnet 5 medium, Haiku 4.5, [operator to place: codex/grok economy] | outrigger: transcription+testing on cheapest tier |
-| T3 | trivial/mechanical only | mini + local qwen3.6 | kb: 3 attempts, spec-narrowing, test theater — capable of small single-seam tasks only |
+Fable 5 is EXCLUDED from headless execution permanently — operator-interaction
+sessions only (cost; and it is the ceiling, reserved for judgment).
 
-Grok placements deliberately blank pending smoke + operator's domain
-assessment; operator refines the whole table before v3 finalization.
+| Tier | Floor meaning | Candidates |
+|---|---|---|
+| T0 | critical tickets | Opus 5 @ high (claude_p) · GPT-5.6-Sol @ high (codex_p) |
+| T1 | contract tickets | Sonnet 5 @ high · grok 4.5 @ high · GPT-5.6-Terra @ high |
+| T2 | code-complete tickets | PENDING operator confirmation — proposed: the T1 models at medium effort (Sonnet 5 @ med, GPT-5.6-Terra @ med, grok 4.5 @ med) |
+| T3 | trivial/mechanical only | Haiku 4.5 · mini + local qwen3.6 |
+
+Ledger asymmetry (ratified): measured outcomes auto-DEMOTE a model from a
+tier; only the operator PROMOTES. A lucky streak cannot lift a model without
+sign-off.
 
 ## 5. Verification & routing by determinacy/risk tags
 
