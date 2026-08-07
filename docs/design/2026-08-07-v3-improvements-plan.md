@@ -98,18 +98,65 @@ deliberately un-compresses tagged domains.
 granted by artifacts, never claimed by agents") from scratch across three
 nights of runner debugging. The lessons are general and belong in one-punch.
 
-Contents: harness-verified done (project verify commands re-run by the harness;
-the agent's word is never the evidence) · blocker gating from ticket metadata ·
-fresh session per ticket, file handoffs · failure-debris salvage and
-restore-on-retry (partial work accumulates across attempts) · context
-compaction guidance for local models · two launcher recipes: mini-swe-agent
-(local models) and hardened `claude -p` (outrigger's claude_p.py pattern with
-the 2026-08 build corrections: OS-level denyRead walls + Read-tool deny,
-acceptEdits never bypassPermissions, failIfUnavailable, setting-source
-exclusion, network allowlists, unix-socket DB bridging, env-prefix
-approval-gating workaround via config files) · per-ticket cost/usage ledger.
-Verify commands parameterized per repo. Composes with, never replaces,
-`/to-tickets` ticket bodies.
+**Architecture (ratified in direction 2026-08-08):** outrigger's tool-neutral
+launcher contract is the spine — one bundle shape (params.json: worker
+{tool, model, effort}; isolation intent; cwd; timeout; instructions.md),
+per-tool launchers that translate intent into vendor mechanisms and refuse
+fail-closed anything inexpressible. Adding a tool = adding a launcher; the
+runner never changes.
+
+**Tool-agnostic core (what made the kb runner work):** harness-verified done
+(commit + harness re-runs project verify; the agent's word is never the
+evidence) · blocker gating from ticket metadata · fresh session per ticket,
+file handoffs · failure-debris salvage and restore-on-retry · per-ticket
+cost/usage ledger. Verify commands parameterized per repo. Composes with,
+never replaces, `/to-tickets` ticket bodies.
+
+**Launchers (v3 roster):**
+- `claude_p` — outrigger pattern + the 2026-08 build-2.1.220 corrections
+  (OS denyRead walls + Read-tool deny, acceptEdits never bypassPermissions,
+  failIfUnavailable, setting-source exclusion, network allowlists,
+  unix-socket DB bridging, env-prefix approval-gating workaround via config
+  files, stream-json usage capture).
+- `codex_p` — port of outrigger's smoke-verified launcher (codex exec,
+  generated per-spawn --profile, permissions-table walls, network deny
+  verified; Browser-plugin network breach documented -> plugins excluded in
+  worker profiles).
+- `grok` — NEW; no launcher, no probed facts. Smoke-first before any real
+  ticket: headless invocation, usage reporting, native sandbox or absence.
+  Isolation: container-wrapped launcher as the wall (ratified); interim until
+  built: low-sensitivity tickets in isolated clones only. Fail-closed rule
+  inherited.
+- `mini` (mini-swe-agent + local models) — RETAINED at the lowest tier only
+  (operator decision 2026-08-08: local model quality may improve; keep the
+  lane open). Only routed truly simple, straightforward tickets. Its
+  compaction machinery is kept as a mini-specific reference.
+
+**Routing & usage governor (forks resolved 2026-08-08):**
+- Tag -> hard quality floor -> ordered candidate chain of (tool, model,
+  effort); router substitutes freely across tools at/above the floor; nothing
+  available at floor -> park the ticket and take other frontier work; never
+  silently downgrade.
+- Remaining-usage is INFERRED: per-provider spend ledger + observed limit
+  errors with parsed-or-default cooldowns; optional operator hint command.
+  No dashboard scraping.
+- Quality is measured, not asserted: per-(tool, model, tag) outcome ledger
+  (verify pass rate, spec-verdict findings, cost, turns) continuously updates
+  the routing table. Seeded from existing evidence: outrigger's routing
+  anchors + the kb Qwen/Sonnet experiment.
+
+**Initial quality tiers — DRAFT, operator to review and refine before
+finalization** (evolves with the ledger, new models, and price changes):
+
+| Tier | Floor meaning | Candidates (draft) | Evidence anchors |
+|---|---|---|---|
+| T0 | critical tickets | Fable 5 (attended), Opus 5 high via claude_p, [operator to place: codex top model @ high] | outrigger: "most capable model for final review"; kb: contract/ACL class |
+| T1 | contract tickets | Sonnet 5 high via claude_p (measured: 1-pass, ~zero findings, $3.03), [operator to place: codex mid/high, grok top] | kb Sonnet experiment; outrigger: sub-mid-tier churned 2/2 on prose specs |
+| T2 | code-complete tickets | Sonnet 5 medium, Haiku 4.5, [operator to place: codex/grok economy] | outrigger: transcription+testing on cheapest tier |
+| T3 | trivial/mechanical only | mini + local qwen3.6 | kb: 3 attempts, spec-narrowing, test theater — capable of small single-seam tasks only |
+
+Grok placements deliberately blank pending smoke + operator's domain
+assessment; operator refines the whole table before v3 finalization.
 
 ## 5. Verification & routing by determinacy/risk tags
 
