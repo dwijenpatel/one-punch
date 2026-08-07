@@ -319,6 +319,25 @@ to the human. Mechanism:
 
 ## 8. Packaging plan (Q5 — proposed)
 
+**Effort lifecycle requirements (operator, 2026-08-08), mapped into this
+section:**
+- **Self-contained repo**: the local-markdown tracker becomes the DEFAULT
+  posture, not an option — task definitions, decision record, and effort state
+  live in-repo; no external ticketing. Run state is committed or derivable
+  from committed artifacts (ticket Status lines are the source of truth);
+  only transient logs/trajectories are gitignored (and archived).
+- **Resumability first-class**: every stage's output is an on-disk artifact;
+  sessions are file-contract based; the harness gains a `resume` entry point
+  (read the repo -> report frontier, in-flight debris, pending gates, parked
+  tickets -> continue). Nothing lives only in a conversation.
+- **Retro loop**: at milestones, effort-end, or any later date, a retro
+  compiles the routing/usage ledger, gate outcomes + waivers, size-estimate
+  audits, and operator OUTCOME REPORTS (external results, e.g. an interview
+  probing a learning goal) into an evidence memo filed in one-punch, with
+  proposed amendments. Retro is the promotion front door (ledger auto-demotes
+  in-effort; promotions ride retro evidence + operator sign-off) and the
+  calibration channel for §7 gate design.
+
 | Item | Ships as |
 |---|---|
 | §1 intent elicitation + §2 privacy overlay | New one-punch skill `intent` (effort-opening ceremony; INTENT.md + overlay setup templates in references/) |
@@ -327,6 +346,8 @@ to the human. Mechanism:
 | §5 tags, routing, verification, plan-probe/trap-notes | pipeline.md amendment extending the §7 ticket-craft list; harness skill references the routing table |
 | §6 orchestrator proposals | pipeline.md note (one paragraph); consider upstreaming to mattpocock-skills later — out of v3 scope |
 | §7 learning mode + gates | New one-punch skill `learning-gates` (L-ticket conventions, rubric + LEARNING.md templates, waiver protocol; composes upstream `teach`, never paraphrases it) |
+| Effort lifecycle: tracker default + committed state + `resume` | pipeline.md amendment + harness skill `resume` entry point |
+| `retro` loop | New one-punch skill `retro` (evidence-memo template, outcome-report format, amendment-proposal protocol; files memos in one-punch docs/evidence/) |
 | Blind oracle for `critical` tickets | NOT built in v3 (Q1 resolved: evidence-first). ckb's first critical ticket runs top-tier implementer + spec-verdict review; if a defect ships through that, the oracle earns its seat with evidence. Revisit clause recorded here. |
 
 ## 9. Out of scope for v3 (recorded to keep the fence honest)
