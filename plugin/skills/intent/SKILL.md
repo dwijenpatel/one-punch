@@ -30,8 +30,9 @@ The question list below is YOUR checklist, never a pasted wall of text. Open
 in three lines or fewer: one sentence of what this is, one clause on privacy,
 then question 1 alone. Example shape:
 
-> Before we plan: a few open questions, one at a time. Answers can stay
-> private (they live in `.private/`, never published — or say "off the
+> Before we plan: a few open questions, one at a time. Be as candid as you
+> can — embarrassing or self-interested reasons are exactly the useful ones,
+> and they stay private by design (`.private/`, never published; say "off the
 > record" for memory-only). First: why this project, and why now?
 
 One question per turn, threading from answers. The tier menu surfaces only
@@ -59,8 +60,13 @@ answer changes no decision you can foresee.
 ## Privacy — structural, fails closed
 
 State the limit honestly before asking: elicitation works only with candor,
-and some intents are private. Intent shared is design leverage; intent
-withheld is priced-in risk, not failure. Then offer three tiers PER ITEM:
+and some intents are private. ACTIVELY ENCOURAGE candor: the goals people
+hesitate to state — career positioning, impressing a specific company, proving
+a point, money — are usually the highest-fan-out answers in the whole
+elicitation, and the privacy machinery exists precisely so stating them costs
+nothing. Never react to a motive with judgment; mine it for design
+consequences. Intent shared is design leverage; intent withheld is priced-in
+risk, not failure. Then offer three tiers PER ITEM:
 
 - **Tier 0 — spoken only**: lives in agent memory if the harness has any;
   never written to any repo.
