@@ -1,10 +1,9 @@
 # one-punch v3 improvements — planning document
 
-**Status: DRAFT — under active review in the 2026-08-07 operator session.**
-Nothing here is ratified; the operator finalizes this document explicitly before
-any change to one-punch executes. First test case for every change: the "ckb"
-restart of the cerebras-knowledge-base effort (which does not begin until this
-document is final).
+**Status: FINAL — ratified by the operator 2026-08-08 ("finalize", after
+top-to-bottom review across the 2026-08-07/08 sessions).** This document is
+now the execution authority for v3; deviations during execution are recorded
+here with rationale. First test case for every change: the "ckb" restart.
 
 **Evidence base:** the cerebras-knowledge-base effort end to end (design map,
 contract review, Qwen/Sonnet build experiments, run-agent.sh harness);
