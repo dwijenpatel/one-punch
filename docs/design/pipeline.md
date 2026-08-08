@@ -1,7 +1,12 @@
-# one-punch v2 — decisions by execution, contracts by compilation
+# one-punch v3 — decisions by execution, contracts by compilation, goals before frames
 
 **Status:** LIVING copy — this document is one-punch's design authority.
-**Date:** 2026-07-27. **Supersedes:** the v1 pipeline (`one-liner → PRD → tech-plan →
+**Date:** 2026-08-08 (v3). **v3 provenance:** the ratified improvements plan
+(`2026-08-07-v3-improvements-plan.md`, evidence: the cerebras-knowledge-base
+effort end to end, outrigger's frozen capstone + smoke ledger, upstream skills
+v1.2.3). v2 text below is retained where still authoritative; v3 deltas are
+integrated in place and in §§8–12.
+**v2 date:** 2026-07-27. **Supersedes:** the v1 pipeline (`one-liner → PRD → tech-plan →
 plan-review → runner → verification`), preserved in git history at `762edda` and
 summarized in the provenance section below. v1's frozen capstone remains at
 `outrigger docs/design/one-liner-to-code-complete.md@3ebe595`; outrigger is untouched
@@ -36,6 +41,18 @@ only two small deltas of its own. We compose rather than paraphrase: paraphrases
 
 ## 1. Principles (v2)
 
+0a. **Goals before frames.** Every effort opens by eliciting the operator's
+   intent-stack — the why behind the why, audiences, success scenarios, futures
+   not to foreclose, learning goals — into a durable, privacy-tiered INTENT.md
+   that every later session loads. A question's value is its FAN-OUT (how many
+   downstream decisions its answer changes): ask in descending fan-out order,
+   batch-ratify everything with fan-out ≈ 1. (kb evidence: one intent paragraph
+   flipped six ratified decisions and surfaced a missing P0.)
+0b. **Load-bearing claims carry warrants.** The v2 spike rule is the
+   execution-warrant special case of evidence-kit's warrant × decay system;
+   research routes through the evidence-kit method into a private graded
+   corpus, and the fork-or-build question is answered before any map is
+   charted.
 1. **Mechanism truth comes from execution, never prose.** A claim about an external
    system enters a contract only via a spike transcript. (v1's probe apparatus,
    collapsed to its useful residue.)
@@ -62,9 +79,11 @@ repo — tracker, triage labels, docs location).
 
 | Stage | Instrument | Notes |
 |---|---|---|
+| **Intent** | **`/one-punch:intent`** (via `/one-punch:start` in a new repo) | Intent-stack elicitation into privacy-tiered INTENT.md (+ `.private/` overlay, gitignore-first). Revisited at stage boundaries. |
+| **Evidence pass** | evidence-kit method (composed) | Prior art + FORK-OR-BUILD (mandatory before charting), benchmarks, domain evidence — graded corpus in `.private/`, publishable extracts promoted deliberately. |
 | **Destination** | `/grilling` (+ `/domain-modeling`) | Name what *done* looks like — a working tool, a decision, a corpus change, a spec-for-handoff. Minutes, not hours. Scope is fixed here. |
 | **Decision map** | `/wayfinder` | Decisions as tickets, one resolved per session. Fog stays in Not-yet-specified. Out-of-scope is a ledger, not a fence built upfront. |
-| **— resolve: product judgment** | `/grilling` | The human's decisions, one question at a time, recommendation attached. |
+| **— resolve: product judgment** | `/grilling` (decision-memo discipline) | Craft decisions derived on the record (recommendation applied, one-line rationale, corpus claims cited by tier); only genuine forks — one-way doors and product boundaries — asked individually. The operator batch-ratifies the memo and may reopen any item by naming it. (Outrigger measured 14/10→2 turns, zero escapes; kb audit: 20 gates, 2 course changes.) Learning-tagged domains invert Socratically per §11. |
 | **— resolve: behavior/substrate** | **`/one-punch:spike`** or `/prototype` | Executed code answers it. Spike = AFK fact-finding (what is true); prototype = HITL reaction (does this feel right). |
 | **— resolve: external facts** | `/research` (subagent) | Primary sources, findings as a cited file. |
 | **Contract** (only when the effort is big enough to hand off or gate) | `/to-spec` | Compiled from Decisions-so-far. Decisions and seams, **no mechanism**: no file paths, no code except spike/prototype-born snippets trimmed to the decision-rich parts. Small efforts skip straight to tickets. |
@@ -164,3 +183,85 @@ weight; they are v2's house style for ticket bodies, applied by whoever writes t
 5. **Repo conventions are numbered and quotable** (the repo's CLAUDE.md); a
    convention that lives only in a ticket is requested of one implementer and
    enforced on none.
+
+## 8. Build execution (v3): routing, verification, harness
+
+Tickets carry three annotations from `/to-tickets`: determinacy tag
+(`code-complete` / `contract` / `critical` / `trivial`), **Size** (low / medium
+/ high / very-high), and any learning tags (§11).
+
+**Tag × Size → tier floor** (floors are hard; fallback goes up freely, down
+never): critical→T0 (any size) · contract high/very-high→T1 · contract
+low/med→T2 · code-complete high/very-high→T3 · code-complete low/med→T4 ·
+trivial→T5. Current tier ladder (operator-owned; the ledger auto-DEMOTES,
+only the operator PROMOTES, promotions ride retro evidence): T0 Opus @ high,
+GPT-Sol @ high · T1 Sonnet/grok/GPT-Terra @ max · T2 same @ medium · T3
+GPT-Luna @ max · T4 Haiku · T5 mini + local models. The interactive
+operator-session model is NEVER routed headless.
+
+**Selection within a tier:** ε-greedy bandit (ε≈0.10–0.15; exploit
+best-by-ledger, explore least-sampled) so no candidate goes unexercised;
+critical never explores; exploration only on low/med sizes; the usage
+governor (per-provider spend ledger + observed limit errors + inferred
+cooldowns) filters first; ledger stats are recency-weighted. A failed attempt
+retries ONE tier up with restored debris and a root-cause note; two escalated
+failures park the ticket for the operator.
+
+**Verification depth follows the tag:** code-complete → harness verify only,
+review amortized at branch milestones · contract → per-ticket spec-verdict
+pass (Missing / Extra / Misunderstood vs. the ticket checklist) · critical →
+top-tier implementer AND independent acceptance-test authorship (oracle seat:
+evidence-first — see the ratified plan's revisit clause). Completion is
+granted by artifacts, never claimed by agents: the harness re-runs the
+project's verify commands after every claimed done. Plan-probe → trap-notes
+before dispatching cheap implementers at hard tickets.
+
+The worker harness (see the `worker-harness` skill) implements: bundle
+contract + per-tool launchers (fail-closed isolation), blocker gating, fresh
+session per ticket, debris salvage/restore, JSONL event ledger (all state a
+pure fold; `resume` reports frontier / debris / gates / parked / cooling).
+
+## 9. Effort lifecycle (v3)
+
+Local-markdown tracker is the DEFAULT: the repo is fully self-contained (task
+definitions, decision record, effort state committed or derivable from
+committed artifacts; only transient logs/trajectories gitignored+archived).
+Every stage's output is an on-disk artifact — an effort can stop and resume
+anytime, in any session, with `resume`. Ceremony entry is model-PROPOSABLE,
+never model-enterable: one-line proposals at natural pauses, at most one per
+turn, declined proposals not re-raised absent material change.
+
+## 10. Retro (v3)
+
+At milestones, effort-end, or whenever outside evidence arrives: compile the
+routing/usage ledger, gate outcomes + waivers, size audits, and operator
+OUTCOME REPORTS into an evidence memo filed in one-punch `docs/evidence/`,
+with proposed amendments (tier promotions, gate recalibrations, pipeline
+changes). Retro is the promotion front door and the calibration channel for
+§11 gates. The process is under the same regime as the code: measured,
+ledgered, amended on evidence.
+
+## 11. Operator learning mode (v3)
+
+When INTENT.md declares learning goals, they are TYPED — conceptual
+understanding / tradeoff mastery / skill acquisition / gap-closing — and each
+type has its own mechanism and gate (see the `learning-gates` skill).
+Implementation progress GATES on measured, verified learning: assessment
+tickets (`L-NN`) block implementation tickets like any other edge and resolve
+only via committed artifacts (pre-registered rubric + bar, blind grading,
+transfer-only testing; prediction-first wherever the project supplies an
+answer key; mutation-tested operator artifacts where the work itself can
+verify understanding). Bars: target set at intent time (binding), rubric per
+milestone. Budget: N operator-implements tickets, tracker-visible. Bypass
+exists only as a loud recorded waiver; the agent never fakes a pass.
+Anti-death-spiral: fail → drills → retest on a DIFFERENT task; two fails →
+waive-on-record or descope.
+
+## 12. Harness agnosticism (v3)
+
+AGENTS.md is canonical; CLAUDE.md is an import shim with vendor-specific
+notes. Every skill conforms to the Agent Skills open standard (harness-neutral
+wording, graceful degradation, compatibility frontmatter). Distribution:
+Claude Code plugin AND skills.sh file-copy. A vendor is claimed supported only
+when its dated, build-pinned smoke checklist row passes — a green Claude row
+says nothing about Codex.
