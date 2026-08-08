@@ -1,11 +1,13 @@
 {
   "name": "one-punch",
-  "owner": {"name": "Dwijen Patel"},
+  "owner": {
+    "name": "Dwijen Patel"
+  },
   "plugins": [
     {
       "name": "one-punch",
       "source": "./plugin",
-      "description": "One-liner → code-complete pipeline skills: tech-plan (PRD → ratifiable technical plan with determinacy tiers) and plan-review (adversarial spec-prose review). The walk-away execution runner ships in the repo's runner/ directory."
+      "description": "one-punch v3 pipeline skills: start (front door), intent (goal-stack + private overlay), spike (facts by execution), contract-review, worker-harness (routed headless builds), learning-gates, retro. Composes mattpocock-skills and evidence-kit."
     }
   ]
 }
