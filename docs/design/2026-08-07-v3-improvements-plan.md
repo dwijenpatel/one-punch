@@ -416,6 +416,15 @@ pattern:
   harness runnable — each row passing PER VENDOR before that vendor is
   claimed supported; re-run on vendor releases. A green Claude row says
   nothing about Codex.
+- **Install flows (README source material, ratified direction):**
+  Claude Code: `claude plugin marketplace add <gh-slug>/one-punch` +
+  `claude plugin install one-punch@one-punch`, then `/one-punch:start` in the
+  project dir; `start`'s prereq check detects missing composed dependencies
+  (mattpocock-skills, evidence-kit) and prints their install commands rather
+  than requiring foreknowledge. Codex (post-§8b, post-smoke only):
+  `npx skills@latest add <gh-slug>/one-punch` (+ mattpocock/skills) via the
+  skills.sh file-copy path; AGENTS.md read natively; skills invoked by name in
+  prose, no slash commands assumed.
 - Capability-degradation notes where features assume a harness capability
   (e.g. voice mocks in learning gates degrade to text; subagent model-routing
   names differ per harness and live in the vendor shim, never in skill
