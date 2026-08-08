@@ -24,7 +24,22 @@ questions have fan-out ≈ 1 and are batch-ratified elsewhere, never asked here.
 - At stage boundaries (map complete, contract ratified, pre-build): re-read
   INTENT.md aloud in one paragraph and ask what changed.
 
-## The questions
+## The opening — concise, conversational (operator feedback, first live use)
+
+The question list below is YOUR checklist, never a pasted wall of text. Open
+in three lines or fewer: one sentence of what this is, one clause on privacy,
+then question 1 alone. Example shape:
+
+> Before we plan: a few open questions, one at a time. Answers can stay
+> private (they live in `.private/`, never published — or say "off the
+> record" for memory-only). First: why this project, and why now?
+
+One question per turn, threading from answers. The tier menu surfaces only
+when FILING answers ("I'll record that as private — object if you want it
+public or memory-only"), not upfront. Never enumerate the full list or the
+tier taxonomy in the opening.
+
+## The questions (agent checklist)
 
 Ask openly and generatively — these are conversation starters, not a form.
 Pull the thread wherever an answer implies undeclared goals; stop when a new
