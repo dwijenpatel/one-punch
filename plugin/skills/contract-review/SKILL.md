@@ -1,6 +1,8 @@
 ---
 name: contract-review
 description: "On-demand adversarial review of a COMPILED CONTRACT — a spec, schema, or decision record assembled from already-resolved decisions. Finds sentences on contract surfaces (schemas, one-way doors, error models, invariants, stated deviations) that admit two defensible readings, verifies each finding adversarially, and reports with proposed rewrites. Mechanism-shaped candidates (claims about how an external system behaves, test-harness details, framework internals) are never findings here — they convert to spike tickets. One round per artifact, ever. Use only when the operator explicitly points it at a contract; it is not a pipeline stage."
+compatibility: Works in any agent harness; verification passes benefit from parallel or fresh sessions where available, and degrade to sequential fresh contexts otherwise.
+license: MIT
 ---
 
 # contract-review — one adversarial pass over a compiled contract

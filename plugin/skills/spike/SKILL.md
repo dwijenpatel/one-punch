@@ -1,6 +1,8 @@
 ---
 name: spike
 description: "Settle a question about how an external system actually behaves — a framework default, an API's real response shape, a library seam, path or exception semantics — by writing and executing throwaway code, then recording a probe transcript (command, trimmed output, versions, date) on the decision ticket that asked. Use when a decision or contract sentence rests on unverified external behavior, when a review converts a mechanism claim to a spike, or when two plausible readings of a system can be discriminated by running something small. Fact-finding by execution; for reaction-seeking artifacts (does this design feel right?) use a prototype skill instead."
+compatibility: Works in any agent harness with shell access to run throwaway probes.
+license: MIT
 ---
 
 # spike — execute the question
@@ -39,3 +41,12 @@ spike it.
 6. **Transcripts feed contracts verbatim-or-cited.** A contract sentence resting on a
    spike names it; a code snippet may be inlined only if it is the spike's own text,
    trimmed to the decision-rich part.
+
+## Filing (v3)
+
+A probe transcript is an execution warrant. Besides landing on the decision
+ticket that asked, file it (or a pointer to it) into the effort's evidence
+corpus as a directly-verified holding with a decay class — vendor builds and
+service behaviors rot, and the recheck schedule is what notices. One rule for
+all claim types: load-bearing claims carry warrants; spikes are the
+execution-shaped warrant.
