@@ -385,8 +385,39 @@ section:**
 | §7 learning mode + gates | New one-punch skill `learning-gates` (L-ticket conventions, rubric + LEARNING.md templates, waiver protocol; composes upstream `teach`, never paraphrases it) |
 | §1b evidence pass | pipeline.md stage amendment + composition note in the `intent` skill; evidence-kit itself stays external (composed, not vendored); spike skill amended to file transcripts as execution-warrant holdings |
 | Effort lifecycle: tracker default + committed state + `resume` | pipeline.md amendment + harness skill `resume` entry point |
+| §8b harness agnosticism | AGENTS.md canonicalization + CLAUDE.md shim; skill-by-skill standard-conformance audit; per-vendor smoke checklist doc; dual-path install docs in README |
 | `retro` loop | New one-punch skill `retro` (evidence-memo template, outcome-report format, amendment-proposal protocol; files memos in one-punch docs/evidence/) |
 | Blind oracle for `critical` tickets | NOT built in v3 (Q1 resolved: evidence-first). ckb's first critical ticket runs top-tier implementer + spec-verdict review; if a defect ships through that, the oracle earns its seat with evidence. Revisit clause recorded here. |
+
+## 8b. Harness agnosticism (operator requirement, 2026-08-08)
+
+one-punch must be usable with any interactive agent — Claude Code, Codex,
+grok — not only Claude Code. Outrigger already made this migration; adopt its
+pattern:
+
+- **AGENTS.md is canonical**; CLAUDE.md becomes an `@AGENTS.md` import shim
+  plus a short Claude-specific section (the outrigger layout, verbatim
+  pattern). Vendor-specific guidance lives only in the vendor shim.
+- **Every one-punch skill conforms to the Agent Skills open standard**
+  (agentskills.io): no hardcoded Claude Code tool names, graceful degradation
+  ("if the harness offers a structured question UI, use it; else ask in plain
+  text"), background-agent dispatch phrased harness-neutrally (upstream
+  skills' 1.2.1-1.2.3 diffs are the template), real requirements in
+  `compatibility:` frontmatter.
+- **Distribution dual-path**: Claude Code plugin AND skills.sh-style
+  file-copy install for Codex/grok/others.
+- **The harness reference implementation is already agnostic by
+  construction** (stdlib Python core; per-tool launchers behind the JSON
+  bundle contract; the interactive agent driving it is irrelevant to it).
+- **Per-vendor compatibility smoke** (outrigger's discipline): a checklist
+  table in one-punch — instructions loaded, skills invocable, tracker ops,
+  harness runnable — each row passing PER VENDOR before that vendor is
+  claimed supported; re-run on vendor releases. A green Claude row says
+  nothing about Codex.
+- Capability-degradation notes where features assume a harness capability
+  (e.g. voice mocks in learning gates degrade to text; subagent model-routing
+  names differ per harness and live in the vendor shim, never in skill
+  bodies).
 
 ## 9. Out of scope for v3 (recorded to keep the fence honest)
 
