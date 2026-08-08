@@ -12,6 +12,13 @@ decisions happen, feels the learning, and learns ~10% of it. "I feel like I
 learned X" is a completion claim, and completion claims are worthless without
 artifacts — the same rule the pipeline applies to agents, applied to the human.
 
+## Conversation surface
+
+Tables and taxonomies in this file are YOUR reference, never pasted at the
+operator. Goal-typing and gate-setting happen conversationally: one question
+at a time, threading from answers; menus and mechanics surface only when a
+concrete choice needs them.
+
 ## Goals are typed; the mechanism follows the type
 
 | Type | Primary mechanism | Gate |

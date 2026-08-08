@@ -1,5 +1,5 @@
 {
   "name": "one-punch",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "one-punch v3: HITL pipeline over mattpocock-skills + evidence-kit. Front door (start, intent w/ private overlay), decisions by execution (spike), contract-review, learning gates, retro. Worker harness ships as reference templates."
 }
