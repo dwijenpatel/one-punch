@@ -30,6 +30,15 @@ failing or silently degrading:
   the repo stays self-contained; external trackers are the exception).
 - **evidence-kit**: needed at step 4; detect and note now, install guidance
   only when reached.
+- **Freshness, not just presence** (added after two stale-cache incidents on
+  day one of first use): where the harness exposes installed plugin versions
+  and the local source/marketplace is reachable, compare them for one-punch
+  and its composed dependencies. If anything is stale, say so NOW and print
+  the exact update commands (e.g. for Claude Code:
+  `claude plugin marketplace update <name> && claude plugin update <plugin>@<name>`),
+  and remind the operator that updates apply at session start — better to
+  restart at minute zero than mid-ceremony. A version check that cannot be
+  performed in this harness is reported as unchecked, never assumed current.
 
 ## 2. Scaffold
 
