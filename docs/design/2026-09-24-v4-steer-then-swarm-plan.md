@@ -196,7 +196,9 @@ ticket.
 - Frontier = tickets whose blockers are merged (v3 `frontier()`).
 - **Batch selection:** from the frontier, pick up to N (default 4) tickets
   with pairwise-disjoint `Touches`; ties broken by critical path, then size.
-  Pure function in `core.py`, property-tested.
+  Pure function in `core.py`, property-tested. Overlap is defined on the
+  current tree: two tickets overlap if any existing file matches both
+  `Touches` sets, or both sets match the same not-yet-existing path prefix.
 - Each selected ticket → a worker in its own worktree branched from the
   current integration head, with the preamble (§3.8) + ticket text.
 - The planner keeps the pipe full: as each ticket integrates, recompute the
@@ -282,7 +284,7 @@ the planner's context.
 |---|---|---|
 | `trivial`, `code-complete` | `integrate` verify only | — |
 | `contract` | spec verdict (Missing / Extra / Misunderstood vs. ticket) by a fresh reviewer | — |
-| `critical` | spec verdict + one **decorrelated lens**: different model from the implementer, sees codebase + ticket + diff only; independent acceptance-test authorship stays per v3 §8 | — |
+| `critical` | spec verdict + one **decorrelated lens**: a different model *family* from the implementer via a v3 launcher (e.g. `codex_p`) when available, else a fresh Opus reviewer with a different context (codebase + ticket + diff only, never the transcript); independent acceptance-test authorship stays per v3 §8 | — |
 | **Milestone** | — | mattpocock `code-review` (Standards + Spec axes, parallel) over the milestone diff, then H3 |
 
 Reviewers are read-only (superpowers v6.0.0). Findings are batched to one
@@ -316,7 +318,7 @@ fixer ticket per milestone, not one fixer per finding.
 | **`steer`** (new) | Front door. Runs H1 → A1 → H2 → A2, and H3 per milestone; `resume` reports where the effort is. Replaces `start` (whose dependency-freshness checks move here). |
 | **`decision-memo`** (new) | Memo format and the altitude rule; used at H2 and H3. |
 | **`field-guide`** (new) | Format, budget, curation rules. Small. |
-| **`worker-harness`** (changed) | `core.py`: `select_batch()` (disjoint `Touches`), ticket-header parsing for v4 fields. New `integrate` script (§3.5) with ref/Touches/megafile checks and ledger events. Handoff schema. Dispatch stays with the planner via the harness's native isolated background subagents; the headless `run` shell remains deferred (v3 ticket 13 stays cut). |
+| **`worker-harness`** (changed) | `core.py`: `select_batch()` (disjoint `Touches`), ticket-header parsing for v4 fields. New `integrate` script (§3.5) with ref/Touches/megafile checks and ledger events. Handoff schema. Dispatch stays with the planner via the harness's native isolated background subagents; the headless `run` shell remains deferred (v3 ticket 13 stays cut). v3 launchers are kept, used for cross-vendor lenses (§3.9) and as the future headless path. **Blocked by the §8.4 spike.** |
 | **`intent`** (changed) | One sitting, H1 question set, risk register; overlay offered, not default. |
 | **`retro`** (changed) | Adds v4 metrics (§6). |
 | **`learning-gates`** | Unchanged content; opt-in only (proposed when INTENT.md names a learning goal). |
@@ -368,3 +370,18 @@ peer-to-peer worker coordination; a standing integrator agent; N > 4 tuning.
 3. Worktree location and cleanup — defer to the harness's native worktree
    tool when present (superpowers `using-git-worktrees` discipline), else
    `.worktrees/` git-ignored.
+4. **SPIKE FIRST — blocks every `integrate`/dispatch ticket.** The in-session
+   dispatch path (§3.4, §3.5, §5) assumes behavior of the harness's native
+   isolated background subagents that no transcript has verified: does a
+   worktree subagent that committed leave a named branch, where, and does it
+   persist; can the parent repo rebase and fast-forward from it; is a
+   worktree cut from the current integration head or from `HEAD`; can a
+   background subagent invoke plugin skills (`tdd`, `spike`); how many run
+   concurrently before limits bite. Per principle v3 §1.1 these enter the
+   contract only via a `spike` transcript. Fallback if the spike fails:
+   planner-created `git worktree add` per ticket, worker launched into it.
+5. **Change from the design as presented in chat, for ratification:** chat
+   §4 said "worker-harness gains `--parallel N`". Because the planner is the
+   interactive session, this spec instead keeps dispatch with the planner
+   (native subagents) and limits the harness to pure `select_batch()` + the
+   `integrate` script; the headless multi-worker `run` shell stays deferred.
