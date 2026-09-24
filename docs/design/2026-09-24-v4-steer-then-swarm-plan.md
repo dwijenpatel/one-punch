@@ -8,7 +8,9 @@ authority for v4, and `pipeline.md` is amended to v4 by the first ticket.
 **Evidence base:** [../evidence/2026-09-24-v4-outside-evidence.md](../evidence/2026-09-24-v4-outside-evidence.md)
 — the ckb cold-start stall, Cursor's three swarm posts, superpowers 5.0.6–6.4.1
 measured corrections, mattpocock-skills 1.2.3, slipstream's build record,
-idea-gen D26. Section references below cite that memo as `E§n`.
+idea-gen D26. Section references below cite that memo as `E§n`. Code-style
+evidence: [canon](../evidence/2026-09-24-code-style-research-canon.md) (`C`)
+and [critiques + agent evidence](../evidence/2026-09-24-code-style-research-critiques-and-agents.md) (`K`).
 
 **One-line shape:** agents run ahead of the human in parallel; the human
 ratifies forks against evidence in few, dense sittings; a planner that never
@@ -51,7 +53,12 @@ damage a wrong change could do if it shipped unnoticed.
 6. **Ceremony is opt-in.** Private overlay, evidence corpus, learning gates and
    contract review are off by default and proposed only when the effort shows
    the need (v3 §9 "model-proposable, never model-enterable" stands). (E§1.1)
-7. **The environment carries the memory.** Decisions, negative results and
+7. **Code standards are enforced, not just stated.** A short, repo-specific
+   style section says only what a linter cannot decide; linters and import
+   boundaries enforce what they can; review checks the rest. Each
+   decomposition rule carries its counterweight, because the listed failure of
+   agent code is over-abstraction, not under-abstraction. (§3.11; C, K)
+8. **The environment carries the memory.** Decisions, negative results and
    surprises are written where the next agent reads them first (decision
    ledger, field guide), not left in transcripts. (E§1.2 Field Guide, E§1.5)
 
@@ -220,6 +227,7 @@ review; accepted, because the costs are asymmetric.
 | Operator review | milestone sample | milestone | milestone; each B2 diff listed | **reads the diff before it merges** — `integrate` holds it `AWAITING-OPERATOR`; the run continues with other tickets |
 | Scheduling | any batch | any | any | never co-scheduled with a ticket in the same blast-map zone; licensed breakage *into* a B3 zone is forbidden (it must be its own B3 ticket) |
 | Merge conflicts | merge agent | merge agent | merge agent | merge agent on Opus, and the merged result re-enters B3 review |
+| Structure (§3.11) | style lint | style lint | + decision logic in the pure core | + **decision logic pure and property-tested on its own; the effectful shell kept thin enough to review line by line** |
 
 **Domain checklists** (`blast-radius` skill references; used by the oracle
 test author and the lens): authentication & sessions · authorization &
@@ -358,6 +366,9 @@ Deterministic, stdlib-only, invoked by `harness run` after each worker exits (an
      exist as artifacts (B2: spec verdict; B3: independent acceptance tests
      committed before the implementation commits, lens report, domain
      checklist answered) → else fail;
+   - **style lint** (§3.11) — hard-fail rules fail; soft-cap warnings are
+     written to the integration log and the handoff, not failed; brownfield
+     is ratcheted (only new violations in changed code count);
    - **megafile check** — any changed file that crossed the threshold (default
      800 lines, configurable) *in this change* → fail with
      `MEGAFILE <path>`; the planner cuts a decompose ticket that blocks further
@@ -429,7 +440,10 @@ else a fresh Opus reviewer that sees codebase + ticket + diff only, never the
 transcript.
 
 **Milestone:** mattpocock `code-review` (Standards + Spec axes, parallel) over
-the milestone diff, with every B2/B3 diff reviewed individually, then H3.
+the milestone diff, with every B2/B3 diff reviewed individually, then H3. The
+Standards axis reads the repo's `AGENTS.md` style section natively and adds the
+§3.11 review rubric; it also receives the milestone's accumulated lint
+warnings.
 
 Reviewers are read-only (superpowers v6.0.0). Milestone findings are batched
 to one fixer ticket, not one fixer per finding; a finding in a B3 zone
@@ -449,6 +463,69 @@ becomes its own B3 ticket.
   as the throttle. N=4 is a default, lowered automatically when limit errors
   are observed.
 
+### 3.11 Code standards (three layers)
+
+**Evidence in brief.** Agent-adopting repos showed +30% static-analysis
+warnings and +42% complexity that persisted (K: He et al., MSR'26,
+difference-in-differences). Prompting with more detail did not reduce smells
+(K: Zhu et al., p>0.8). Context files are followed but cost steps, and their
+value is in *non-standard, repo-specific* practice (K: Gloaguen et al.,
+preprint; style rules were never ablated separately — whether prose style rules
+improve quality is unmeasured). Vendors converge: short, positive, reasoned
+rules; linters over prose; add a rule after a repeated mistake. The canon (C)
+strongly supports the operator's five principles, with two refinements: the
+DB/shared-object exception becomes *injected and confined to the shell*, and
+granularity is split by abstraction level, never by line count, paired with
+Ousterhout's counterweights (no pass-through layers, no shallow modules).
+Inference, not measured: with four parallel fresh workers, stated conventions
+reduce style split-brain, and consistent layered code lowers the operator's
+B3 review cost.
+
+**Layer 1 — stated.** A `Code style` section in the repo's `AGENTS.md`,
+installed at A2 from the one-punch default (Appendix A) with repo-specific
+slots filled (which directories are the pure core, which are the shell, a
+reference file showing the pattern). Budget ≈ 30 lines. Positive phrasing,
+one-clause why, no MUST/CRITICAL. Operator-owned; the planner proposes edits.
+
+**Layer 2 — enforced** (the project's verify commands, run by `integrate`):
+
+| Hard fail | Soft cap (warn, never fail) |
+|---|---|
+| import boundary: core modules may not import I/O, DB, network, clock or randomness modules (import-linter / dependency-cruiser / crate boundaries) | function length ~40–60 lines (target ~25; K: Chowdhury et al., MSR'22) |
+| swallowed errors (bare/blind except, empty catch, unchecked errors) | cyclomatic/cognitive complexity above the repo's cap |
+| unused imports/variables, commented-out code, unused exports | clone-level duplication above threshold |
+| boolean flag parameters; > N parameters | inheritance depth > framework + 1 |
+| new mutable globals; mutable default arguments | — |
+| formatter drift | — |
+
+Language packs ship with the skill (ruff codes verified in C; eslint, pylint,
+clippy and Go rule names from recall — verified when a repo is wired, as a
+spike item). Brownfield ratchet: existing violations are grandfathered;
+changed code must not add new ones.
+
+**Layer 3 — reviewed** (only what tools cannot decide). Rubric for the
+milestone Standards axis and the B2/B3 spec verdict:
+- Over-abstraction: single-use helpers without a standalone contract,
+  pass-through functions, interfaces with one implementation, speculative
+  parameters/config, new modules before a second real use.
+- Mixed abstraction levels in one body; names that don't cover what the
+  function does.
+- Defensive code for states the types or boundary parsing already rule out.
+- Observable-behavior drift in a refactor: outputs, error types/messages,
+  ordering (Hyrum's law).
+- Knowledge duplicated (a rule that must change in lockstep in two places);
+  shared helpers that grew per-caller flags.
+- Scope beyond the ticket, or PR size out of proportion to the ticket.
+
+Reviewers flag rule violations and correctness- or requirement-relevant gaps
+only. They are told not to request extra abstraction or hardening, since
+review itself can push code toward over-engineering (K: Anthropic guidance).
+
+**Rule lifecycle.** A new rule enters only after a repeated mistake (field
+guide → promoted to `AGENTS.md`, citing the handoffs). A stated rule with no
+review findings and no lint hits across two milestones is a pruning candidate
+at retro. A rule a linter can decide moves to Layer 2 and leaves the prose.
+
 ## 4. Greenfield vs brownfield (one pipeline, two lane sets)
 
 | Aspect | Greenfield | Brownfield |
@@ -456,6 +533,7 @@ becomes its own B3 ticket.
 | A1 shape lane | walking skeleton / prototype | code survey + characterization tests |
 | First tickets | skeleton hardening, then tracer bullets | prefactors at the seams ("make the change easy"), then slices |
 | Field guide | starts empty, grows | seeded from survey (fragile areas, real commands) |
+| Code standards | template installed at A2; lint from ticket 1 | template adapted to existing idioms; lint ratcheted (new violations only); moving old code toward the rules only via planned prefactor tickets |
 | Megafile check | from ticket 1 | only on files that grow past threshold in the change |
 | Blast map | drafted from INTENT.md catastrophes + skeleton architecture | proposed by the survey from existing code; B3 zones usually already exist |
 | Ledger | starts empty | seeded with discovered de-facto decisions (`status: inferred`) only where tickets depend on them |
@@ -467,6 +545,7 @@ becomes its own B3 ticket.
 | **`steer`** (new) | Front door. Runs H1 → A1 → H2 → A2, and H3 per milestone; `resume` reports where the effort is. Replaces `start` (whose dependency-freshness checks move here). |
 | **`decision-memo`** (new) | Memo format and the altitude rule; used at H2 and H3. |
 | **`field-guide`** (new) | Format, budget, curation rules. Small. |
+| **`code-style`** (new) | Appendix A template with repo slots, lint packs per language (hard-fail vs soft-cap), the Layer 3 review rubric, and the rule lifecycle. Used by `steer` (A2) and reviewers. |
 | **`blast-radius`** (new) | Level definitions, blast-map format, default pattern pack, the scrutiny ladder, domain checklists (references/). Used by `steer` (A1/H2/A2), the harness (detector, evidence check), the oracle test author and the lens. |
 | **`worker-harness`** (changed) | Builds the imperative shell v3 cut (ticket 13): `run --parallel N` (§3.4) with worktree-per-ticket, stop conditions, and `resume`. `core.py`: `select_batch()` (disjoint `Touches`), v4 ticket-header parsing. New `integrate` script (§3.5) with ref/Touches/**blast/scrutiny-evidence**/megafile checks, the B3 `AWAITING-OPERATOR` hold, and ledger events. Handoff schema. Launchers kept: `claude_p` for workers, `codex_p` for cross-vendor lenses (§3.9). **Blocked by the §8.1 spike.** |
 | **`intent`** (changed) | One sitting, H1 question set (incl. catastrophes), risk register; overlay offered, not default. |
@@ -500,6 +579,8 @@ feature). Each trial's retro reports:
 | Escaped defects (found after merge) by blast level | recorded; **any escaped B3 defect triggers a retro of the B3 ladder** |
 | `BLAST-ESCALATION`s (planner under-classification) | recorded; recurring pattern → extend the blast map / pattern pack |
 | Share of tickets at B3, and operator minutes per B3 review | recorded; B3 share > 20% → A2's isolate-the-blast rule is failing |
+| Static-analysis warnings and complexity per merged KLOC; clone-level duplication % | recorded per milestone; a rising trend across milestones (the He et al. pattern) triggers a Layer 2 review |
+| Layer 3 rubric findings per milestone, by rule | recorded; feeds the rule lifecycle |
 | Field-guide entries that a later worker cited | recorded; zero after a milestone → question the skill |
 
 **Kill/revise clauses:** if Trial 1 exceeds 3 operator sittings before first
@@ -531,6 +612,10 @@ Resolved by the operator 2026-09-24:
   at H1, A1, H2, A2, H3, routing, scheduling, integrate, licensed breakage,
   review, metrics. Proposed specifics awaiting ratification: the four levels,
   the ladder values, operator diff review at B3, and the v3 tag split.
+- **Code standards in three layers** (§3.11): approved 2026-09-24; the
+  Appendix A rule text awaits operator review. Optional experiment for Trial
+  2: run a ticket subset with the Layer 1 section removed (Layers 2–3
+  unchanged) to measure what the prose itself buys (K open gap).
 - **Megafile threshold:** 800 lines default, per-repo in `harness.toml`.
 - **`D-NNN` refs in tests:** encouraged, not checked.
 - **Worktrees:** `.worktrees/<ticket>`, git-ignored, created and removed by
@@ -556,3 +641,50 @@ enter the contract only via a `spike` transcript):
 
 Fallback if (2) caps below 4: lower the default N to the measured ceiling;
 the design is unchanged.
+
+## Appendix A — default `Code style` section (one-punch template; slots in `<…>`)
+
+```markdown
+## Code style
+
+1. **Pure core, thin shell.** Decision logic lives in `<core dirs>` and is pure:
+   its result depends only on its arguments, with no I/O, clock, randomness, or
+   mutation of inputs. DB, network, filesystem and time live in `<shell dirs>`,
+   which receive their handles as parameters, never through imported
+   singletons. Logging is fine anywhere. Why: pure code tests without mocks.
+   Pattern: `<reference file>`.
+2. **Each layer changes the abstraction.** Top-level functions sequence named
+   steps, mid-level functions compose leaves, and leaves do one concrete job.
+   Keep each body at one level. Inline a function that only forwards, and a
+   single-use helper that can't be understood without its caller.
+3. **One responsibility, fully named.** A module or function does one thing
+   you can state without "and", and its name covers all of it. Modules stay
+   deep: few public functions over substantial behavior. Split instead of
+   adding a boolean flag parameter.
+4. **Compose; inherit only to implement an interface** or where the framework
+   requires it.
+5. **Write for the next reader.** Plain constructs, early returns, names sized
+   to their scope. Comments state contracts and why, never what the code does
+   or how it changed.
+6. **Fail loudly.** Never swallow an error or fall back to a silent default.
+   First design error cases away (idempotent operations, clamps); handle the
+   rest where something can act on them.
+7. **Parse at the boundary.** Turn external input into precise types once, at
+   the edge; inside, trust the types and skip re-validation.
+8. **Explicit and immutable.** Pass collaborators in; add no mutable globals,
+   singletons or module caches; don't mutate arguments.
+9. **Build what the ticket asks.** No speculative parameters, flags, config or
+   one-implementation interfaces. Tests and clarity refactors within `Touches`
+   are always in scope.
+10. **Delete what you replace:** no dead code, commented-out code or compat
+    shims unless the ticket asks for them.
+11. **Deduplicate knowledge, not text.** A rule that must change in lockstep
+    lives in one place; look-alike code stays separate until a third copy that
+    changes for the same reason.
+12. **Observable behavior is the interface.** Refactors keep outputs, error
+    types and messages, and ordering unless the ticket says otherwise.
+13. **Match the repo.** Reuse existing helpers and conventions before adding
+    new ones; the formatter and linter config are authoritative.
+14. **Hot paths may trade these for speed** when profiled and marked
+    `PERF: <why>`.
+```
