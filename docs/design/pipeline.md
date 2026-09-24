@@ -128,7 +128,7 @@ v1's outrigger arc measured real things that remain true and are inherited: spec
 ambiguity survives every downstream instrument (hence grilling one question at a time,
 and contracts that record decisions rather than prose that invites readings);
 completion claims are worthless without artifacts (hence TDD red/green evidence and
-diff review); conventions live in CLAUDE.md or they are enforced on no one. What v1's
+diff review); conventions live in AGENTS.md or they are enforced on no one. What v1's
 evidence does **not** support is total-spec authoring: its one end-to-end success
 (goodhart-sim, 2026-07-17, $31.32) was a small greenfield build; the first
 framework-coupled plan produced the four-round record above. The v1 pipeline text,
@@ -180,7 +180,7 @@ weight; they are v2's house style for ticket bodies, applied by whoever writes t
 4. **Worked examples carry exact values** and are written to be lifted into tests
    verbatim. A placeholder that matches two structurally different values is a
    defect in the ticket.
-5. **Repo conventions are numbered and quotable** (the repo's CLAUDE.md); a
+5. **Repo conventions are numbered and quotable** (the repo's AGENTS.md); a
    convention that lives only in a ticket is requested of one implementer and
    enforced on none.
 
@@ -259,8 +259,9 @@ waive-on-record or descope.
 
 ## 12. Harness agnosticism (v3)
 
-AGENTS.md is canonical; CLAUDE.md is an import shim with vendor-specific
-notes. Every skill conforms to the Agent Skills open standard (harness-neutral
+AGENTS.md is the only agent-instructions file and stays vendor-neutral;
+Claude Code reads it natively (v2.1.277+), so there is no CLAUDE.md shim.
+Every skill conforms to the Agent Skills open standard (harness-neutral
 wording, graceful degradation, compatibility frontmatter). Distribution:
 Claude Code plugin AND skills.sh file-copy. A vendor is claimed supported only
 when its dated, build-pinned smoke checklist row passes — a green Claude row

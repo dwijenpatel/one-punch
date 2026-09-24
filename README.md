@@ -41,6 +41,9 @@ claude plugin marketplace add <your-gh-user>/one-punch
 claude plugin install one-punch@one-punch
 ```
 
+Developing one-punch itself: pass your local clone's path to
+`claude plugin marketplace add` instead of `<your-gh-user>/one-punch`.
+
 Then, in your project directory, one command:
 
 ```
