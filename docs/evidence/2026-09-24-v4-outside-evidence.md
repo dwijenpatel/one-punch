@@ -131,6 +131,21 @@ grade: vendor research blog, not independently replicated):
   (PROVISIONAL-FINAL). Bears on how much weight review lenses can carry
   relative to execution-based verification.
 
+### 1.7 Operator principle (2026-09-24) — scrutiny follows blast radius
+
+Operator direction: oversight of agent-generated code must be a function of
+blast radius — authentication, critical database transactions and similar
+code get high scrutiny and standards; contained code does not. Consistent
+with the evidence above: D26 (LLM review alone misses most real bugs, so
+where failure is silent and irreversible a human and independent tests must
+carry the load); Cursor's review ROI claim and superpowers' measured review
+overhead are both correct *for their blast profile* (§3); slipstream's
+exactness gates and drift test are scrutiny spent precisely where silent
+error was possible. v3 already had the seed (`critical` → top-tier
+implementer + independent acceptance tests) but as one tag among four,
+mixed with determinacy, and not applied to decisions, spikes, scheduling,
+licensed breakage, or operator attention.
+
 ## 2. What it contradicts / confirms in the current process
 
 | v3 element | Verdict | Evidence |

@@ -14,7 +14,8 @@ idea-gen D26. Section references below cite that memo as `E§n`.
 ratifies forks against evidence in few, dense sittings; a planner that never
 implements turns ratified decisions into explicit tickets; up to four workers
 execute them in isolated worktrees; a script — not an agent's word — decides
-what merges.
+what merges; and **scrutiny at every stage is set by blast radius** — how much
+damage a wrong change could do if it shipped unnoticed.
 
 ---
 
@@ -36,9 +37,17 @@ what merges.
 4. **Avoid conflicts structurally, resolve them neutrally.** Tickets declare
    what they touch; the scheduler never co-runs overlapping tickets; residual
    conflicts go to a neutral merge agent, never to either worker. (E§1.2)
-5. **Review scales with risk × concurrency × run length.** Execution-based
-   verification is primary. Decorrelated review lenses are spent on `critical`
-   tickets and milestone boundaries only. (E§3)
+5. **Scrutiny scales with blast radius.** The damage a wrong change could do
+   if it shipped unnoticed — irreversibility, security exposure, breadth,
+   silence — sets every scrutiny dial: who decides the design, which model
+   implements, who writes the tests, which lenses review, whether a spike is
+   mandatory, and whether the operator reads the diff. Classification is the
+   maximum of the plan, a ratified blast map, and a diff detector; agents can
+   raise it, never lower it. Contained work takes the lightest path so the
+   scrutiny budget concentrates where damage lives (§2b). Execution-based
+   verification stays primary at every level; concurrency × run length only
+   raises the milestone-review floor. (Operator principle 2026-09-24; E§1.7,
+   E§3, D26.)
 6. **Ceremony is opt-in.** Private overlay, evidence corpus, learning gates and
    contract review are off by default and proposed only when the effort shows
    the need (v3 §9 "model-proposable, never model-enterable" stands). (E§1.1)
@@ -60,16 +69,20 @@ pasted wall — v3 lesson `cdae9ad`). The agent's checklist:
 2. Who uses or sees it?
 3. Constraints: stack, deadline, budget, hard non-goals, things that must not
    be foreclosed.
-4. **Brownfield only:** which area of the code; what must not break; what the
+4. **What would be catastrophic if wrong?** Data loss or corruption, a
+   security or privacy breach, money moved wrongly, users locked out,
+   anything irreversible or silent. Seeds the blast map (§2b).
+5. **Brownfield only:** which area of the code; what must not break; what the
    operator already knows is fragile.
-5. **Risky assumptions:** the agent proposes a list drawn from answers 1–4;
+6. **Risky assumptions:** the agent proposes a list drawn from answers 1–5;
    the operator ranks and adds. Each gets a kill/pivot criterion.
 
 Follow-ups only where an answer changes a foreseeable decision. The private
 overlay is offered only if the operator signals private motives.
 
 **Output:** `INTENT.md` (≤1 page) with sections Goal · Done looks like ·
-Audience · Constraints · Non-goals · Must-not-foreclose · **Risk register**
+Audience · Constraints · Non-goals · Must-not-foreclose · **Catastrophes**
+(seed for the blast map) · **Risk register**
 (table: ID `R-n`, assumption, why risky, cheapest test, kill/pivot criterion,
 status).
 
@@ -81,7 +94,7 @@ file-based brief and a timebox:
 | Lane | Greenfield | Brownfield |
 |---|---|---|
 | **Risk** | one `spike` per top-ranked `R-n`, cheapest first; transcript recorded against the risk | same |
-| **Shape** | walking skeleton or `prototype` answering the biggest *does-this-feel-right* question | code survey of the touched area: module map, seams, test coverage, hot/mega files |
+| **Shape** | walking skeleton or `prototype` answering the biggest *does-this-feel-right* question | code survey of the touched area: module map, seams, test coverage, hot/mega files, **blast-map proposal** (auth, transactions, migrations, money, trust boundaries found in the code) |
 | **Safety net** | — | characterization tests pinning current behavior at the seams to be changed |
 | **Facts** | `research` on open external questions; fork-or-build only if genuinely open | same, plus upstream/issue history for the touched area |
 
@@ -96,6 +109,10 @@ Rules:
 - Research and spikes write findings to files; lanes never message each
   other.
 - Brownfield seeds the field guide (§3.7) from the survey.
+- Greenfield: the planner drafts the blast map from INTENT.md's catastrophes
+  and the skeleton's architecture.
+- Any risk whose failure would land in a B3 zone is spiked in A1, not
+  deferred to build.
 
 ### H2 — decision memo + demo (one sitting; follow-up rounds allowed)
 
@@ -106,8 +123,13 @@ Produced by the new `decision-memo` skill. Format:
    transcript links.
 3. **Forks** (the only questions), fan-out ordered, each with: the question,
    options, recommendation, evidence link, what it forecloses.
-4. **Recorded defaults:** every craft decision as `D-NNN — decision — one-line
-   rationale`, batch-ratified; the operator reopens any by ID.
+4. **Blast map** (§2b) for ratification — a fork by definition, since it
+   encodes the operator's risk tolerance. Every design decision inside a B3
+   zone (auth scheme, session model, transaction/isolation model, migration
+   strategy, trust boundaries) is listed as a **fork**, never as a default.
+5. **Recorded defaults:** every craft decision as `D-NNN — decision — one-line
+   rationale`, batch-ratified; the operator reopens any by ID. B2 defaults are
+   flagged as such.
 
 Forks newly unlocked by the answers come as a short follow-up round in the
 same sitting (mattpocock `grilling` rounds over a frontier), never as new
@@ -120,20 +142,100 @@ specified", with the milestone that will reveal them.
 - **Spec** via `to-spec` only when the effort is handoff-sized; otherwise the
   ledger + INTENT.md are the contract.
 - **Tickets** via `to-tickets`, plus the v4 fields (§3.2).
-- A one-screen **ticket-graph summary** (ticket, Touches, blockers, tag, size)
-  is shown to the operator. It is a veto window, not a gate: building starts
+- **Isolate the blast.** Tickets are cut so B3 code sits behind narrow seams
+  (deep modules) and is touched by as few, as small tickets as possible;
+  B3 core and its B1 surroundings are separate tickets.
+- A one-screen **ticket-graph summary** (ticket, Touches, blockers, tag, size,
+  **blast**) is shown to the operator, with the count of B3 tickets — each is
+  a diff the operator will read. It is a veto window, not a gate: building starts
   unless the operator objects.
 
 ### H3 — milestone demo + merge (recurs)
 
 The operator sees the milestone running, accepts or redirects, and decides the
 merge to `main`. Forks unlocked by building arrive here as a mini-memo (same
-format as H2, forks + defaults only).
+format as H2, forks + defaults only). The milestone report lists every B2/B3
+change with its evidence (tests, lens report, operator sign-off for B3) and
+every blast escalation the detector caught.
 
 **Milestones:** destinations larger than one build batch (rule of thumb: >15
 tickets or >1 day of worker time) split into milestones. Each milestone runs
 A1 (only lanes with new risks) → H2 (only newly visible forks) → A2 → build →
 H3.
+
+## 2b. Blast radius — the scrutiny axis
+
+**Definition.** A change's blast radius is the worst plausible damage if it is
+wrong and the error ships unnoticed. Four factors:
+
+- **Irreversibility** — data lost or corrupted, money moved, messages sent,
+  state that cannot be rolled back.
+- **Exposure** — crosses a security or privacy boundary: authentication,
+  authorization, sessions, secrets, crypto, PII, parsing untrusted input.
+- **Breadth** — fan-in: how many modules, users, or later tickets depend on
+  it (shared core, public interfaces, schema, build/CI/deploy).
+- **Silence** — fails quietly rather than loudly. A wrong isolation level or
+  a missing authz check passes every happy-path test.
+
+**Levels** (silent + irreversible ⇒ B3 regardless of size):
+
+| Level | Typical code |
+|---|---|
+| **B0 contained** | tests only, docs, dev scripts, prototypes, internal tooling, copy |
+| **B1 local** | feature code behind a seam, one module; failures loud and reversible |
+| **B2 wide** | shared core modules, public APIs/interfaces, additive schema changes, concurrency, caching, performance-critical paths, build/CI config, dependency upgrades |
+| **B3 severe** | authn/authz, sessions, crypto, secrets; payments/money; database transactions and isolation; destructive or irreversible data operations (migrations that drop or transform, deletes, backfills); PII; tenant/permission boundaries; untrusted-input parsing at a trust boundary; deploy/infra |
+
+**Assignment — the maximum of three sources; never lowered by an agent:**
+
+1. **Blast map** (`docs/blast-map.md`, with a machine-readable block the
+   harness reads): path globs and content patterns → minimum level. A default
+   pattern pack ships with the `blast-radius` skill (auth/session/password/
+   token identifiers and crypto imports; SQL DDL, `DELETE`, transaction and
+   isolation keywords; migration directories; payment SDKs; role/permission
+   checks; deserialization of external input; CI/deploy files); repos extend
+   it. Proposed in A1, ratified at H2.
+2. **Planner declaration** per ticket at A2: `Blast: B3 — changes session
+   token validation` (level + one-line reason).
+3. **Diff detector** in `integrate` (§3.5): effective blast = max(declared,
+   blast-map level of every path in the actual diff, pattern matches in the
+   diff). Effective > declared → `BLAST-ESCALATION`: not merged; the ticket
+   re-routes at the higher level with its work salvaged, and the retry adds
+   that level's scrutiny steps. Planner under-classification is caught
+   mechanically and counted.
+
+Only the operator lowers a level, recorded as a ledger row (`D-NNN: path X is
+B1 despite pattern Y because …`). Detector false positives cost one extra
+review; accepted, because the costs are asymmetric.
+
+**Scrutiny ladder** (each level includes everything in the levels below it):
+
+| Dial | B0 | B1 | B2 | B3 |
+|---|---|---|---|---|
+| Design decisions (H2) | craft default | craft default | default, flagged | **always an operator fork** |
+| Spikes | — | external-behavior claims (v3 §1.1) | same | **mandatory** for every security/consistency semantic relied on (the isolation level the DB actually provides, a token library's validation defaults, the framework's CSRF behavior) |
+| Implementer floor | per tag × size (Haiku allowed) | Sonnet | Sonnet (Opus for `contract`) | **Opus** |
+| Tests | verify passes | TDD red→green at the seams | + edge and error paths at the public seam; coverage on touched files not reduced | + **acceptance tests written first by an independent agent** from the ticket and the domain checklist (oracle seat, v3 §8); + adversarial/negative tests (authz denial on every path, replay, injection; rollback, concurrent writers, crash mid-transaction, idempotent retry; migration up→down→up on prod-shaped data); property tests where an invariant exists |
+| Automated review | — | spec verdict if `contract` | spec verdict | spec verdict + **decorrelated lens** (Codex else Opus, no transcript) against the domain checklist |
+| Operator review | milestone sample | milestone | milestone; each B2 diff listed | **reads the diff before it merges** — `integrate` holds it `AWAITING-OPERATOR`; the run continues with other tickets |
+| Scheduling | any batch | any | any | never co-scheduled with a ticket in the same blast-map zone; licensed breakage *into* a B3 zone is forbidden (it must be its own B3 ticket) |
+| Merge conflicts | merge agent | merge agent | merge agent | merge agent on Opus, and the merged result re-enters B3 review |
+
+**Domain checklists** (`blast-radius` skill references; used by the oracle
+test author and the lens): authentication & sessions · authorization &
+tenancy · secrets & crypto · transactions & concurrency · migrations &
+destructive operations · money · untrusted input. Each is a short list of
+the failure modes that pass happy-path tests (for transactions: boundaries
+match the invariant; isolation level stated and justified; no
+read-modify-write outside a transaction; retries idempotent; lock order
+fixed; a failure leaves no partial state).
+
+**Why the operator reads B3 diffs.** LLM judges caught 5% of real bugs in
+D26's exp-01; at B3 the failure is silent and irreversible, so model review
+alone is not an adequate last line. This deliberately reinstates one
+per-ticket human touchpoint, and only here. v4 moves the operator's attention
+from craft questions, which it removes, to the few diffs where damage lives.
+A2's "isolate the blast" rule keeps that load small.
 
 ## 3. Half B — build
 
@@ -142,9 +244,9 @@ H3.
 | Role | Who | Model | Never |
 |---|---|---|---|
 | **Planner** | the operator's interactive session (default); headless T0 is a later option | Opus (session model) | implements; routes itself headless |
-| **Worker** | fresh headless session per ticket, launched by `harness run` into its own worktree via a v3 launcher (`claude_p` default) | Sonnet default; Haiku for `trivial`; Opus for `critical` | plans across tickets; talks to other workers; decides a ledger question |
-| **Merge agent** | fresh agent, invoked only on conflict | Sonnet (Opus if either ticket is `critical`) | favors either side; changes behavior beyond the two tickets |
-| **Lens reviewer** | fresh agent, `critical` tickets + milestones | a model different from the implementer's | edits code; sees the implementer's transcript (codebase + ticket + diff only) |
+| **Worker** | fresh headless session per ticket, launched by `harness run` into its own worktree via a v3 launcher (`claude_p` default) | floor = max(tag × size floor, blast floor §2b): Haiku only at B0; Sonnet default; Opus at B3 | plans across tickets; talks to other workers; decides a ledger question |
+| **Merge agent** | fresh agent, invoked only on conflict | Sonnet (Opus if either ticket is B3) | favors either side; changes behavior beyond the two tickets |
+| **Lens reviewer** | fresh agent, B3 tickets + milestones | a model different from the implementer's | edits code; sees the implementer's transcript (codebase + ticket + diff only) |
 
 Every dispatch names its model explicitly (operator policy; superpowers
 v6.0.0 failure). No Fable model on any subagent.
@@ -161,7 +263,8 @@ Local-markdown default (`.scratch/<effort>/issues/NN-slug.md`). Header lines:
 ```
 Status: ready-for-agent
 Blocked by: 03, 05
-Tag: code-complete | contract | critical | trivial
+Tag: code-complete | contract
+Blast: B0 | B1 | B2 | B3 — <one-line reason>
 Size: low | medium | high | very-high
 Touches: src/store/**, tests/store/**
 Decides: D-014            (only if the planner delegates a local decision)
@@ -175,6 +278,11 @@ as shell commands (v3 §7 rot-proof fences); worked examples with exact values.
 
 `Touches` is a promise the harness checks (§3.5): a diff outside `Touches` is
 allowed only as licensed breakage (§3.6).
+
+**v3 tag split.** v3's `Tag` mixed two axes. v4 keeps `Tag` for determinacy
+only (`code-complete` / `contract`) and moves risk to `Blast`: v3 `critical`
+→ B3, v3 `trivial` → B0 + `Size: low`. Routing floor = max(v3 tag × size
+floor, blast floor); fallback goes up freely, down never (v3 §8).
 
 ### 3.3 Decision ledger
 
@@ -200,6 +308,7 @@ and is notified when it stops. The loop:
 1. Frontier = tickets whose blockers are merged (v3 `frontier()`).
 2. **Batch selection:** from the frontier, pick up to N (default 4) tickets
    with pairwise-disjoint `Touches`; ties broken by critical path, then size.
+   B3 tickets are never batched with a ticket in the same blast-map zone.
    Pure function `select_batch()` in `core.py`, property-tested. Overlap is
    defined on the current tree: two tickets overlap if any existing file
    matches both `Touches` sets, or both sets match the same not-yet-existing
@@ -241,14 +350,25 @@ Deterministic, stdlib-only, invoked by `harness run` after each worker exits (an
    - **ref check** (§3.3);
    - **Touches check** — files changed outside `Touches` without a
      `BREAKING(D-NNN):` comment → fail;
+   - **blast check** (§2b) — compute effective blast from the actual diff;
+     above declared → `BLAST-ESCALATION` (not merged; re-route at the higher
+     level, work salvaged); a diff reaching into a B3 zone from a non-B3
+     ticket → fail;
+   - **scrutiny evidence check** — the steps the effective level requires
+     exist as artifacts (B2: spec verdict; B3: independent acceptance tests
+     committed before the implementation commits, lens report, domain
+     checklist answered) → else fail;
    - **megafile check** — any changed file that crossed the threshold (default
      800 lines, configurable) *in this change* → fail with
      `MEGAFILE <path>`; the planner cuts a decompose ticket that blocks further
      tickets touching that file (pre-existing brownfield megafiles pass until
      they grow).
-5. All green → fast-forward the integration branch; append an event to the
-   JSONL ledger (ticket, model, tag, size, attempts, verify result, tokens
-   if known, wall-clock).
+5. All green → B0–B2: fast-forward the integration branch. B3: park as
+   `AWAITING-OPERATOR` with a review packet (diff, tests, lens report,
+   checklist) and continue other tickets; the planner session surfaces it,
+   and it fast-forwards only on operator approval. Append an event to the
+   JSONL ledger (ticket, model, tag, size, declared and effective blast,
+   attempts, verify result, tokens if known, wall-clock).
 6. Any red → FAILED attempt (v3 salvage/escalation rules unchanged: retry one
    tier up with a root-cause note; two escalated failures park the ticket).
 
@@ -262,7 +382,9 @@ site (creating a *proposed* ledger row in its handoff if no decision exists)
 and list it under Deviations. The planner accepts (ledger row goes active; the
 compiler/tests surface every dependent site as follow-up work) or rejects (the
 attempt fails with a note). Prevents ossification without licensing drive-by
-edits. (E§1.2)
+edits. (E§1.2) Blast limits: breakage into a B2 zone needs the planner's
+acceptance before merge; breakage into a B3 zone is never licensed and must
+become its own B3 ticket.
 
 ### 3.7 Field guide
 
@@ -278,8 +400,9 @@ budget). Distinct from `AGENTS.md`, which stays operator-owned rules.
 **Preamble** (short; don't instruct what the model knows): the repo's
 `AGENTS.md` pointer, `field-guide/index.md` inline, the relevant ledger rows
 (`Depends-on`), constraints (stay within `Touches`; licensed-breakage rule;
-TDD red→green at the ticket's seams; never decide a ledger question), and
-the handoff contract.
+TDD red→green at the ticket's seams; never decide a ledger question), the
+ticket's blast level with that level's required steps — and for B2/B3 the
+relevant domain checklist inline — and the handoff contract.
 
 **Handoff** (`.scratch/<effort>/handoffs/NN.md`):
 
@@ -296,17 +419,21 @@ Field-guide proposals: …
 The planner reads handoffs as files; worker transcripts are never loaded into
 the planner's context.
 
-### 3.9 Review by tag
+### 3.9 Review by blast radius
 
-| Tag | Per ticket | Extra |
-|---|---|---|
-| `trivial`, `code-complete` | `integrate` verify only | — |
-| `contract` | spec verdict (Missing / Extra / Misunderstood vs. ticket) by a fresh reviewer | — |
-| `critical` | spec verdict + one **decorrelated lens**: a different model *family* from the implementer via a v3 launcher (e.g. `codex_p`) when available, else a fresh Opus reviewer with a different context (codebase + ticket + diff only, never the transcript); independent acceptance-test authorship stays per v3 §8 | — |
-| **Milestone** | — | mattpocock `code-review` (Standards + Spec axes, parallel) over the milestone diff, then H3 |
+Per-ticket review follows the §2b ladder: nothing extra at B0; spec verdict
+(Missing / Extra / Misunderstood vs. the ticket) for `contract` at B1 and for
+every B2; spec verdict + decorrelated lens + operator diff review at B3. The
+decorrelated lens is a different model *family* via `codex_p` when available,
+else a fresh Opus reviewer that sees codebase + ticket + diff only, never the
+transcript.
 
-Reviewers are read-only (superpowers v6.0.0). Findings are batched to one
-fixer ticket per milestone, not one fixer per finding.
+**Milestone:** mattpocock `code-review` (Standards + Spec axes, parallel) over
+the milestone diff, with every B2/B3 diff reviewed individually, then H3.
+
+Reviewers are read-only (superpowers v6.0.0). Milestone findings are batched
+to one fixer ticket, not one fixer per finding; a finding in a B3 zone
+becomes its own B3 ticket.
 
 ### 3.10 Economics
 
@@ -315,6 +442,9 @@ fixer ticket per milestone, not one fixer per finding.
   a planner saves.
 - Turn count beats token price (superpowers): don't route prose-heavy
   tickets below Sonnet.
+- Scrutiny spend is concentrated by design: the bulk of tickets (B0/B1) take
+  the cheap path; Opus implementers, independent test authors, lenses and
+  operator attention are spent on the few B3 tickets.
 - Spend is a quota proxy on a fixed subscription; the v3 usage governor stays
   as the throttle. N=4 is a default, lowered automatically when limit errors
   are observed.
@@ -327,6 +457,7 @@ fixer ticket per milestone, not one fixer per finding.
 | First tickets | skeleton hardening, then tracer bullets | prefactors at the seams ("make the change easy"), then slices |
 | Field guide | starts empty, grows | seeded from survey (fragile areas, real commands) |
 | Megafile check | from ticket 1 | only on files that grow past threshold in the change |
+| Blast map | drafted from INTENT.md catastrophes + skeleton architecture | proposed by the survey from existing code; B3 zones usually already exist |
 | Ledger | starts empty | seeded with discovered de-facto decisions (`status: inferred`) only where tickets depend on them |
 
 ## 5. Skill inventory (one-punch plugin)
@@ -336,8 +467,9 @@ fixer ticket per milestone, not one fixer per finding.
 | **`steer`** (new) | Front door. Runs H1 → A1 → H2 → A2, and H3 per milestone; `resume` reports where the effort is. Replaces `start` (whose dependency-freshness checks move here). |
 | **`decision-memo`** (new) | Memo format and the altitude rule; used at H2 and H3. |
 | **`field-guide`** (new) | Format, budget, curation rules. Small. |
-| **`worker-harness`** (changed) | Builds the imperative shell v3 cut (ticket 13): `run --parallel N` (§3.4) with worktree-per-ticket, stop conditions, and `resume`. `core.py`: `select_batch()` (disjoint `Touches`), v4 ticket-header parsing. New `integrate` script (§3.5) with ref/Touches/megafile checks and ledger events. Handoff schema. Launchers kept: `claude_p` for workers, `codex_p` for cross-vendor lenses (§3.9). **Blocked by the §8.1 spike.** |
-| **`intent`** (changed) | One sitting, H1 question set, risk register; overlay offered, not default. |
+| **`blast-radius`** (new) | Level definitions, blast-map format, default pattern pack, the scrutiny ladder, domain checklists (references/). Used by `steer` (A1/H2/A2), the harness (detector, evidence check), the oracle test author and the lens. |
+| **`worker-harness`** (changed) | Builds the imperative shell v3 cut (ticket 13): `run --parallel N` (§3.4) with worktree-per-ticket, stop conditions, and `resume`. `core.py`: `select_batch()` (disjoint `Touches`), v4 ticket-header parsing. New `integrate` script (§3.5) with ref/Touches/**blast/scrutiny-evidence**/megafile checks, the B3 `AWAITING-OPERATOR` hold, and ledger events. Handoff schema. Launchers kept: `claude_p` for workers, `codex_p` for cross-vendor lenses (§3.9). **Blocked by the §8.1 spike.** |
+| **`intent`** (changed) | One sitting, H1 question set (incl. catastrophes), risk register; overlay offered, not default. |
 | **`retro`** (changed) | Adds v4 metrics (§6). |
 | **`learning-gates`** | Unchanged content; opt-in only (proposed when INTENT.md names a learning goal). |
 | `spike`, `contract-review` | Unchanged (re-earn clause stands). |
@@ -362,9 +494,12 @@ feature). Each trial's retro reports:
 | Wall-clock, effort start → first runnable artifact | < 1 day (ckb: 8 days, none) |
 | Wall-clock, H1 → first merged ticket | recorded (no prior baseline) |
 | Merge conflicts per merged ticket | recorded; > 0.3 triggers a Touches-granularity review |
-| Integrate verify-fail rate by tag × model | recorded; feeds tier ledger |
+| Integrate verify-fail rate by tag × blast × model | recorded; feeds tier ledger |
 | Decisions reopened after build started, and rework they caused | recorded; any reopened fork that H2 should have asked = altitude-rule defect |
 | Token share planner vs workers (quota proxy) | recorded; compare to Cursor's ≥69% worker share |
+| Escaped defects (found after merge) by blast level | recorded; **any escaped B3 defect triggers a retro of the B3 ladder** |
+| `BLAST-ESCALATION`s (planner under-classification) | recorded; recurring pattern → extend the blast map / pattern pack |
+| Share of tickets at B3, and operator minutes per B3 review | recorded; B3 share > 20% → A2's isolate-the-blast rule is failing |
 | Field-guide entries that a later worker cited | recorded; zero after a milestone → question the skill |
 
 **Kill/revise clauses:** if Trial 1 exceeds 3 operator sittings before first
@@ -392,6 +527,10 @@ Resolved by the operator 2026-09-24:
   planner session's between-batch steering loop).
 - **Critical-ticket lens:** a different vendor via `codex_p` when available,
   else a fresh Opus reviewer with codebase + ticket + diff only (§3.9).
+- **Scrutiny is a function of blast radius** (operator principle): §2b, applied
+  at H1, A1, H2, A2, H3, routing, scheduling, integrate, licensed breakage,
+  review, metrics. Proposed specifics awaiting ratification: the four levels,
+  the ladder values, operator diff review at B3, and the v3 tag split.
 - **Megafile threshold:** 800 lines default, per-repo in `harness.toml`.
 - **`D-NNN` refs in tests:** encouraged, not checked.
 - **Worktrees:** `.worktrees/<ticket>`, git-ignored, created and removed by
