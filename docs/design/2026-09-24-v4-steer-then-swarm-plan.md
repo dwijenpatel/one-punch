@@ -142,7 +142,7 @@ H3.
 | Role | Who | Model | Never |
 |---|---|---|---|
 | **Planner** | the operator's interactive session (default); headless T0 is a later option | Opus (session model) | implements; routes itself headless |
-| **Worker** | fresh background agent per ticket, own worktree | Sonnet default; Haiku for `trivial`; Opus for `critical` | plans across tickets; talks to other workers; decides a ledger question |
+| **Worker** | fresh headless session per ticket, launched by `harness run` into its own worktree via a v3 launcher (`claude_p` default) | Sonnet default; Haiku for `trivial`; Opus for `critical` | plans across tickets; talks to other workers; decides a ledger question |
 | **Merge agent** | fresh agent, invoked only on conflict | Sonnet (Opus if either ticket is `critical`) | favors either side; changes behavior beyond the two tickets |
 | **Lens reviewer** | fresh agent, `critical` tickets + milestones | a model different from the implementer's | edits code; sees the implementer's transcript (codebase + ticket + diff only) |
 
@@ -191,30 +191,48 @@ compile-checked references and slipstream's drift test. The ref pattern is confi
 decision makes every reference to it a visible grep target for a follow-up
 ticket.
 
-### 3.4 Scheduling (planner + harness core)
+### 3.4 Scheduling — `harness run --parallel N` (ratified 2026-09-24, option C)
 
-- Frontier = tickets whose blockers are merged (v3 `frontier()`).
-- **Batch selection:** from the frontier, pick up to N (default 4) tickets
-  with pairwise-disjoint `Touches`; ties broken by critical path, then size.
-  Pure function in `core.py`, property-tested. Overlap is defined on the
-  current tree: two tickets overlap if any existing file matches both
-  `Touches` sets, or both sets match the same not-yet-existing path prefix.
-- Each selected ticket → a worker in its own worktree branched from the
-  current integration head, with the preamble (§3.8) + ticket text.
-- The planner keeps the pipe full: as each ticket integrates, recompute the
-  frontier and dispatch the next disjoint ticket. No waiting for the slowest
-  worker (Cursor's rigid-executor failure).
+The build loop is a deterministic program, not an LLM. The planner session
+cuts tickets, then starts `harness run --parallel 4` as a background process
+and is notified when it stops. The loop:
+
+1. Frontier = tickets whose blockers are merged (v3 `frontier()`).
+2. **Batch selection:** from the frontier, pick up to N (default 4) tickets
+   with pairwise-disjoint `Touches`; ties broken by critical path, then size.
+   Pure function `select_batch()` in `core.py`, property-tested. Overlap is
+   defined on the current tree: two tickets overlap if any existing file
+   matches both `Touches` sets, or both sets match the same not-yet-existing
+   path prefix.
+3. Each selected ticket → `git worktree add .worktrees/<ticket>` on a branch
+   `t/<ticket>` cut from the current integration head; the tier router (v3
+   §8) picks the launcher + model; the worker gets the preamble (§3.8) +
+   ticket text.
+4. **Keep the pipe full:** as each worker exits, run `integrate` (§3.5) on its
+   branch, recompute the frontier, and launch the next disjoint ticket. No
+   waiting for the slowest worker (Cursor's rigid-executor failure).
+5. Failures follow v3 salvage/escalation; conflicts launch the merge agent
+   headless (§3.5 step 2).
+
+**Stop conditions** (the run exits and the planner session is notified):
+frontier empty (milestone done) · every frontier ticket parked or blocked ·
+**K tickets (default 2) parked on `Decisions needed`** — a worker handoff whose
+decision-needed item is not locally reversible parks that ticket and its
+dependents · usage governor reports all candidates cooling · operator stop.
+The planner then reads handoffs, updates the ledger/tickets (steering happens
+here, between runs), and relaunches. `harness run` is equally usable
+walk-away or overnight; `resume` reports state from the event ledger.
 
 ### 3.5 Integration — `integrate` script (the only path to the integration branch)
 
-Deterministic, stdlib-only, invoked by the planner per claimed-done ticket:
+Deterministic, stdlib-only, invoked by `harness run` after each worker exits (and runnable by hand):
 
 1. Refuse unless the worker's handoff file exists with status DONE or
    DONE_WITH_CONCERNS.
 2. Rebase the ticket branch onto the integration head.
    - Clean → continue.
    - Conflict → abort the rebase, emit `CONFLICT` with both tickets' IDs;
-     the planner dispatches the merge agent (mattpocock
+     the harness launches the merge agent headless (mattpocock
      `resolving-merge-conflicts` discipline) with both tickets, both
      handoffs, and their `Depends-on` rows; the merge agent's result re-enters
      at step 2.
@@ -318,13 +336,13 @@ fixer ticket per milestone, not one fixer per finding.
 | **`steer`** (new) | Front door. Runs H1 → A1 → H2 → A2, and H3 per milestone; `resume` reports where the effort is. Replaces `start` (whose dependency-freshness checks move here). |
 | **`decision-memo`** (new) | Memo format and the altitude rule; used at H2 and H3. |
 | **`field-guide`** (new) | Format, budget, curation rules. Small. |
-| **`worker-harness`** (changed) | `core.py`: `select_batch()` (disjoint `Touches`), ticket-header parsing for v4 fields. New `integrate` script (§3.5) with ref/Touches/megafile checks and ledger events. Handoff schema. Dispatch stays with the planner via the harness's native isolated background subagents; the headless `run` shell remains deferred (v3 ticket 13 stays cut). v3 launchers are kept, used for cross-vendor lenses (§3.9) and as the future headless path. **Blocked by the §8.4 spike.** |
+| **`worker-harness`** (changed) | Builds the imperative shell v3 cut (ticket 13): `run --parallel N` (§3.4) with worktree-per-ticket, stop conditions, and `resume`. `core.py`: `select_batch()` (disjoint `Touches`), v4 ticket-header parsing. New `integrate` script (§3.5) with ref/Touches/megafile checks and ledger events. Handoff schema. Launchers kept: `claude_p` for workers, `codex_p` for cross-vendor lenses (§3.9). **Blocked by the §8.1 spike.** |
 | **`intent`** (changed) | One sitting, H1 question set, risk register; overlay offered, not default. |
 | **`retro`** (changed) | Adds v4 metrics (§6). |
 | **`learning-gates`** | Unchanged content; opt-in only (proposed when INTENT.md names a learning goal). |
 | `spike`, `contract-review` | Unchanged (re-earn clause stands). |
 | **`start`** | Removed after `steer` lands (history keeps it). |
-| Merge agent | No new skill: the planner dispatches with mattpocock `resolving-merge-conflicts`. Revisit if conflicts prove frequent. |
+| Merge agent | No new skill: the harness launches it headless with mattpocock `resolving-merge-conflicts` discipline. Revisit if conflicts prove frequent. |
 
 Composed, never copied: mattpocock `grilling`, `wayfinder`, `prototype`,
 `research`, `to-spec`, `to-tickets`, `tdd`, `code-review`,
@@ -358,30 +376,44 @@ merge machinery.
 ## 7. Out of scope for v4
 
 Custom VCS or shared CoW workspaces; recursive subplanners; accepted error
-rate on the integration branch; headless planner (later option, not v4);
-peer-to-peer worker coordination; a standing integrator agent; N > 4 tuning.
+rate on the integration branch; a headless *planner* (workers are headless,
+the planner stays the operator's session); per-ticket mid-run steering
+(steering is between runs); peer-to-peer worker coordination; a standing
+integrator agent; N > 4 tuning.
 
-## 8. Open questions
+## 8. Resolved choices and the gating spike
 
-1. Megafile default threshold (800 lines) — language-dependent; set per repo
-   in `harness.toml`? (Proposed: yes, 800 default.)
-2. Should `D-NNN` refs also be required in tests that pin a decision's
-   behavior? (Proposed: encouraged, not checked.)
-3. Worktree location and cleanup — defer to the harness's native worktree
-   tool when present (superpowers `using-git-worktrees` discipline), else
-   `.worktrees/` git-ignored.
-4. **SPIKE FIRST — blocks every `integrate`/dispatch ticket.** The in-session
-   dispatch path (§3.4, §3.5, §5) assumes behavior of the harness's native
-   isolated background subagents that no transcript has verified: does a
-   worktree subagent that committed leave a named branch, where, and does it
-   persist; can the parent repo rebase and fast-forward from it; is a
-   worktree cut from the current integration head or from `HEAD`; can a
-   background subagent invoke plugin skills (`tdd`, `spike`); how many run
-   concurrently before limits bite. Per principle v3 §1.1 these enter the
-   contract only via a `spike` transcript. Fallback if the spike fails:
-   planner-created `git worktree add` per ticket, worker launched into it.
-5. **Change from the design as presented in chat, for ratification:** chat
-   §4 said "worker-harness gains `--parallel N`". Because the planner is the
-   interactive session, this spec instead keeps dispatch with the planner
-   (native subagents) and limits the harness to pure `select_batch()` + the
-   `integrate` script; the headless multi-worker `run` shell stays deferred.
+Resolved by the operator 2026-09-24:
+
+- **Build loop:** option C — `harness run --parallel N` launched from the
+  planner session (§3.4). Rejected: A (session dispatches native subagents —
+  Opus does bookkeeping, session must stay open, Claude-only workers, relies
+  on unverified subagent-worktree behavior); B (standalone only — loses the
+  planner session's between-batch steering loop).
+- **Critical-ticket lens:** a different vendor via `codex_p` when available,
+  else a fresh Opus reviewer with codebase + ticket + diff only (§3.9).
+- **Megafile threshold:** 800 lines default, per-repo in `harness.toml`.
+- **`D-NNN` refs in tests:** encouraged, not checked.
+- **Worktrees:** `.worktrees/<ticket>`, git-ignored, created and removed by
+  the harness (removed after integrate; kept on failure for salvage).
+
+### 8.1 SPIKE FIRST — blocks every `run`/`integrate` ticket
+
+Claims the loop depends on that no transcript has verified (v3 §1.1: they
+enter the contract only via a `spike` transcript):
+
+1. `claude -p` (headless) launched with its working directory inside a
+   `.worktrees/<ticket>` worktree commits to that worktree's branch and
+   nothing else.
+2. Four concurrent headless sessions on the operator's subscription: rate /
+   concurrency limits hit, and the error shape when they are (feeds the usage
+   governor).
+3. The permission mode and tool allowlist a headless worker needs to edit,
+   test and commit without prompting, and that `claude_p`'s isolation intent
+   (deny-read walls) is still expressible on the current CLI build.
+4. A headless worker can load the operator's plugins/skills (`tdd`) or,
+   if not, what the preamble must carry instead.
+5. `codex_p` smoke on the current Codex CLI build (lens path).
+
+Fallback if (2) caps below 4: lower the default N to the measured ceiling;
+the design is unchanged.
