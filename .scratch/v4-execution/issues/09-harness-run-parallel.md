@@ -18,7 +18,7 @@ Constraints: the loop is deterministic — no LLM decides scheduling; all decisi
 Acceptance: integration tests against the mock launcher: 4-wide batch with disjoint Touches; overlap serialized; stop on K decisions-needed; resume from a bare clone; kill -INT mid-run leaves a resumable ledger.
 
 ## Comments
-2026-09-24 — PROPOSED amendments (operator review pending), from outrigger
+2026-09-24 — ACCEPTED amendments (operator, 2026-09-24), from outrigger
 exec-loop prior art (Reference: outrigger@9fa7023:tools/exec-loop/loop.py, pattern):
 - **No state file:** derive progress from git ancestry + the ledger on every
   start; tear down and redo interrupted worktrees (outrigger decision 7).
@@ -26,5 +26,6 @@ exec-loop prior art (Reference: outrigger@9fa7023:tools/exec-loop/loop.py, patte
   checks against the integration head. Per-merge verify runs the project
   suite, but ticket-specific shell checks run only once, so a later merge can
   silently break an earlier ticket's promise.
-- Preamble carries spike 02's command-form rules (plain commands, env in
-  config files, script files not `-c`).
+- Workers launch with `bypassPermissions` in their worktree (no walls; spike 02).
+- Ledger records the headline metric's inputs: every operator intervention
+  (AWAITING-OPERATOR review, parked-ticket steer, manual relaunch) as an event.

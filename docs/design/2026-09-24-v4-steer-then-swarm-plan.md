@@ -622,6 +622,7 @@ feature). Each trial's retro reports:
 
 | Metric | Bar (pre-registered) |
 |---|---|
+| **Headline: unattended tickets merged per operator intervention** (outrigger's delete-or-keep criterion) | recorded per milestone; falling across milestones → the build half is not earning its keep |
 | Operator turns, H1 → first build dispatch | ≤ 3 sittings; turn count recorded |
 | Wall-clock, effort start → first runnable artifact | < 1 day (ckb: 8 days, none) |
 | Wall-clock, H1 → first merged ticket | recorded (no prior baseline) |
@@ -756,3 +757,23 @@ the design is unchanged.
 14. **Hot paths may trade these for speed** when profiled and marked
     `PERF: <why>`.
 ```
+
+## 9. Execution deviations log
+
+- **2026-09-24 — no isolation walls (operator).** Outrigger measured
+  wall-escape prevention (`deny_read`, sandbox walls, escape and boundary
+  probes, sealed held-out suites) as not worth its cost, and v4 has nothing
+  to hide from workers. Workers run `bypassPermissions` inside their
+  worktree; `integrate` guards what lands. Launcher hygiene flags (no ambient
+  hooks/MCP/memory) stay. Unused wall code is removed in ticket 11. Affects
+  §8.1 items 3 and 5 (rewritten in ticket 02).
+- **2026-09-24 — imported from outrigger exec-loop (operator).**
+  (1) `integrate` fast-forwards only the exact tree its checks ran on, and
+  re-enters at rebase if the head moved. (2) Milestone closure: before H3,
+  re-run every merged ticket's acceptance checks against the integration
+  head. (3) Process and rule files (`AGENTS.md`, `.claude/`, blast map,
+  decision ledger, field guide, `harness.toml`, lint/formatter config, verify
+  commands, the harness) are B3 in the default blast map. This is gate
+  integrity: agents loosen their own checks to reach green. (4) Headline
+  metric added to §6. (5) Single-writer `flock` per repository. Carried in
+  tickets 03, 08, 09, 14.

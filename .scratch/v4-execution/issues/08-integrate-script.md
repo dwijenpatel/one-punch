@@ -18,7 +18,7 @@ Constraints: functional core / imperative shell — each check is a pure functio
 Acceptance: one test per check (pass + fail case); an end-to-end test on a temp repo (clean ff, conflict, escalation, B3 hold); `mypy --strict` clean.
 
 ## Comments
-2026-09-24 — PROPOSED amendments (operator review pending), from outrigger
+2026-09-24 — ACCEPTED amendments (operator, 2026-09-24), from outrigger
 exec-loop prior art (Reference: outrigger@9fa7023:tools/exec-loop/loop.py, pattern):
 - **Land only the judged tree:** fast-forward against the SHA the checks ran
   on; if the integration head moved mid-flight, refuse and re-enter at rebase.
