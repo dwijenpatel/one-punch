@@ -43,6 +43,10 @@ metrics below:
   them), field-guide and style-rule commit history, ticket header fields.
 - **Operator report** — sittings and turns, review minutes, escaped defects
   found after merge, and outcome reports filed since the last retro.
+- **Polish log** — the milestone's post-demo fix log: each operator-reported
+  symptom, its regression case, whether it landed planner-direct or as a
+  ticket, and any fix that broke a neighbouring variant. Every polish entry is
+  an escaped defect and an unplanned intervention.
 - **Session transcript** — when the harness or agent environment exposes a
   timestamped record of the operator/agent session (a steering sitting, a
   light-mode build), compile the per-stage timing table and the operator

@@ -1,6 +1,6 @@
 {
   "name": "one-punch",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "one-punch v4: steer then swarm. steer is the front door: one intent sitting, parallel agent lanes (spikes, skeleton or survey, prior art, evidence), one decision memo, then explicit tickets. A parallel worker harness builds them in worktrees and lands work only through integrate, with scrutiny scaled by blast radius and three-layer code standards (stated, enforced, reviewed). Skills: steer, intent, decision-memo, blast-radius, code-style, field-guide, worker-harness, spike, retro, contract-review, learning-gates. Composes mattpocock-skills and evidence-kit.",
   "author": {
     "name": "Dwijen Patel"
