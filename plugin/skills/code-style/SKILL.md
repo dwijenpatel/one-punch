@@ -1,6 +1,6 @@
 ---
 name: code-style
-description: "Install and maintain a repo's three-layer code-standards system for agent-written code — a short, positive Layer-1 `Code style` section for AGENTS.md (the one-punch 14-rule template with repo-specific slots), Layer-2 lint-pack mappings to hard-fail-vs-soft-cap enforcement plus the `allow(<rule>): D-NNN` exception convention, and the Layer-3 review rubric for what only a reviewer can decide. Use when compiling or updating a repo's AGENTS.md at plan-compile time, when wiring or auditing a project's lint/format verify commands, when a reviewer needs the Standards-axis rubric for a milestone or a spec verdict, or when deciding whether a stated rule should be promoted, pruned, or moved to Layer 2 under the rule lifecycle."
+description: "Install and maintain a repo's three-layer code-standards system for agent-written code — a short, positive Layer-1 `Code style` section for AGENTS.md (the default 14-rule template with repo-specific slots), Layer-2 lint-pack mappings to hard-fail-vs-soft-cap enforcement plus the `allow(<rule>): D-NNN` exception convention, and the Layer-3 review rubric for what only a reviewer can decide. Use when compiling or updating a repo's AGENTS.md at plan-compile time, when wiring or auditing a project's lint/format verify commands, when a reviewer needs the Standards-axis rubric for a milestone or a spec verdict, or when deciding whether a stated rule should be promoted, pruned, or moved to Layer 2 under the rule lifecycle."
 compatibility: No runtime dependency of its own. Layer 2 assumes the target repo's language has (or a wiring ticket adds) a lint/format toolchain; only the Python/ruff mappings in references/lint-packs/ are verified against vendor docs, the rest are recall-sourced and UNVERIFIED until checked against a real install.
 license: MIT
 ---
@@ -21,7 +21,7 @@ re-derive or restate their content here.
 ## Layer 1 — stated
 
 At plan-compile time (A2), install [references/template.md](references/template.md)
-— the one-punch default `Code style` section — into the repo's `AGENTS.md`,
+— the default `Code style` section — into the repo's `AGENTS.md`,
 filling the `<…>` slots (which directories are the pure core, which are the
 shell, a reference file that shows the pattern). Keep all 14 rules; the section
 runs to roughly 40 lines. Positive phrasing, one clause of *why* per rule, no

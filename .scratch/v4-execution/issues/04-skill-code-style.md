@@ -1,7 +1,7 @@
 # 04 — skill code style
 
 Type: task
-Status: ready-for-agent
+Status: done
 Blocked by: —
 Tag: code-complete
 Blast: B1
