@@ -16,3 +16,12 @@ Rewrite the worker-harness SKILL.md for v4: `run --parallel N` launched from the
 Acceptance: `rg -q 'parallel' plugin/skills/worker-harness/SKILL.md` · handoff schema in references/ · `skills-ref validate` if available.
 
 ## Comments
+2026-09-25 — from tickets 08/09:
+- Split `core.py` (852 lines — already past the 800-line megafile threshold)
+  and keep `integrate.py` (753), `run.py` (692) and `runcore.py` (533) under it.
+- Port `claude_p.py`'s SIGTERM/SIGINT forwarding into `mock.py` and `codex_p.py`.
+- Document in the skill: run's exit codes (0/3/4/5/6/7/30/31), integrate's
+  exit codes (0/10/20/21/22/30/31/32), `answer` / `relaunch` / `--approve` /
+  `closure` / `resume`, stop via `kill -INT <pid>` or the stop file (not
+  terminal ^C), the reversibility grammar for `Decisions needed`, and
+  "commit the handoff last, on the branch".

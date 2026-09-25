@@ -28,3 +28,7 @@ default pack, because it names auth/money/destructive domains in code and
 fixtures. The pack's `.scratch/**/harness/**` zone doesn't cover it. When
 one-punch dogfoods v4, its blast map needs a repo zone or a lowering for it.
 Record this in the packaging README / dogfood notes.
+2026-09-25 — from ticket 09: `closure` runs only machine-readable acceptance
+(indented command lines under `Acceptance:`, or fenced blocks in an Acceptance
+section). Update `steer`'s ticket-header reference so v4 tickets are cut in
+that form. `steer`'s A2 install must ensure `.worktrees/` is git-ignored.

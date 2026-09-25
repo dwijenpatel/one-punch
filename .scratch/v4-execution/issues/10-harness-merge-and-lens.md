@@ -24,3 +24,8 @@ grammar. Tests-first: the first commit touching anything beyond the handoff
 and review files may touch only `test_globs` files. Git cannot prove the test
 author was independent, so this ticket's dispatch must guarantee it (a separate
 agent, dispatched before the implementer).
+2026-09-25 — from ticket 09 (run.py merged; read `handoffs/09.md`): remove
+run's temporary B3 plan-time hold (`b3-path` park) once this ticket's B3 path
+exists. Make integrate's `_checklist_sources` and `_env` public (run.py
+imports them). CONFLICT currently parks the ticket; wire the merge agent into
+that branch of run.py.
