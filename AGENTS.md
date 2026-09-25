@@ -9,6 +9,11 @@
   tdd, code-review, …) and composes the evidence-kit method for research. Never
   copy or restate those projects' content into this repo — deltas only, as
   one-punch's own skills. Paraphrases drift.
+- **Verify:** `bash plugin/skills/worker-harness/references/harness/verify.sh`
+  is the repo's one verify command: the harness unittest suite, both
+  launcher suites (unittest discovery does not collect `launchers/`), and
+  `mypy --strict` over every harness `.py`. It must exit 0; never check a
+  subset. Needs uv.
 - **Git:** never commit directly to `main` — feature branch → commit → ff-only
   merge → delete branch.
 - **Skills stay self-contained, portable, and harness-agnostic:** no repo-relative

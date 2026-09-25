@@ -42,7 +42,7 @@ spike it.
    spike names it; a code snippet may be inlined only if it is the spike's own text,
    trimmed to the decision-rich part.
 
-## Filing (v3)
+## Filing
 
 A probe transcript is an execution warrant. Besides landing on the decision
 ticket that asked, file it (or a pointer to it) into the effort's evidence

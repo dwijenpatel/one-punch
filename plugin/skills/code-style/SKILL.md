@@ -1,7 +1,7 @@
 ---
 name: code-style
 description: "Install and maintain a repo's three-layer code-standards system for agent-written code — a short, positive Layer-1 `Code style` section for AGENTS.md (the default 14-rule template with repo-specific slots), Layer-2 lint-pack mappings to hard-fail-vs-soft-cap enforcement plus the `allow(<rule>): D-NNN` exception convention, and the Layer-3 review rubric for what only a reviewer can decide. Use when compiling or updating a repo's AGENTS.md at plan-compile time, when wiring or auditing a project's lint/format verify commands, when a reviewer needs the Standards-axis rubric for a milestone or a spec verdict, or when deciding whether a stated rule should be promoted, pruned, or moved to Layer 2 under the rule lifecycle."
-compatibility: No runtime dependency of its own. Layer 2 assumes the target repo's language has (or a wiring ticket adds) a lint/format toolchain; only the Python/ruff mappings in references/lint-packs/ are verified against vendor docs, the rest are recall-sourced and UNVERIFIED until checked against a real install.
+compatibility: No runtime dependency of its own. Layer 2 assumes the target repo's language has (or a wiring ticket adds) a lint/format toolchain; only the Python/ruff mappings in references/lint-pack-python.md are verified against vendor docs, the rest are recall-sourced and UNVERIFIED until checked against a real install.
 license: MIT
 ---
 
@@ -44,11 +44,12 @@ decide. Split by consequence, not by rule number:
 | mutable global state without a `D-NNN` reference; mutable default arguments | — |
 | formatter drift | — |
 
-Language lint packs, mapping each row to concrete linter codes, live under
-[references/lint-packs/](references/lint-packs/): [python.md](references/lint-packs/python.md)
-(ruff, verified against vendor docs), [javascript-typescript.md](references/lint-packs/javascript-typescript.md),
-[rust.md](references/lint-packs/rust.md), and [go.md](references/lint-packs/go.md) (eslint, pylint's
-supplementary codes, clippy and Go tool names — all `UNVERIFIED`, recall-sourced).
+Language lint packs map each row to concrete linter codes:
+[lint-pack-python.md](references/lint-pack-python.md) (ruff, verified against
+vendor docs), [lint-pack-javascript-typescript.md](references/lint-pack-javascript-typescript.md),
+[lint-pack-rust.md](references/lint-pack-rust.md) and
+[lint-pack-go.md](references/lint-pack-go.md) (eslint, pylint's supplementary
+codes, clippy and Go tool names — all `UNVERIFIED`, recall-sourced).
 Don't upgrade an `UNVERIFIED` mapping to load-bearing in a verify command
 without first running the `spike` skill against the repo's actual installed
 toolchain — that probe transcript *is* the verification, not this skill.
@@ -122,7 +123,7 @@ A rule's home moves as evidence about it accumulates:
 - **Planner, at plan-compile time:** install/update Layer 1 from
   `references/template.md`.
 - **Whoever wires a repo's verify commands:** spike the `UNVERIFIED` entries
-  in `references/lint-packs/` against the repo's actual toolchain before a
+  in the `references/lint-pack-*.md` files against the repo's actual toolchain before a
   verify command depends on them; update the file's verification note in
   place with the probe transcript.
 - **Reviewer, at any blast-radius tier that reads the diff or at a milestone:**

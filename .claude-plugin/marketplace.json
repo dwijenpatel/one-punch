@@ -3,11 +3,14 @@
   "owner": {
     "name": "Dwijen Patel"
   },
+  "metadata": {
+    "description": "one-punch: steer-then-swarm skills for building software with agents."
+  },
   "plugins": [
     {
       "name": "one-punch",
       "source": "./plugin",
-      "description": "one-punch v3 pipeline skills: start (front door), intent (goal-stack + private overlay), spike (facts by execution), contract-review, worker-harness (routed headless builds), learning-gates, retro. Composes mattpocock-skills and evidence-kit."
+      "description": "one-punch v4 — steer then swarm: steer (front door: intent sitting, parallel agent lanes, decision memo, tickets), a parallel worker harness that lands work only through integrate, blast-radius scrutiny, three-layer code standards; plus intent, decision-memo, field-guide, spike, retro, contract-review and opt-in learning-gates. Composes mattpocock-skills and evidence-kit."
     }
   ]
 }

@@ -331,4 +331,7 @@ grammar are in [references/handoff.md](references/handoff.md).
 - [references/events.md](references/events.md): the event ledger schema.
 - [references/harness/](references/harness/): the code. `run.py` and
   `integrate.py` are the entry points, and their module docstrings are the
-  authoritative sequence descriptions.
+  authoritative sequence descriptions. `verify.sh` there checks the harness
+  itself: every test suite, including the launcher tests that unittest
+  discovery does not collect, plus `mypy --strict` over every file
+  (development only; it needs uv).

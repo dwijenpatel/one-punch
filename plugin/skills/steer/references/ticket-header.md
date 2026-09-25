@@ -26,7 +26,7 @@ Reference: <owner>/<repo>@<full SHA>:<path> (<dependency | fork | port | pattern
 | `Tag` | yes | determinacy only: `code-complete` (the ticket fully specifies the code) or `contract` (the worker designs within a stated contract). Risk never goes here |
 | `Blast` | yes | level plus the reason, naming the factor that set it — declared per the `blast-radius` skill; never below the highest blast-map zone the `Touches` globs overlap |
 | `Size` | yes | the planner's estimate; retro audits it against actuals |
-| `Touches` | yes | comma-separated globs of every path the ticket may change, in the blast map's glob dialect. A promise the harness checks: a diff outside it merges only as licensed breakage |
+| `Touches` | yes | comma-separated globs of every path the ticket may change, in the blast map's glob dialect. A promise the harness checks: a diff outside it merges only as licensed breakage. **A B3 ticket's `Touches` include its test paths**: the independent test author may write only test files inside `Touches`, so a B3 ticket without them cannot get its tests-first commit and parks |
 | `Decides` | no | only when the planner delegates one local decision to this ticket; the worker records the choice in its handoff and the planner files the ledger row |
 | `Depends-on` | no | ledger rows the worker must honor; the harness injects them into the worker's instructions |
 | `Reference` | no | a file from a reference dossier at its pinned SHA, with the reuse mode ratified at H2. The worker follows it unless the ticket says otherwise and reports deviations. `port` and `fork` carry an attribution obligation (third-party notices entry) |
@@ -48,7 +48,12 @@ After the header, in this order:
    done, written to survive later tickets (assert behavior, not line
    numbers). The milestone closure re-runs every one of them against the
    integration head, so each must be runnable from the repo root without
-   setup the ticket doesn't state.
+   setup the ticket doesn't state. Closure reads only machine-readable
+   acceptance, in the grammar the `worker-harness` skill's handoff reference
+   defines: command lines indented directly under an `Acceptance:` line (as
+   in the worked example below), or a fenced block inside an Acceptance
+   section. Prose acceptance is reported as "no acceptance commands" and is
+   never re-run.
 5. **Worked examples with exact values** — input, expected output.
 
 Explicitness is the cost lever: a `code-complete` ticket a mid-tier worker

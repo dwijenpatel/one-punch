@@ -189,7 +189,9 @@ The planner turns ratified decisions into an explicit build. In order:
 3. **Tickets** via `to-tickets`, each carrying the header block in
    [references/ticket-header.md](references/ticket-header.md). Tickets are
    explicit enough for a mid-tier worker to transcribe: constraints, numeric
-   ranges, acceptance checks as shell commands, worked examples. First
+   ranges, acceptance checks as commands in the machine-readable form the
+   reference gives (closure runs nothing else), worked examples. A B3
+   ticket's `Touches` include its test paths. First
    tickets: greenfield hardens the skeleton, then cuts tracer bullets;
    brownfield lands the safety-net tests and prefactors at the seams ("make
    the change easy"), then slices.
@@ -208,7 +210,13 @@ The planner turns ratified decisions into an explicit build. In order:
      brownfield adapts it to existing idioms with lint ratcheted; the first
      tickets wire Layer 2 into the project's verify commands;
    - the field guide file from `field-guide`'s template (seeded or empty);
-   - the worker harness and its configuration, per `worker-harness`.
+   - the worker harness and its configuration, per `worker-harness`: the
+     worktree directory (`.worktrees/` by default) is git-ignored before the
+     first run, and the configuration names the decorrelated B3 lens (`[run]
+     lens`, a model family other than the implementers') together with its
+     `lens_smoke` command — the lens is used only while that smoke passes,
+     else B3 lens reviews fall back to the top ladder rung. Keys and defaults:
+     that skill's configuration reference.
 7. **Cut the integration branch** `integrate/<effort>` from `main`. `main`
    changes only at H3.
 8. **Ticket-graph summary — a veto window, not a gate.** Write

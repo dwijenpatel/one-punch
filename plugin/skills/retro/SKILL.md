@@ -1,7 +1,7 @@
 ---
 name: retro
 description: Compile an effort's measured evidence — led by the headline metric of unattended tickets merged per operator intervention, plus routing/usage ledgers, gate outcomes and waivers, size-estimate audits, and operator outcome reports — into an evidence memo with proposed process amendments, filed in the process-authority repo. Use at milestones, at effort end, or whenever outside evidence arrives (an interview, an incident, a model release); also the required path for promoting a model tier or for reviewing a stated-vs-enforced style rule.
-compatibility: Works in any agent harness. Needs read access to the effort repo's ledgers and, to file memos, the process-authority repo (one-punch or the operator's equivalent).
+compatibility: Works in any agent harness. Needs read access to the effort repo's ledgers and, to file memos, the process-authority repo the operator designates.
 license: MIT
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: learning-gates
-description: Gate implementation progress on the operator's measured, verified learning. Types each learning goal (conceptual understanding, tradeoff mastery, skill acquisition, gap-closing), attaches the right assessment mechanism, and enforces gates as tracker-native blocker tickets that resolve only via committed assessment artifacts. Use when INTENT.md declares learning goals, when cutting tickets in a learning-tagged domain, or when running any assessment, drill, or waiver.
+description: Gate implementation progress on the operator's measured, verified learning. Types each learning goal (conceptual understanding, tradeoff mastery, skill acquisition, gap-closing), attaches the right assessment mechanism, and enforces gates as tracker-native blocker tickets that resolve only via committed assessment artifacts. Opt-in — propose it only when INTENT.md names a learning goal, and enter it only on the operator's yes; never a default opener. Once enabled, use when cutting tickets in a learning-tagged domain, or when running any assessment, drill, or waiver.
 compatibility: Works in any agent harness. Blind grading requires the ability to start a fresh session or context without the coaching history; where unavailable, note the limitation on the assessment artifact. Voice mocks degrade to text.
 license: MIT
 ---
@@ -11,6 +11,15 @@ The failure this skill exists to prevent: the operator watches competent
 decisions happen, feels the learning, and learns ~10% of it. "I feel like I
 learned X" is a completion claim, and completion claims are worthless without
 artifacts — the same rule the pipeline applies to agents, applied to the human.
+
+## Opt-in, never default
+
+Learning gates slow the build on purpose, so they run only when the operator
+asks for them. Propose this skill with a one-line reason when INTENT.md names
+a learning goal (or the operator raises one later), and enter it only on a
+yes. A declined proposal is not re-raised unless the goals change. Without a
+named learning goal, no ticket carries a learning tag and no `L-NN` gate
+exists.
 
 ## Conversation surface
 

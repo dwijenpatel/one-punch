@@ -14,10 +14,14 @@ practice, slipstream, idea-gen D26; cited as `E§n`),
 provenance is §14. v2 (2026-07-27) and v1 provenance are §§15–17.
 
 This document states policy and names instruments. Mechanism lives in the
-skills it names; detail lives in the plan. Until a skill named here has
-landed, the plan section cited next to it is the mechanism.
+skills it names, and every contract has exactly one home, named where this
+document uses it: the ticket header (`steer`), the scrutiny ladder and
+checklists (`blast-radius`), stop conditions, exit codes, routing floors,
+configuration and the handoff schema (`worker-harness`). Rationale and
+detail live in the plan. Three copies of a contract drift; one plus
+pointers does not.
 
-**Section map.** Skills, code and the plan cite v3 section numbers; they
+**Section map.** The harness code and the plan cite v3 section numbers; they
 resolve here as: v3 §0 → §15 · §1 → §1 · §2 → §2 · §3 → §2.2 · §4 → §4 ·
 §5 → §16 · §6 → §17 · §7 → §7.3 · §8 → §8 · §9 → §10 · §10 → §11 · §11 → §12
 · §12 → §13. The plan's "principle n" is v4.n in §1.
@@ -148,8 +152,8 @@ one-punch's own skills (roster per plan §5):
 
 - **`steer`** — the front door: runs H1 → A1 → H2 → A2, and H3 per milestone;
   owns the A1 lane briefs, the prior-art dossier format and the evidence lane;
-  `resume` reports where the effort is. Replaces `start`, which stays the
-  front door until `steer` lands and is then removed.
+  `resume` reports where the effort is. Replaced `start`, removed in v4
+  (git history keeps it).
 - **`intent`** — H1: one sitting, catastrophes, risk register; overlay
   offered, not default.
 - **`decision-memo`** — the altitude rule and the memo format, at H2 and as
@@ -227,7 +231,7 @@ spike is mandatory, the implementer floor, who writes the tests, which
 automated review runs, whether the operator reads the diff, scheduling,
 merge-conflict handling, build-vs-reuse default, and structure. Each level
 includes everything below it. The `blast-radius` skill owns the ladder and
-the domain checklists (plan §2b until it lands). Load-bearing points:
+the domain checklists. Load-bearing points:
 
 - **B0–B1** take the lightest path, so the scrutiny budget concentrates where
   damage lives.
@@ -311,11 +315,13 @@ composed; lane briefs and the dossier format: `steer`. Detail: plan §2 A1/H2,
 
 ## 6. Build loop
 
-Detail: plan §3; mechanism: `worker-harness`. **Every `run`/`integrate`
-capability is gated on the plan's §8.1 spike** (headless workers in
-worktrees, concurrency limits, permission mode, skill loading, `codex_p`).
-If the measured concurrency ceiling is below 4, the default N drops to it;
-the design is unchanged.
+Detail: plan §3; mechanism: `worker-harness`. The plan's §8.1 gating spike
+ran on 2026-09-25: headless workers commit unattended in their own
+worktrees under `bypassPermissions`, the concurrency ceiling is ≥4, and the
+`codex_p` lens runs read-only (rows in [vendor-smoke.md](../vendor-smoke.md)).
+Workers' skill-availability self-reports proved unreliable, so worker
+guidance goes inline in the preamble (§6.7). If a re-smoke measures a
+ceiling below 4, the default N drops to it; the design is unchanged.
 
 ### 6.1 Roles and models
 
@@ -337,14 +343,14 @@ The build loop is a deterministic program, not an LLM. The planner starts
 `harness run --parallel N` (default 4) in the background and is notified when
 it stops. It takes the frontier (tickets whose blockers are merged), selects
 up to N tickets with pairwise-disjoint `Touches` (B3 never batched with a
-ticket in the same blast-map zone), gives each a worktree `.worktrees/<ticket>`
-on branch `t/<ticket>` cut from the integration head, runs `integrate` as
-each worker exits, and refills the pipe without waiting for the slowest
-worker. **Stops:** frontier empty · every frontier ticket parked or blocked
-· K (default 2) tickets parked on `Decisions needed` that are not locally
-reversible · usage governor reports all candidates cooling · operator stop.
-The planner then reads handoffs, updates ledger and tickets, and relaunches.
-Usable walk-away or overnight.
+ticket in the same blast-map zone), gives each its own worktree and branch
+cut from the integration head, runs `integrate` as each worker exits, and
+refills the pipe without waiting for the slowest worker. It stops when
+nothing more can run unattended — decisions the planner or operator must
+take, exhausted usage, or an operator stop; the stop conditions, their exit
+codes and the next step for each are `worker-harness`'s. The planner then
+reads handoffs, updates ledger and tickets, and relaunches. Usable
+walk-away or overnight.
 
 ### 6.3 Integration
 
@@ -359,8 +365,9 @@ file crossing the threshold, default 800 lines, in this change). All green:
 B0–B2 fast-forward the integration branch; B3 parks `AWAITING-OPERATOR`
 (§4). It fast-forwards only the exact tree its checks ran on and re-enters at
 rebase if the head moved; one writer per repository holds a `flock`. Any red
-is a failed attempt under the salvage and escalation rules (§8). The
-integration branch is always green; `main` changes only at H3.
+is a failed attempt under the salvage and escalation rules (§8); outcomes,
+exit codes and failure tokens are `worker-harness`'s. The integration branch
+is always green; `main` changes only at H3.
 
 ### 6.4 Licensed breakage
 
@@ -376,24 +383,25 @@ becomes its own B3 ticket.
 `docs/decisions.md`, one row per decision, planner-owned (v4.3); decisions
 meeting mattpocock `domain-modeling`'s ADR criteria also get an ADR. Code
 that exists because of a non-obvious decision carries a `D-NNN` reference,
-kept honest by `integrate`'s ref check. Row format: plan §3.3.
+kept honest by `integrate`'s ref check. Row format: `decision-memo`
+(filing).
 
 ### 6.6 Field guide
 
 `docs/field-guide/index.md`, hard budget 150 lines, injected into every
 worker preamble: surprises, traps, negative results, commands that actually
 work. Workers propose entries; the planner is the single writer. Mechanism:
-`field-guide` (plan §3.7). `AGENTS.md` stays operator-owned rules.
+`field-guide`. `AGENTS.md` stays operator-owned rules.
 
 ### 6.7 Preamble and handoff
 
 The preamble is short and carries only what the model doesn't know: the
 `AGENTS.md` pointer, the field guide, the `Depends-on` ledger rows, the
 constraints, the ticket's blast level with its required steps (and the domain
-checklist for B2/B3), and the handoff contract. Workers report in a handoff
-file (Status DONE / DONE_WITH_CONCERNS / BLOCKED / NEEDS_CONTEXT, plus
-Deviations, Decisions needed and Field-guide proposals); the planner reads
-handoffs, never worker transcripts. Schema: plan §3.8, `worker-harness`.
+checklist for B2/B3), and the handoff contract. Workers report in a
+committed handoff file; the planner reads handoffs, never worker
+transcripts. The handoff schema and the reversibility grammar for
+`Decisions needed` are `worker-harness`'s.
 
 ### 6.8 Review by blast radius
 
@@ -420,27 +428,20 @@ Launcher hygiene flags (no ambient hooks, MCP servers or memory) stay.
 
 ### 7.1 Ticket format
 
-Local markdown by default (`.scratch/<effort>/issues/NN-slug.md`), via
-mattpocock `to-tickets` plus these header lines:
+Local markdown by default, cut via mattpocock `to-tickets` plus the v4
+header block (`Status`, `Blocked by`, `Tag`, `Blast`, `Size`, `Touches`,
+optional `Decides`, `Depends-on`, `Reference`). The block, its key
+semantics, the body conventions and a worked example are `steer`'s
+ticket-header reference; the harness parses exactly that form. Policy that
+holds here:
 
-```
-Status: ready-for-agent
-Blocked by: 03, 05
-Tag: code-complete | contract
-Blast: B0 | B1 | B2 | B3 — <one-line reason>
-Size: low | medium | high | very-high
-Touches: src/store/**, tests/store/**
-Decides: D-014            (only if the planner delegates a local decision)
-Depends-on: D-003, D-007
-Reference: <repo>@<sha>:<path> (<reuse mode>)
-```
-
-The body states intent in a few sentences, then **constraints** ("no TODOs,
-no partial implementations, no new dependencies without a ledger entry")
-rather than a step checklist, numeric ranges where scope is quantitative,
-acceptance checks as shell commands, and worked examples with exact values.
-`Touches` is a promise `integrate` checks. Ticket explicitness is the cost
-lever: vague tickets cost more worker tokens than a planner saves (E§1.2).
+- `Touches` is a promise `integrate` checks; a B3 ticket's `Touches` include
+  its test paths, because the independent test author writes only there.
+- Acceptance is machine-readable commands, because milestone closure re-runs
+  them and runs nothing else.
+- Constraints, not step checklists; worked examples with exact values.
+  Ticket explicitness is the cost lever: vague tickets cost more worker
+  tokens than a planner saves (E§1.2).
 
 ### 7.2 The v3 tag split
 
@@ -477,16 +478,15 @@ weight; they are house style for ticket bodies, applied by whoever writes ticket
 Tickets carry `Tag` (§7.2), `Size` (low / medium / high / very-high), `Blast`
 (§3), and any learning tags (§12).
 
-**Tag × Size → tier floor** (floors are hard; fallback goes up freely, down
-never): contract high/very-high→T1 · contract low/med→T2 · code-complete
-high/very-high→T3 · code-complete low/med→T4. **Blast floor:** Haiku only at
-B0; Sonnet at B1 and B2 (Opus for `contract` at B2); Opus at B3. The
-effective floor is the maximum of the two. Current tier ladder
-(operator-owned; the ledger auto-DEMOTES, only the operator PROMOTES,
-promotions ride retro evidence): T0 Opus @ high, GPT-Sol @ high · T1
-Sonnet/grok/GPT-Terra @ max · T2 same @ medium · T3 GPT-Luna @ max · T4 Haiku
-· T5 mini + local models. The interactive operator-session model is NEVER
-routed headless.
+**Floors.** Each ticket has a tag × size floor and a blast floor; the
+effective floor is the stronger of the two. Floors are hard: fallback goes
+up freely, down never. Blast floors put B3 on the top tier and keep the
+cheapest tier to B0. Both tables are `worker-harness`'s (routing floors).
+**The tier ladder** (T0 strongest … T5) is operator-owned and configured per
+effort (`[run] ladder`); the ledger auto-DEMOTES, only the operator PROMOTES,
+and promotions ride retro evidence. T5 carries no traffic in v4 until a retro
+reopens it (plan §9). The interactive operator-session model is NEVER routed
+headless.
 
 **Selection within a tier:** ε-greedy bandit (ε≈0.10–0.15; exploit
 best-by-ledger, explore least-sampled) so no candidate goes unexercised; B3
@@ -500,15 +500,13 @@ ticket for the operator.
 **Verification depth follows blast radius** (§3, §6.8), replacing v3's
 verification by tag. Completion is granted by artifacts, never claimed by
 agents: `integrate` re-runs the project's verify commands after every claimed
-done. Plan-probe → trap-notes before dispatching cheap implementers at hard
-tickets. Turn count beats token price: prose-heavy tickets are not routed
+done. Traps a cheap implementer would hit on a hard ticket reach it through
+the field guide and the ticket body. Turn count beats token price: prose-heavy tickets are not routed
 below Sonnet (E§1.3).
 
-The `worker-harness` skill implements: per-tool launchers (hygiene flags, no
-isolation walls — §6.9), blocker gating, fresh session per ticket, debris
-salvage/restore, the JSONL event ledger (all state a pure fold; `resume`
-reports frontier / debris / gates / parked / cooling), `harness run` and
-`integrate`.
+Mechanism: `worker-harness` — launchers (hygiene flags, no isolation walls,
+§6.9), `harness run`, `integrate`, salvage, the JSONL event ledger (all state
+a pure fold) and `resume`.
 
 ## 9. Code standards
 
@@ -519,8 +517,8 @@ practice (evidence: the two code-style memos; summary in plan §3.11).
 Mechanism: `code-style`.
 
 - **Layer 1 — stated.** A short `Code style` section in the effort repo's
-  `AGENTS.md`, installed at A2 from the one-punch default (plan Appendix A,
-  14 rules) with repo-specific slots filled. Operator-owned; the planner
+  `AGENTS.md`, installed at A2 from `code-style`'s 14-rule template with
+  repo-specific slots filled. Operator-owned; the planner
   proposes edits.
 - **Layer 2 — enforced.** The project's verify commands, run by `integrate`:
   hard-fail rules fail, soft caps warn into the integration log and handoff,

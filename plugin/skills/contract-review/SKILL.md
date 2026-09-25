@@ -9,8 +9,8 @@ license: MIT
 
 `/contract-review <contract artifact> [design/decision references…]`
 
-**Provisional — re-earn clause.** This skill is demoted from a v1 instrument whose
-measured value came from reviewing total-spec plans, a medium the current pipeline no
+**Provisional — re-earn clause.** This skill is demoted from an earlier pipeline's instrument
+whose measured value came from reviewing total-spec plans, a medium the current pipeline no
 longer produces. Its seat is not tenured: **if its next two invocations each confirm
 zero findings the operator judges worth fixing, delete this skill.** Record each
 invocation's outcome (artifact, confirmed count, operator-kept count) in the ledger at
@@ -70,10 +70,10 @@ mechanism and belongs in code, not that the contract needs round two.
 ## Invocation ledger
 
 <!-- artifact · date · confirmed · operator-kept -->
-- cerebras-knowledge-base `.scratch/kb-design/spec.md` · 2026-08-02 · 10 confirmed
+- a knowledge-base effort's compiled spec · 2026-08-02 · 10 confirmed
   (+1 plausible dropped, 4 spike conversions) · 10 kept and applied. First real
-  invocation under v2; re-earn clause: passed round one (kept > 0).
-- 2026-07-27 status note (not an invocation): the v2 first trial
-  (retrieval-fetcher) compiled no new contract — its spec was inherited — so this
+  invocation; re-earn clause: passed round one (kept > 0).
+- 2026-07-27 status note (not an invocation): the pipeline's first
+  trial (a retrieval-fetcher build) compiled no new contract — its spec was inherited — so this
   skill was never pointed at anything. Clause untriggered; the two-invocation
   count starts at the first real compiled contract.
