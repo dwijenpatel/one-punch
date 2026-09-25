@@ -8,8 +8,8 @@ those values returning a `CheckResult`. Modules:
 - `diff`      — unified-diff text -> file entries (format §5 "File entry").
 - `blastmap`  — blast-map extraction (format §1), validation (§3), the
                 detector (§5).
-- `ledger`    — decision-ledger table, ledger-ref scanning, handoff status,
-                config (`harness.toml` `[integrate]`).
+- `ledger`    — decision-ledger table, ledger-ref scanning, handoff status.
+- `config`    — `harness.toml` `[integrate]` keys, defaults and validation.
 - `hygiene`   — every check and the outcome decision.
 - `lint`      — lint-output parsing, the brownfield ratchet, `allow(...)`
                 exceptions.

@@ -29,7 +29,8 @@ from checks.hygiene import (
     touches_check,
     verify_check,
 )
-from checks.ledger import ConfigError, LedgerError, parse_config, parse_ledger, ref_scanner
+from checks.config import ConfigError, parse_config
+from checks.ledger import LedgerError, parse_ledger, ref_scanner
 from checks.lint import LintRun, lint_check, parse_lint_output, ratchet
 from core import DEFAULT_REF_PATTERN, Blast, Reference, ReuseMode, Tag
 
@@ -288,6 +289,7 @@ def test_verify_check() -> None:
     assert verify_check([CommandRun("make test", 0)]).ok
     failures = verify_check([CommandRun("make test", 2), CommandRun("make lint", None)]).failures
     assert "VERIFY-FAILED 'make test' (exit 2)" in failures[0] and "timed out" in failures[1]
+    assert verify_check([CommandRun("ruff format", 0)], [" M src/a.py"]).failures[0].startswith("VERIFY-DIRTY")
 
 
 def test_ref_check() -> None:
@@ -409,6 +411,8 @@ def test_lint_check_ratchet_and_allow() -> None:
     assert waived.ok and waived.exceptions == ("allow(F401): D-001 src/a.py:1",)
     red = _lint([_lint_run(True, old, head_out)], [entry], {"src/a.py": "import os\n"}, LEDGER_ROWS)
     assert red.failures == ("LINT F401 src/a.py:1 `os` imported but unused",)
+    superseded = _lint([_lint_run(True, old, head_out)], [entry], {"src/a.py": "import os  # allow(F401): D-002\n"}, LEDGER_ROWS)
+    assert superseded.failures == red.failures and superseded.exceptions == ()
     soft = _lint([_lint_run(False, old, head_out)], [entry], {}, LEDGER_ROWS)
     assert soft.ok and soft.warnings == ("LINT-WARN F401 src/a.py:1 `os` imported but unused",)
     crashed = _lint([_lint_run(True, "", "", exit_code=2)], [entry], {}, LEDGER_ROWS)

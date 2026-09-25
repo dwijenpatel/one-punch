@@ -6,7 +6,7 @@ listed for the planner, inactive lowerings); exceptions record every honored
 `allow(<rule>): D-NNN` so retro can count them per rule.
 
 Failure tokens (pinned by substring in the tests):
-`HANDOFF-MISSING`, `HANDOFF-STATUS`, `VERIFY-FAILED`, `REF-UNRESOLVED`,
+`HANDOFF-MISSING`, `HANDOFF-STATUS`, `VERIFY-FAILED`, `VERIFY-DIRTY`, `REF-UNRESOLVED`,
 `TOUCHES-OUTSIDE`, `TOUCHES-B3`, `BLAST-ESCALATION`, `SCRUTINY-MISSING`,
 `SCRUTINY-FAILED`, `TESTS-NOT-FIRST`, `CHECKLIST-UNANSWERED`,
 `ATTRIBUTION-MISSING`, `ATTRIBUTION-LICENSE`, `MEGAFILE`.
@@ -71,7 +71,7 @@ class CheckResult:
 class CommandRun:
     command: str
     exit_code: int | None  # None: timed out
-    output_tail: str = ""
+    output: str = ""
 
 
 @dataclass(frozen=True)
@@ -121,14 +121,18 @@ def handoff_check(text: str | None) -> CheckResult:
     return CheckResult("handoff")
 
 
-def verify_check(runs: Sequence[CommandRun]) -> CheckResult:
-    """Step 3: every verify command exits 0 on the judged tree."""
-    failures = tuple(
+def verify_check(runs: Sequence[CommandRun], dirty: Sequence[str] = ()) -> CheckResult:
+    """Step 3: every verify command exits 0 on the judged tree, and leaves
+    its tracked files as committed (`dirty`: `git status --porcelain` lines
+    after the run), so what lands is exactly what was verified."""
+    failures = [
         f"VERIFY-FAILED {run.command!r} ({'timed out' if run.exit_code is None else f'exit {run.exit_code}'})"
         for run in runs
         if run.exit_code != 0
-    )
-    return CheckResult("verify", failures=failures)
+    ]
+    if dirty:
+        failures.append(f"VERIFY-DIRTY verify modified tracked files: {'; '.join(line.strip() for line in dirty)}")
+    return CheckResult("verify", failures=tuple(failures))
 
 
 # --------------------------------------------------------------------------
