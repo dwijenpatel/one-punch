@@ -50,9 +50,14 @@ damage a wrong change could do if it shipped unnoticed.
    verification stays primary at every level; concurrency × run length only
    raises the milestone-review floor. (Operator principle 2026-09-24; E§1.7,
    E§3, D26.)
-6. **Ceremony is opt-in.** Private overlay, evidence corpus, learning gates and
-   contract review are off by default and proposed only when the effort shows
-   the need (v3 §9 "model-proposable, never model-enterable" stands). (E§1.1)
+6. **Ceremony is opt-in; evidence is not.** Private overlay, a per-effort
+   evidence corpus, learning gates and contract review are off by default.
+   Evidence itself is always gathered, but lightly and in parallel: A1 runs a
+   prior-art lane (proven reference implementations) and a lake-backed,
+   retrieval-grade evidence lane scoped to open forks and risks (§2 A1). The
+   heavier options are and proposed only when the effort shows
+   proposed only when the effort shows the need (v3 §9 "model-proposable,
+   never model-enterable" stands). (E§1.1; operator direction 2026-09-24)
 7. **Code standards are enforced, not just stated.** A short, repo-specific
    style section says only what a linter cannot decide; linters and import
    boundaries enforce what they can; review checks the rest. Each
@@ -79,9 +84,12 @@ pasted wall — v3 lesson `cdae9ad`). The agent's checklist:
 4. **What would be catastrophic if wrong?** Data loss or corruption, a
    security or privacy breach, money moved wrongly, users locked out,
    anything irreversible or silent. Seeds the blast map (§2b).
-5. **Brownfield only:** which area of the code; what must not break; what the
+5. **What do you already know about?** Prior art, competitors, reference
+   codebases, articles, people. The operator seeds research targets; A1
+   starts from these seeds, not from a blank search.
+6. **Brownfield only:** which area of the code; what must not break; what the
    operator already knows is fragile.
-6. **Risky assumptions:** the agent proposes a list drawn from answers 1–5;
+7. **Risky assumptions:** the agent proposes a list drawn from answers 1–6;
    the operator ranks and adds. Each gets a kill/pivot criterion.
 
 Follow-ups only where an answer changes a foreseeable decision. The private
@@ -103,7 +111,8 @@ file-based brief and a timebox:
 | **Risk** | one `spike` per top-ranked `R-n`, cheapest first; transcript recorded against the risk | same |
 | **Shape** | walking skeleton or `prototype` answering the biggest *does-this-feel-right* question | code survey of the touched area: module map, seams, test coverage, hot/mega files, **blast-map proposal** (auth, transactions, migrations, money, trust boundaries found in the code) |
 | **Safety net** | — | characterization tests pinning current behavior at the seams to be changed |
-| **Facts** | `research` on open external questions; fork-or-build only if genuinely open | same, plus upstream/issue history for the touched area |
+| **Prior art** | codebases that already solve our problem (operator seeds first): clone pinned to a SHA, one **reference dossier** each — what it solves and how (architecture, key files), evidence it works (production users, test suite, maintenance; stars are not evidence), license, recommended **reuse mode**: `dependency` / `fork` / `port` (copy with attribution) / `pattern` (read only) | same, plus how comparable codebases structured the area being changed |
+| **Evidence** | evidence-kit **retrieval-grade** pass into `evidence-lake`: questions that could rule product directions in or out, each naming the fork or `R-n` it could change | same, plus upstream/issue history for the touched area |
 
 Meanwhile the planner drafts the **decision map** privately (wayfinder used as
 the planner's own tool, not as one human session per ticket), resolving craft
@@ -115,6 +124,14 @@ Rules:
   footnote.
 - Research and spikes write findings to files; lanes never message each
   other.
+- **Evidence discipline** (evidence-kit method, composed): read the lake
+  first and reuse existing holdings; write new holdings back to the lake so
+  evidence compounds across efforts. A question that cannot name the fork or
+  risk it serves is dropped, so there are no open-ended surveys. A per-effort corpus
+  (evidence-kit scaffold) is opt-in, for efforts with a lasting stake in the
+  answers.
+- **Lane budget:** all lanes share the ≤4-agent cap and are timeboxed; the
+  planner allocates risk spikes first, then prior art, then evidence.
 - Brownfield seeds the field guide (§3.7) from the survey.
 - Greenfield: the planner drafts the blast map from INTENT.md's catastrophes
   and the skeleton's architecture.
@@ -129,7 +146,16 @@ Produced by the new `decision-memo` skill. Format:
 2. **Risk register update:** each `R-n` → confirmed / killed / pivoted, with
    transcript links.
 3. **Forks** (the only questions), fan-out ordered, each with: the question,
-   options, recommendation, evidence link, what it forecloses.
+   options, recommendation, evidence link **and its tier** (evidence-kit
+   grading; a fork resting on Tier B/C evidence says so), what it forecloses.
+   - **Reuse fork**, always asked when prior art exists: per problem area,
+     adopt a reference as `dependency` / `fork` / `port` / `pattern`, or
+     build fresh, with the dossier as evidence. One-way door by definition.
+   - A one-way-door fork that rests on external claims triggers an
+     **adversarial-grade** evidence-kit pass before ratification (the only
+     automatic escalation of evidence weight).
+   - **Absence claims** ("nobody has built this", "no library does X") are
+     never asserted from the corpus alone; the operator confirms them here.
 4. **Blast map** (§2b) for ratification — a fork by definition, since it
    encodes the operator's risk tolerance. Every design decision inside a B3
    zone (auth scheme, session model, transaction/isolation model, migration
@@ -163,7 +189,9 @@ The operator sees the milestone running, accepts or redirects, and decides the
 merge to `main`. Forks unlocked by building arrive here as a mini-memo (same
 format as H2, forks + defaults only). The milestone report lists every B2/B3
 change with its evidence (tests, lens report, operator sign-off for B3) and
-every blast escalation the detector caught.
+every blast escalation the detector caught. Fast-decaying facts the build
+rests on (API pricing, vendor behavior, library versions) are rechecked per
+evidence-kit's decay schedule before the milestone is accepted.
 
 **Milestones:** destinations larger than one build batch (rule of thumb: >15
 tickets or >1 day of worker time) split into milestones. Each milestone runs
@@ -227,6 +255,7 @@ review; accepted, because the costs are asymmetric.
 | Operator review | milestone sample | milestone | milestone; each B2 diff listed | **reads the diff before it merges** — `integrate` holds it `AWAITING-OPERATOR`; the run continues with other tickets |
 | Scheduling | any batch | any | any | never co-scheduled with a ticket in the same blast-map zone; licensed breakage *into* a B3 zone is forbidden (it must be its own B3 ticket) |
 | Merge conflicts | merge agent | merge agent | merge agent | merge agent on Opus, and the merged result re-enters B3 review |
+| Build vs reuse | any | any | prefer a proven reference (`Reference:` field) | **default is a vetted library or reference implementation; hand-rolling (auth, crypto, transactions, migrations) is an operator fork** |
 | Structure (§3.11) | style lint | style lint | + decision logic in the pure core | + **decision logic pure and property-tested on its own; the effectful shell kept thin enough to review line by line** |
 
 **Domain checklists** (`blast-radius` skill references; used by the oracle
@@ -277,6 +306,7 @@ Size: low | medium | high | very-high
 Touches: src/store/**, tests/store/**
 Decides: D-014            (only if the planner delegates a local decision)
 Depends-on: D-003, D-007
+Reference: tokio-rs/axum@3f2c1e9:examples/jwt/src/main.rs (pattern)
 ```
 
 Body: intent in a few sentences; **constraints** ("no TODOs, no partial
@@ -286,6 +316,12 @@ as shell commands (v3 §7 rot-proof fences); worked examples with exact values.
 
 `Touches` is a promise the harness checks (§3.5): a diff outside `Touches` is
 allowed only as licensed breakage (§3.6).
+
+`Reference:` (optional) points the worker at a proven implementation from a
+reference dossier, with the reuse mode ratified at H2. Workers follow the
+referenced design unless the ticket says otherwise, and report deviations in
+the handoff. A concrete file is the strongest pattern signal a worker can
+get (K: vendor guidance).
 
 **v3 tag split.** v3's `Tag` mixed two axes. v4 keeps `Tag` for determinacy
 only (`code-complete` / `contract`) and moves risk to `Blast`: v3 `critical`
@@ -366,6 +402,10 @@ Deterministic, stdlib-only, invoked by `harness run` after each worker exits (an
      exist as artifacts (B2: spec verdict; B3: independent acceptance tests
      committed before the implementation commits, lens report, domain
      checklist answered) → else fail;
+   - **attribution check** — a ticket whose `Reference:` mode is `port` or
+     `fork` must add or keep an entry in the repo's third-party notices
+     (source, SHA, license) and the license must be on the repo's allowed
+     list → else fail. `pattern` needs nothing: reading is always fine;
    - **style lint** (§3.11) — hard-fail rules fail; soft-cap warnings are
      written to the integration log and the handoff, not failed; brownfield
      is ratcheted (only new violations in changed code count);
@@ -546,6 +586,7 @@ at retro. A rule a linter can decide moves to Layer 2 and leaves the prose.
 | Field guide | starts empty, grows | seeded from survey (fragile areas, real commands) |
 | Code standards | template installed at A2; lint from ticket 1 | template adapted to existing idioms; lint ratcheted (new violations only); moving old code toward the rules only via planned prefactor tickets |
 | Megafile check | from ticket 1 | only on files that grow past threshold in the change |
+| Prior art | references for the whole design | references for the changed area; the repo's own history and past approaches count as prior art |
 | Blast map | drafted from INTENT.md catastrophes + skeleton architecture | proposed by the survey from existing code; B3 zones usually already exist |
 | Ledger | starts empty | seeded with discovered de-facto decisions (`status: inferred`) only where tickets depend on them |
 
@@ -553,7 +594,7 @@ at retro. A rule a linter can decide moves to Layer 2 and leaves the prose.
 
 | Skill | Change |
 |---|---|
-| **`steer`** (new) | Front door. Runs H1 → A1 → H2 → A2, and H3 per milestone; `resume` reports where the effort is. Replaces `start` (whose dependency-freshness checks move here). |
+| **`steer`** (new) | Front door. Runs H1 → A1 → H2 → A2, and H3 per milestone; owns the A1 lane briefs incl. the prior-art dossier format and the evidence lane (composing evidence-kit, lake-first); `resume` reports where the effort is. Replaces `start` (whose dependency-freshness checks move here). |
 | **`decision-memo`** (new) | Memo format and the altitude rule; used at H2 and H3. |
 | **`field-guide`** (new) | Format, budget, curation rules. Small. |
 | **`code-style`** (new) | Appendix A template with repo slots, lint packs per language (hard-fail vs soft-cap), the Layer 3 review rubric, and the rule lifecycle. Used by `steer` (A2) and reviewers. |
@@ -592,6 +633,8 @@ feature). Each trial's retro reports:
 | Share of tickets at B3, and operator minutes per B3 review | recorded; B3 share > 20% → A2's isolate-the-blast rule is failing |
 | Static-analysis warnings and complexity per merged KLOC; clone-level duplication % | recorded per milestone; a rising trend across milestones (the He et al. pattern) triggers a Layer 2 review |
 | Layer 3 rubric findings per milestone, by rule | recorded; feeds the rule lifecycle |
+| Verify-fail rate and rework: tickets with a `Reference:` vs without | recorded; tests whether proven references pay |
+| Forks reopened after build, by evidence tier at ratification | recorded; Tier B/C forks reopening often → escalate evidence grade earlier |
 | Field-guide entries that a later worker cited | recorded; zero after a milestone → question the skill |
 
 **Kill/revise clauses:** if Trial 1 exceeds 3 operator sittings before first
@@ -623,6 +666,12 @@ Resolved by the operator 2026-09-24:
   at H1, A1, H2, A2, H3, routing, scheduling, integrate, licensed breakage,
   review, metrics. Proposed specifics awaiting ratification: the four levels,
   the ladder values, operator diff review at B3, and the v3 tag split.
+- **Evidence-kit in the front half** (operator, 2026-09-24): prior-art lane with
+  reference dossiers, a reuse fork at H2, the `Reference:` field and
+  attribution check, B3 preferring vetted libraries; a lake-backed
+  retrieval-grade evidence lane scoped to forks and risks; adversarial grade
+  only for one-way doors on external claims; absence claims confirmed by the
+  operator; milestone recheck of fast-decaying facts.
 - **Code standards in three layers** (§3.11): approved 2026-09-24; the
   Appendix A rule text awaits operator review. Optional experiment for Trial
   2: run a ticket subset with the Layer 1 section removed (Layers 2–3
