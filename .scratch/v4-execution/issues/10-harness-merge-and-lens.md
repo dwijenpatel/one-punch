@@ -16,3 +16,7 @@ The agent paths the loop invokes (plan §3.1, §3.5 step 2, §3.9, §2b): merge 
 Acceptance: mock-launcher tests: conflict → merge agent → re-integrate; B3 ticket produces tests-first commit order, lens report, packet; lens falls back to Opus when codex smoke is absent.
 
 ## Comments
+2026-09-24 — PROPOSED prerequisite (operator review pending): before the first
+B3 ticket runs headless, run the adversarial boundary matrix per launcher
+(Read tool, shell, glob/search, credential paths, outbound network), per
+outrigger's named upgrade (SMOKE.md) and spike 02's deferral.

@@ -18,3 +18,12 @@ Constraints: functional core / imperative shell — each check is a pure functio
 Acceptance: one test per check (pass + fail case); an end-to-end test on a temp repo (clean ff, conflict, escalation, B3 hold); `mypy --strict` clean.
 
 ## Comments
+2026-09-24 — PROPOSED amendments (operator review pending), from outrigger
+exec-loop prior art (Reference: outrigger@9fa7023:tools/exec-loop/loop.py, pattern):
+- **Land only the judged tree:** fast-forward against the SHA the checks ran
+  on; if the integration head moved mid-flight, refuse and re-enter at rebase.
+- **Single writer:** a `flock` in the repo's git common dir so two
+  integrate/run processes can never write one repository.
+- **Checks on a committed rebase in a throwaway worktree**, never a staged
+  merge (spike 02 F9: git-state-reading checks fail environmentally otherwise).
+- **Protected paths** → B3 via the blast map (see ticket 03 amendment).

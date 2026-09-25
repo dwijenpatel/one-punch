@@ -18,3 +18,10 @@ Constraints: Agent Skills standard (name = dir, description says what + when, ha
 Acceptance: `test -f plugin/skills/blast-radius/SKILL.md` · 7 checklist files under references/ · schema example parses (a doctest-style snippet or `python -c` in Comments) · `skills-ref validate` if available.
 
 ## Comments
+2026-09-24 — PROPOSED amendment (operator review pending), from outrigger
+exec-loop's protected-paths interlock (loop.py; README "Threat model"): a worker
+that edits the instruction/process surfaces steers every later spawn or weakens
+the gate. Default pattern pack classifies these as **B3**: `AGENTS.md`,
+`CLAUDE.md`, `.claude/`, `.agents/`, `.codex/`, `docs/blast-map.md`,
+`docs/decisions.md`, `docs/field-guide/`, `harness.toml`, and the harness
+itself. Effect: such a diff never auto-merges; it goes through the operator.
