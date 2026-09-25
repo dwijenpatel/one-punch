@@ -1,7 +1,7 @@
 # 15 — packaging v4
 
 Type: task
-Status: ready-for-agent
+Status: done
 Blocked by: 01, 11, 13, 14
 Tag: contract
 Blast: B2 — pipeline.md trim (process authority) + removal of start
@@ -45,3 +45,19 @@ subsets and missed 127 errors). Document it in AGENTS.md as the repo's verify.
 Touches widened by planner: plugin/**, README.md, AGENTS.md,
 docs/design/pipeline.md, .claude-plugin/**, docs/vendor-smoke.md. Blast B2
 (pipeline.md trim is the process authority).
+
+2026-09-25 — done (worker). Conformance audit, every skill (script: frontmatter parsed with PyYAML; name == dir and `^[a-z0-9]+(-[a-z0-9]+)*$` ≤64; description ≤1024; compatibility ≤500; SKILL.md <500 lines; every relative link resolves and is one hop, `references/<file>`; no project names, machine/repo paths, plan pointers, SHAs or pipeline-version pointers anywhere in SKILL.md; no vendor tool or product names outside `compatibility:`, where the standard puts real requirements such as a required CLI):
+
+| skill | name==dir | name ok | desc | compat | lines | links (exist, 1 level) | SKILL.md leaks | result |
+|---|---|---|---|---|---|---|---|---|
+| blast-radius | True | True | 840 | 337 | 183 | 9 True | none | PASS |
+| code-style | True | True | 724 | 310 | 132 | 5 True | none | PASS |
+| contract-review | True | True | 642 | 156 | 79 | 0 True | none | PASS |
+| decision-memo | True | True | 815 | 301 | 158 | 1 True | none | PASS |
+| field-guide | True | True | 908 | 155 | 128 | 1 True | none | PASS |
+| intent | True | True | 560 | 174 | 133 | 2 True | none | PASS |
+| learning-gates | True | True | 572 | 224 | 88 | 2 True | none | PASS |
+| retro | True | True | 540 | 146 | 89 | 2 True | none | PASS |
+| spike | True | True | 659 | 69 | 52 | 0 True | none | PASS |
+| steer | True | True | 966 | 425 | 312 | 10 True | none | PASS |
+| worker-harness | True | True | 959 | 408 | 337 | 14 True | none | PASS |
