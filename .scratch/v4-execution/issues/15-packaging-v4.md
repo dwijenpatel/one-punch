@@ -16,3 +16,9 @@ Remove `start` (steer replaces it; history keeps it). learning-gates: opt-in wor
 Acceptance: `test ! -d plugin/skills/start` · manifest version 0.4.0 · audit table in Comments with every skill PASS.
 
 ## Comments
+2026-09-25 — added by planner from ticket 01's handoff: **pipeline.md trim
+pass.** v4 pipeline.md (683 lines) restates contracts that the plan and, after
+ticket 11, the worker-harness skill also hold (ticket header §7.1, stop
+conditions §6.2, tier ladder §8). Once 11 lands, replace those with pointers
+to the skill (compose, don't paraphrase — three copies drift). Also: the
+README may still describe v3 stages; update it here.
