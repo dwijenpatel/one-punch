@@ -1,7 +1,7 @@
 # 12 — skill intent v4
 
 Type: task
-Status: ready-for-agent
+Status: done
 Blocked by: —
 Tag: contract
 Blast: B1
