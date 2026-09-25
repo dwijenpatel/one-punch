@@ -484,7 +484,9 @@ B3 review cost.
 **Layer 1 — stated.** A `Code style` section in the repo's `AGENTS.md`,
 installed at A2 from the one-punch default (Appendix A) with repo-specific
 slots filled (which directories are the pure core, which are the shell, a
-reference file showing the pattern). Budget ≈ 30 lines. Positive phrasing,
+reference file showing the pattern). ≈40 lines, all 14 rules kept (operator,
+2026-09-24): workers learn linter-enforced rules upfront rather than at merge
+time; the Trial 2 A/B and the rule lifecycle decide any later cuts. Positive phrasing,
 one-clause why, no MUST/CRITICAL. Operator-owned; the planner proposes edits.
 
 **Layer 2 — enforced** (the project's verify commands, run by `integrate`):
