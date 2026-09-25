@@ -14,8 +14,12 @@ Normative sources:
 - v4 plan (docs/design/2026-09-24-v4-steer-then-swarm-plan.md) §2b: blast
   levels and the scrutiny ladder's "Implementer floor" row; §3.2: ticket
   header fields and the v3 tag split; §3.4: batch selection.
-- blast-radius skill, references/blast-map-format.md: the glob dialect (§4,
-  copied below verbatim) and zone membership for scheduling (§6).
+- blast-radius skill, references/blast-map-format.md: the glob dialect (§4)
+  and zone membership for scheduling (§6).
+
+The glob dialect and the Touches overlap predicate live in core_globs.py
+(split off at the 800-line megafile threshold) and are re-exported here:
+import them from `core` as before.
 
 Tier mapping of the blast floors (§2b "Implementer floor" row). Floors are
 ranks on the operator-owned ladder, not vendor names. In the ratified v3
@@ -34,10 +38,66 @@ The routing floor is the stronger of the tag x size floor and the blast floor
 from __future__ import annotations
 
 import re
-from collections import deque
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Collection, Mapping, Sequence, Union
+
+from core_globs import (
+    footprint,
+    footprints_overlap,
+    glob_intersection,
+    glob_to_regex,
+    index_tree,
+    literal_prefix,
+    touches_overlap,
+)
+
+# The public surface. The glob dialect and Touches overlap live in
+# core_globs.py and are re-exported here, so callers keep importing from core.
+__all__ = [
+    "DEFAULT_REF_PATTERN",
+    "EPSILON",
+    "MAX_ESCALATIONS",
+    "READY_STATUSES",
+    "RECENCY_DECAY",
+    "UNSEEN_PRIOR",
+    "V4_TAGS",
+    "Blast",
+    "BlastMap",
+    "Candidate",
+    "CandidateStats",
+    "Event",
+    "GovernorState",
+    "LimitHit",
+    "Outcome",
+    "Parked",
+    "Reference",
+    "ReuseMode",
+    "RouteDecision",
+    "Routed",
+    "Size",
+    "Tag",
+    "Ticket",
+    "TicketHeaderError",
+    "Tier",
+    "Zone",
+    "blast_floor",
+    "blast_map_from_data",
+    "critical_path",
+    "default_floor",
+    "fold",
+    "frontier",
+    "glob_intersection",
+    "glob_to_regex",
+    "literal_prefix",
+    "migrate_v3_tag",
+    "parse_ticket_header",
+    "route",
+    "select_batch",
+    "ticket_zones",
+    "tier_floor",
+    "touches_overlap",
+]
 
 EPSILON = 0.12
 RECENCY_DECAY = 0.85  # weight ratio between consecutive samples, newest first
@@ -501,228 +561,18 @@ def parse_ticket_header(text: str, ticket_id: str, ref_pattern: str = DEFAULT_RE
 
 
 # --------------------------------------------------------------------------
-# Glob dialect
+# Zones and batch selection (plan §3.4; blast-map format §6)
 # --------------------------------------------------------------------------
-
-# Copied verbatim from the blast-radius skill, references/blast-map-format.md
-# §4 ("Normative translation to a Python regex"), schema 1, only type-annotated
-# (`out: list[str]`). One dialect for blast-map paths and ticket Touches; do
-# not edit here without editing the format document. Its test vectors run in
-# test_core.py.
-def glob_to_regex(glob: str) -> re.Pattern[str]:
-    segments = glob.split("/")
-    if glob.startswith("./") or any(s == "" for s in segments):
-        raise ValueError(f"BLAST-MAP-INVALID: bad glob {glob!r}")
-    out: list[str] = []
-    for i, seg in enumerate(segments):
-        last = i == len(segments) - 1
-        if seg == "**":
-            out.append(".+" if last else "(?:[^/]+/)*")
-            continue
-        if "**" in seg:
-            raise ValueError(f"BLAST-MAP-INVALID: bad glob {glob!r}")
-        body = "".join("[^/]*" if c == "*" else "[^/]" if c == "?" else re.escape(c) for c in seg)
-        out.append(body if last else body + "/")
-    return re.compile("".join(out))
-
-
-def _segment_witness(p: str, q: str) -> str | None:
-    """A non-empty string that both single-segment patterns (`*`, `?`,
-    literals; no `/`) match, or None. Product-automaton search."""
-    start = (0, 0)
-    parent: dict[tuple[int, int], tuple[tuple[int, int], str] | None] = {start: None}
-    queue = deque([start])
-    while queue:
-        state = queue.popleft()
-        i, j = state
-        if i == len(p) and j == len(q):
-            chars: list[str] = []
-            cursor: tuple[int, int] | None = state
-            while cursor is not None:
-                step = parent[cursor]
-                if step is None:
-                    break
-                chars.append(step[1])
-                cursor = step[0]
-            witness = "".join(reversed(chars))
-            # Only `*` vs `*` can accept the empty string; segments are non-empty.
-            return witness if witness else "x"
-        moves: list[tuple[tuple[int, int], str]] = []
-        if i < len(p) and p[i] == "*":
-            moves.append(((i + 1, j), ""))
-        if j < len(q) and q[j] == "*":
-            moves.append(((i, j + 1), ""))
-        if i < len(p) and j < len(q):
-            a, b = p[i], q[j]
-            ni = i if a == "*" else i + 1
-            nj = j if b == "*" else j + 1
-            a_any, b_any = a in "*?", b in "*?"
-            if a_any and b_any:
-                moves.append(((ni, nj), "x"))
-            elif a_any:
-                moves.append(((ni, nj), b))
-            elif b_any or a == b:
-                moves.append(((ni, nj), a))
-        for nxt, char in moves:
-            if nxt not in parent:
-                parent[nxt] = (state, char)
-                queue.append(nxt)
-    return None
-
-
-_ZSTAR = None  # token: zero or more whole segments
-
-
-def _glob_tokens(glob: str) -> tuple[str | None, ...]:
-    """Segment tokens: a segment pattern, or _ZSTAR. A last `**` (one or
-    more segments) becomes `*` followed by _ZSTAR."""
-    glob_to_regex(glob)  # validate
-    segments = glob.split("/")
-    tokens: list[str | None] = []
-    for i, seg in enumerate(segments):
-        if seg == "**":
-            if i == len(segments) - 1:
-                tokens.extend(["*", _ZSTAR])
-            else:
-                tokens.append(_ZSTAR)
-        else:
-            tokens.append(seg)
-    return tuple(tokens)
-
-
-def glob_intersection(g: str, h: str) -> str | None:
-    """A path both globs match (a witness), or None when no path can match
-    both. Exact for the §4 dialect: a product search over segment tokens,
-    with segment pairs intersected by `_segment_witness`."""
-    gt, ht = _glob_tokens(g), _glob_tokens(h)
-    start = (0, 0)
-    parent: dict[tuple[int, int], tuple[tuple[int, int], str | None] | None] = {start: None}
-    queue = deque([start])
-    while queue:
-        state = queue.popleft()
-        i, j = state
-        if i == len(gt) and j == len(ht):
-            segs: list[str] = []
-            cursor: tuple[int, int] | None = state
-            while cursor is not None:
-                step = parent[cursor]
-                if step is None:
-                    break
-                if step[1] is not None:
-                    segs.append(step[1])
-                cursor = step[0]
-            return "/".join(reversed(segs))
-        moves: list[tuple[tuple[int, int], str | None]] = []
-        if i < len(gt) and gt[i] is _ZSTAR:
-            moves.append(((i + 1, j), None))
-        if j < len(ht) and ht[j] is _ZSTAR:
-            moves.append(((i, j + 1), None))
-        if i < len(gt) and j < len(ht):
-            a, b = gt[i], ht[j]
-            ni = i if a is _ZSTAR else i + 1
-            nj = j if b is _ZSTAR else j + 1
-            segment = _segment_witness(a if a is not None else "*", b if b is not None else "*")
-            if segment is not None:
-                moves.append(((ni, nj), segment))
-        for nxt, seg in moves:
-            if nxt not in parent:
-                parent[nxt] = (state, seg)
-                queue.append(nxt)
-    return None
-
-
-def literal_prefix(glob: str) -> str:
-    """The glob's leading wildcard-free segments; the whole glob when it has
-    no wildcard; "" (the root) when its first segment has one."""
-    lit: list[str] = []
-    for seg in glob.split("/"):
-        if "*" in seg or "?" in seg:
-            break
-        lit.append(seg)
-    return "/".join(lit)
-
-
-# --------------------------------------------------------------------------
-# Overlap and batch selection (plan §3.4; blast-map format §6)
-# --------------------------------------------------------------------------
-
-
-@dataclass(frozen=True)
-class _Tree:
-    paths: tuple[str, ...]
-    prefixes: frozenset[str]  # every existing file and directory path; "" when non-empty
-
-
-def _index_tree(tree: Collection[str]) -> _Tree:
-    prefixes: set[str] = set()
-    for path in tree:
-        segments = path.split("/")
-        if path.startswith("./") or any(s == "" for s in segments):
-            raise ValueError(f"bad tree path {path!r} (repo-relative, '/'-separated, no empty segments)")
-        prefixes.add("")
-        for k in range(1, len(segments) + 1):
-            prefixes.add("/".join(segments[:k]))
-    return _Tree(paths=tuple(sorted(set(tree))), prefixes=frozenset(prefixes))
-
-
-@dataclass(frozen=True)
-class _Footprint:
-    globs: tuple[str, ...]
-    files: frozenset[str]  # existing files the globs match
-
-
-def _footprint(globs: Sequence[str], tree: _Tree) -> _Footprint:
-    regexes = [glob_to_regex(g) for g in globs]
-    files = frozenset(p for p in tree.paths if any(r.fullmatch(p) for r in regexes))
-    return _Footprint(globs=tuple(globs), files=files)
-
-
-def _globs_overlap(g: str, h: str, tree: _Tree) -> bool:
-    if glob_intersection(g, h) is None:
-        return False
-    lg, lh = literal_prefix(g), literal_prefix(h)
-    shallower, deeper = (lg, lh) if len(lg) <= len(lh) else (lh, lg)
-    # Under-approximated only when a root wildcard meets an existing non-root prefix.
-    return shallower != "" or deeper == "" or deeper not in tree.prefixes
-
-
-def _footprints_overlap(a: _Footprint, b: _Footprint, tree: _Tree) -> bool:
-    if a.files & b.files:
-        return True
-    return any(_globs_overlap(g, h, tree) for g in a.globs for h in b.globs)
-
-
-def touches_overlap(a: Sequence[str], b: Sequence[str], tree: Collection[str]) -> bool:
-    """Whether two glob sets may touch the same file (plan §3.4).
-
-    Two sets overlap when some pair of globs g in `a`, h in `b` can name the
-    same path (`glob_intersection`) and at least one holds:
-      1. an existing file in `tree` matches both;
-      2. the deeper of their literal prefixes does not exist in `tree` (as a
-         file or directory) — "the same not-yet-existing path prefix";
-      3. both literal prefixes are non-root, or both are the root: the globs
-         share an anchor (conservative: `src/api/*.py` and
-         `src/api/*_test.py` may both create `src/api/x_test.py`; two
-         `**/*.md` tickets may both create `README.md`).
-    Deliberate under-approximation, the one remaining case: a root-anchored
-    wildcard glob (`**/AGENTS.md`) meets a glob whose non-root literal prefix
-    exists only through existing files — otherwise every ticket would sit in
-    every `**/`-zone (format §8 pins `src/api/**` outside `**/AGENTS.md`).
-    The integrate step's Touches and B3-zone checks backstop the gap on the
-    actual diff.
-    """
-    index = _index_tree(tree)
-    return _footprints_overlap(_footprint(a, index), _footprint(b, index), index)
 
 
 def ticket_zones(touches: Sequence[str], blast_map: BlastMap, tree: Collection[str]) -> frozenset[str]:
     """Names of the scheduling zones a Touches set is in (format §6): zones
     with at least one path glob that overlaps it. Pattern-only zones never
     count; lowerings play no part."""
-    index = _index_tree(tree)
-    mine = _footprint(touches, index)
+    index = index_tree(tree)
+    mine = footprint(touches, index)
     return frozenset(
-        z.name for z in blast_map.zones if z.paths and _footprints_overlap(mine, _footprint(z.paths, index), index)
+        z.name for z in blast_map.zones if z.paths and footprints_overlap(mine, footprint(z.paths, index), index)
     )
 
 
@@ -827,16 +677,16 @@ def select_batch(
             raise ValueError(f"critical_path lacks frontier tickets {missing}")
     lengths: Mapping[str, int] = critical_path if critical_path is not None else {}
 
-    index = _index_tree(tree)
-    zone_prints = [(z.name, _footprint(z.paths, index)) for z in blast_map.zones if z.paths]
-    prints = {t.id: _footprint(t.touches, index) for t in frontier}
+    index = index_tree(tree)
+    zone_prints = [(z.name, footprint(z.paths, index)) for z in blast_map.zones if z.paths]
+    prints = {t.id: footprint(t.touches, index) for t in frontier}
     zones_of = {
-        tid: frozenset(name for name, zp in zone_prints if _footprints_overlap(fp, zp, index))
+        tid: frozenset(name for name, zp in zone_prints if footprints_overlap(fp, zp, index))
         for tid, fp in prints.items()
     }
 
     def compatible(a: Ticket, b: Ticket) -> bool:
-        if _footprints_overlap(prints[a.id], prints[b.id], index):
+        if footprints_overlap(prints[a.id], prints[b.id], index):
             return False
         if Blast.B3 in (a.blast, b.blast) and zones_of[a.id] & zones_of[b.id]:
             return False
