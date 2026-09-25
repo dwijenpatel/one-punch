@@ -171,6 +171,7 @@ def test_clean_fast_forward_lands_the_judged_commit() -> None:
         assert (event["declared_blast"], event["effective_blast"], event["verify"]) == ("B1", "B1", "pass")
         assert event["files"] == [".scratch/demo/handoffs/01.md", "src/store/kv.py"]
         assert event["ticket_branch_moved"] is True
+        assert event["commits"] == r.git("rev-list", "--reverse", f"{INTEG}~2..{INTEG}").split()
         assert r.git("worktree", "list").count("\n") == 0  # the throwaway worktree is gone
 
 

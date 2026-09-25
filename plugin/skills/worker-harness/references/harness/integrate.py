@@ -163,6 +163,7 @@ class _Judgement:
     results: tuple[CheckResult, ...] = ()
     conflicted: tuple[str, ...] = ()
     verify_runs: tuple[CommandRun, ...] = ()
+    commits: tuple[Commit, ...] = ()
 
 
 # --------------------------------------------------------------------------
@@ -456,6 +457,7 @@ def _judge(git: Git, cfg: IntegrateConfig, ticket_id: str, ticket_sha: str, base
         text = git.show(judged, path)
         if text is not None:
             artifacts[path[len(review_root) + 1 :]] = text
+    commits = tuple(_commits(git, base, judged))
     evaluation = evaluate(bmap, entries, ticket.blast, active_decisions(ledger))
     evidence = cfg.evidence_globs(ticket_id)
     results = (
@@ -467,7 +469,7 @@ def _judge(git: Git, cfg: IntegrateConfig, ticket_id: str, ticket_sha: str, base
             evaluation.effective,
             ticket.tag,
             artifacts,
-            _commits(git, base, judged),
+            commits,
             evaluation.checklists,
             _checklist_sources(git, cfg, base, evaluation.checklists),
             cfg.test_globs,
@@ -487,7 +489,7 @@ def _judge(git: Git, cfg: IntegrateConfig, ticket_id: str, ticket_sha: str, base
         megafile_check(entries, base_lines, head_text, cfg.megafile_threshold, cfg.megafile_skip, ledger, cfg.ref_pattern),
     )
     outcome = decide(results, evaluation)
-    return _Judgement(outcome, base, ticket, judged, entries, evaluation, results, verify_runs=verify_runs)
+    return _Judgement(outcome, base, ticket, judged, entries, evaluation, results, verify_runs=verify_runs, commits=commits)
 
 
 # --------------------------------------------------------------------------
@@ -547,6 +549,7 @@ def _record(event: dict[str, Any], j: _Judgement, handoff: CheckResult) -> None:
         warnings=[w for r in j.results for w in r.warnings],
         exceptions=[x for r in j.results for x in r.exceptions],
         conflicted_paths=list(j.conflicted),
+        commits=[c.sha for c in j.commits],
         verify="not-run" if not j.verify_runs else ("pass" if j.results[0].ok else "fail"),
         verify_failures=[
             {"command": r.command, "exit": r.exit_code, "tail": r.output[-VERIFY_TAIL:]}
