@@ -29,8 +29,8 @@ of what was measured; they are not v4 evidence.
 
 | Vendor | Row | Status | Build | Date | Evidence |
 |---|---|---|---|---|---|
-| Claude Code | 4 (launcher, v4: unattended commit + telemetry) | **PASS** | 2.1.281 | 2026-09-25 | one-punch v4 spike 02 P1/P2: bypassPermissions in own worktree, commit on own branch only, usage + provenance captured, `-c`/pipe/env-prefix run; 4 concurrent workers in one repo, no limit or lock errors (ceiling ≥4). |
-| Codex | 4 (launcher, v4: read-only lens) | **PASS** | codex 0.156.1 | 2026-09-25 | one-punch v4 spike 02 P3: headless review, read-only respected, report written, token usage parsed (cost/api-ms not exposed). |
+| Claude Code | 4 (launcher, v4: unattended commit + telemetry) | **PASS** | 2.1.281 | 2026-09-25 | one-punch v4 spike 02 (re-run 2026-09-25 on post-ticket-11 launchers: P1+P3 CONFIRMED) P1/P2: bypassPermissions in own worktree, commit on own branch only, usage + provenance captured, `-c`/pipe/env-prefix run; 4 concurrent workers in one repo, no limit or lock errors (ceiling ≥4). |
+| Codex | 4 (launcher, v4: read-only lens) | **PASS** | codex 0.156.1 | 2026-09-25 | one-punch v4 spike 02 (re-run 2026-09-25 on post-ticket-11 launchers: P1+P3 CONFIRMED) P3: headless review, read-only respected, report written, token usage parsed (cost/api-ms not exposed). |
 | Claude Code | 2 (v4 skills: `steer`, `intent`) | OPEN | — | — | `steer` replaced `start` in v4 and has not yet run in a real effort. The first v4 trial is the smoke. |
 | Claude Code | 1–3 | **PASS (in-effort evidence, v3 skills)** | 2.1.2xx | 2026-07→08 | The kb effort end-to-end: instructions, all v3 skills (incl. `start`), tracker ops exercised across ~30 sessions. Formal canary re-run due at next CLI major. |
 | Codex | 1–3 | OPEN | — | — | Not yet run. |
