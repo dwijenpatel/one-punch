@@ -6,7 +6,7 @@ Blocked by: —
 Tag: contract
 Blast: B1 — throwaway probes; findings gate B2 tickets 08/09/10
 Size: low
-Touches: .scratch/v4-execution/spikes/**, plugin/skills/worker-harness/references/harness/smoke_workers.sh, plugin/skills/worker-harness/references/harness/launchers/claude_p.py, plugin/skills/worker-harness/references/harness/launchers/codex_p.py, docs/vendor-smoke.md
+Touches: .scratch/v4-execution/spikes/**, plugin/skills/code-style/references/lint-packs/** (P4 verification markers, per ticket 04 handoff), plugin/skills/worker-harness/references/harness/smoke_workers.sh, plugin/skills/worker-harness/references/harness/launchers/claude_p.py, plugin/skills/worker-harness/references/harness/launchers/codex_p.py, docs/vendor-smoke.md
 Reference: outrigger@9fa7023:tools/exec-loop/SMOKE.md (pattern — prior smoke ledger; only its non-wall facts apply)
 Authority: docs/design/2026-09-24-v4-steer-then-swarm-plan.md §8.1, §9
 

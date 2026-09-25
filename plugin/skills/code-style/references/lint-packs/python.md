@@ -19,7 +19,7 @@ entry against an installed pylint before it gates a verify command.
 | Too many parameters | ruff `PLR0913` | Verified |
 | Mutable global state (no `D-NNN`) | ruff `PLW0603` (`global` statement) — flags the statement, not the missing ledger reference; the missing-reference check is the harness's ref check, not a lint rule | Verified (the lint half only) |
 | Mutable default arguments | ruff `B006` | Verified |
-| Formatter drift | `ruff format` (or `black`, if the repo predates the ruff formatter) | UNVERIFIED — the canon memo verified ruff's *rule codes* against vendor docs, not the formatter subcommand; confirm which formatter the repo has standardized on |
+| Formatter drift | `ruff format` (or `black`, if the repo predates the ruff formatter) | Verified 2026-09-25 (ruff 0.16.9: subcommand exists); which formatter a repo standardizes on stays a per-repo choice |
 
 ## Soft cap
 
@@ -27,8 +27,8 @@ entry against an installed pylint before it gates a verify command.
 |---|---|---|
 | Function length ~40–60 lines (target ~25) | ruff `PLR0915` (too-many-statements — a proxy for length, not a line count) | Verified |
 | Cyclomatic/cognitive complexity | ruff `C901` | Verified |
-| Clone-level duplication | pylint `R0801` (`duplicate-code`); no ruff equivalent | UNVERIFIED |
-| Inheritance depth > framework + 1 | pylint `R0901` (`too-many-ancestors`); no ruff equivalent | UNVERIFIED |
+| Clone-level duplication | pylint `R0801` (`duplicate-code`); no ruff equivalent | Verified 2026-09-25 (pylint 4.0.9) |
+| Inheritance depth > framework + 1 | pylint `R0901` (`too-many-ancestors`); no ruff equivalent | Verified 2026-09-25 (pylint 4.0.9) |
 
 ## Also useful, not in the hard-fail/soft-cap table
 
