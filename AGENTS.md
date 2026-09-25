@@ -1,6 +1,6 @@
 # one-punch — working rules (canonical, all agents)
 
-- **Authority:** [docs/design/pipeline.md](docs/design/pipeline.md) (v3). Changes cite
+- **Authority:** [docs/design/pipeline.md](docs/design/pipeline.md) (v4). Changes cite
   what prompted them — a session, a measurement, a trial, a retro memo — in the
   commit message. The repo's history is the ledger; retro evidence memos live in
   `docs/evidence/`.
