@@ -1,7 +1,7 @@
 # 10 — harness merge and lens
 
 Type: task
-Status: ready-for-agent
+Status: done
 Blocked by: 09
 Tag: contract
 Blast: B2
