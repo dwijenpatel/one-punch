@@ -79,7 +79,6 @@ Acceptance:
   python -m pytest tests/auth/test_session_check.py -q
   python -m pytest tests/auth/test_session_check.py -q -k "expired and skew"
 
-Example: token issued at 1700000000 with ttl 1 expires at 1700000001; with
-the 30-second skew it is valid at now=1700000031 and rejected at
-now=1700000032.
+Example: token issued at t=100 with ttl 1 expires at t=101; with the
+30-second skew it is valid at now=131 and rejected at now=132.
 ```

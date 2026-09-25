@@ -186,7 +186,10 @@ The planner turns ratified decisions into an explicit build. In order:
 3. **Tickets** via `to-tickets`, each carrying the header block in
    [references/ticket-header.md](references/ticket-header.md). Tickets are
    explicit enough for a mid-tier worker to transcribe: constraints, numeric
-   ranges, acceptance checks as shell commands, worked examples.
+   ranges, acceptance checks as shell commands, worked examples. First
+   tickets: greenfield hardens the skeleton, then cuts tracer bullets;
+   brownfield lands the safety-net tests and prefactors at the seams ("make
+   the change easy"), then slices.
 4. **Isolate the blast.** Declare every ticket's level and cut B3 cores into
    their own small tickets behind narrow seams, per `blast-radius`'s
    declaring steps; B3 core and its B1 surroundings are always separate
