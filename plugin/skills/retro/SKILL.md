@@ -26,8 +26,8 @@ sanctioned channel from "we observed X" to "the process now does Y."
 ## Inputs (compile, don't recollect)
 
 Every input names the source it was pulled from, so a retro is compiled from
-artifacts, not recollected from memory or transcripts. Five source kinds
-recur across the metrics below:
+artifacts, not recollected from memory. Six source kinds recur across the
+metrics below:
 
 - **Ledger event** — the harness's per-ticket event log (one JSONL record
   appended per attempt): model, tag, size, declared and effective blast,
@@ -43,6 +43,18 @@ recur across the metrics below:
   them), field-guide and style-rule commit history, ticket header fields.
 - **Operator report** — sittings and turns, review minutes, escaped defects
   found after merge, and outcome reports filed since the last retro.
+- **Session transcript** — when the harness or agent environment exposes a
+  timestamped record of the operator/agent session (a steering sitting, a
+  light-mode build), compile the per-stage timing table and the operator
+  interaction log (below) from it **by default**, not by estimate: for each
+  stage, its wall-clock span, the time the agent was actively working
+  (including waiting on background workers) vs. the time spent waiting on
+  the operator, and one row per operator turn (time, stage, gist, class,
+  what prompted it, whether it was avoidable). A milestone with no exposed
+  transcript — no session log, a harness that doesn't record one, a gap the
+  operator worked outside any logged session — leaves the timing table and
+  interaction log `not recorded`, same as any other missing source; do not
+  reconstruct either from memory.
 
 Also compile: gate outcomes and every waiver, named always (git: decision
 ledger rows; handoffs); size audits, estimated vs. actual per ticket (git:
@@ -66,7 +78,9 @@ metrics table with a bar and a source per row so a later reader can
 re-derive every number, and then states: what was measured · what it
 contradicts or confirms in the current process · **proposed amendments,
 each citing its evidence** · what was explicitly considered and left
-unchanged.
+unchanged. When a session transcript is available, the memo also carries
+the per-stage timing table and the operator interaction log, both compiled
+from it, not estimated; when none is available both are `not recorded`.
 
 Amendment classes and their rules:
 - **Tier changes**: the ledger auto-DEMOTES during an effort; PROMOTIONS are

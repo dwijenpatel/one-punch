@@ -17,12 +17,22 @@ lint_hard = ["ruff check --output-format=concise ."]
 
 [run]
 parallel = 4
-ladder = { T0 = [{ tool = "claude", model = "opus", effort = "high" }],
-           T2 = [{ tool = "claude", model = "sonnet", effort = "medium" }],
-           T4 = [{ tool = "claude", model = "haiku" }] }
 lens = { tool = "codex", model = "<codex model id>" }
 lens_smoke = "test -f .scratch/m1/lens-smoke-ok"
+
+[run.ladder]
+T0 = [{ tool = "claude", model = "opus", effort = "high" }]
+T2 = [{ tool = "claude", model = "sonnet", effort = "medium" }]
+T4 = [{ tool = "claude", model = "haiku" }]
 ```
+
+TOML forbids a newline inside `{ … }` (an inline table must fit on one
+line), so a multi-tier ladder needs the `[run.ladder]` table form above, not
+one multi-line inline table — and any bare `[run]` keys (like `lens` here)
+must come before `[run.ladder]` opens, since TOML never lets a table's own
+keys follow one of its subtables. A full worked example that parses through
+both real loaders lives at
+[harness-example.toml](harness-example.toml).
 
 ## `[integrate]`
 

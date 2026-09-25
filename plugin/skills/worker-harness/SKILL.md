@@ -279,6 +279,17 @@ produced. The outcome tokens and exit codes (0, 10, 20, 21, 22, 30, 31, 32)
 are in [references/exit-codes.md](references/exit-codes.md). Integrate never
 writes to the handoff: soft-lint warnings go to the event and stdout.
 
+## Light mode
+
+For a small or timeboxed effort, tickets may run as in-session background
+workers instead of a scheduled `run --parallel N` loop — but every finished
+ticket branch still lands through `integrate.py <ticket>` run by hand, so the
+gate that decides what merges never changes. Lost: automatic dispatch,
+salvage/escalation, the stop conditions, and a ledger-sourced headline metric
+(the retro records it `not recorded` instead of estimating). Kept: every
+`integrate` check, and the events ledger for every integrate outcome. Details
+and the exact by-hand commands: [references/light-mode.md](references/light-mode.md).
+
 ## resume and closure
 
 - `run.py resume [--json]` answers "where were we?" after any gap, on any
@@ -324,6 +335,13 @@ grammar are in [references/handoff.md](references/handoff.md).
 - [references/configuration.md](references/configuration.md): `harness.toml`
   (`[integrate]`, `[run]` including `lens` and `lens_smoke`), the routing
   floors, and the repository layout.
+- [references/harness-example.toml](references/harness-example.toml): a
+  complete, commented `harness.toml` for a typical web repo, loader-tested so
+  it can never silently drift from what `parse_config` / `parse_run_config`
+  accept.
+- [references/light-mode.md](references/light-mode.md): running tickets as
+  in-session workers instead of a scheduled run, with `integrate` still the
+  only path to the integration branch.
 - [references/exit-codes.md](references/exit-codes.md): run and integrate
   exit codes, stop reasons, park states, and refusal and check tokens.
 - [references/handoff.md](references/handoff.md): the handoff schema, the

@@ -1,0 +1,76 @@
+# Example harness.toml for a typical web repo (a Node/TypeScript app with a
+# unit-test suite, a linter and a Playwright-style browser-walk suite).
+#
+# Copy this file to the repository root as `harness.toml`. Everywhere you
+# see a <PLACEHOLDER>, the planner fills in the real value before the first
+# run or `integrate` call — unknown keys and malformed values in either
+# table are CONFIG-INVALID, so delete a commented-out line rather than leave
+# it half-filled. Every key, its default and its meaning are in
+# ../configuration.md; this file only shows the ones a typical effort sets.
+#
+# Light mode (small or timeboxed efforts: tickets run as in-session workers
+# instead of `harness run --parallel N`) still reads this same file — every
+# finished ticket branch lands through `integrate.py <ticket>` run by hand.
+# See ../light-mode.md. The [run] table below is only read by `harness run`
+# itself; light mode never needs it, but keeping it filled in means the
+# effort can switch to `harness run` later with no config changes.
+
+[integrate]
+# The effort's short name: [A-Za-z0-9_.-] only. Expands into every
+# {effort}-templated path and branch below (issues_dir, handoffs_dir,
+# events_file, the integration branch, ...).
+effort = "<EFFORT_NAME>"                      # e.g. "m1", "checkout-revamp"
+
+# Every command below runs in the judged worktree; each must exit 0 and
+# leave tracked files unchanged (a formatter that rewrites files fails the
+# VERIFY-DIRTY check, not the command's own exit code). Put the fast unit
+# suite first. The second command is the visual-closure gate for UI
+# tickets: a headless browser walk over the effort's example URLs at
+# desktop and mobile width, asserting each variant's defining behaviour —
+# not just a marker class. A ticket whose diff never touches rendered UI
+# still runs this command; keep it fast (a smoke walk, not a full suite) or
+# split UI verification into its own ticket-scoped command.
+verify = [
+  "<TEST_COMMAND>",                           # e.g. "npm test -- --run"
+  "<BROWSER_WALK_COMMAND>",                   # e.g. "npx playwright test e2e/"
+]
+
+# Lint is split in two. New violations from lint_hard fail the ticket; new
+# violations from lint_soft are printed as warnings only. Brownfield lint is
+# ratcheted either way: only violations introduced by the judged diff count,
+# so an inherited violation elsewhere in the file never blocks a ticket.
+lint_hard = ["<LINT_HARD_COMMAND>"]           # e.g. "npx eslint . --max-warnings=0"
+lint_soft = ["<LINT_SOFT_COMMAND>"]           # e.g. "npx tsc --noEmit"
+
+# Everything else (integration_branch, ticket_branch, issues_dir,
+# handoffs_dir, ledger_file, blast_map_file, checklists_dir, megafile
+# thresholds, ...) has a working default — see ../configuration.md. Override
+# only what this repo actually needs, for example:
+# ledger_file    = "docs/decisions.md"
+# blast_map_file = "docs/blast-map.md"
+# checklists_dir = "docs/checklists"
+
+[run]
+# Worker slots; `harness run --parallel N` overrides this at the CLI.
+parallel = 4
+
+# The decorrelated B3 lens: a model family other than the implementers',
+# used only while its own smoke check (lens_smoke) exits 0 — otherwise the
+# lens falls back to the top ladder rung. Uncomment both lines together
+# (lens without lens_smoke is CONFIG-INVALID), and keep them above
+# [run.ladder] below — TOML does not allow a bare table's own keys after one
+# of its subtables has opened.
+# lens = { tool = "codex", model = "<CODEX_MODEL_ID>" }
+# lens_smoke = "test -f .scratch/{effort}/lens-smoke-ok"
+
+# The tier ladder: every candidate names its tool and model (a model whose
+# name contains "fable" is refused — no Fable model is ever routed
+# headless). This mirrors the ratified mapping: the strongest tier for
+# contract-shaped or B3 work, a mid tier for the everyday B1 floor, a cheap
+# tier for B0 code-complete work. Swap in this repo's own vendor CLIs and
+# model ids; every `tool` named here needs a launcher file
+# (../configuration.md's `[run].launchers`).
+[run.ladder]
+T0 = [{ tool = "claude", model = "opus", effort = "high" }]
+T2 = [{ tool = "claude", model = "sonnet", effort = "medium" }]
+T4 = [{ tool = "claude", model = "haiku" }]

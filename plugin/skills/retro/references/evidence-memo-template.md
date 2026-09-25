@@ -28,6 +28,30 @@ signal for whether the build half is pulling its weight.
 Falling across milestones means the build half is not earning its keep — treat
 that as a required finding, not a number to bury in the table below.
 
+## Operator interaction log
+
+Source: session transcript, when the harness or agent environment exposes
+one with timestamps; else this whole section is `not recorded` — do not
+reconstruct it from memory. One row per operator turn, in order. Class: **D**
+designed oversight (a scheduled sitting or review the process asks for) ·
+**U** unplanned intervention (the operator found a defect the process didn't
+catch) · **S** operator-initiated scope or request · **C** correction of an
+agent framing error.
+
+| Turn | Time | Stage | Gist | Class | What prompted it | Avoidable? |
+|---|---|---|---|---|---|---|
+| | | | | | | |
+
+## Timing
+
+Source: session transcript; else `not recorded`. "Agent active" includes
+time waiting on background workers; "Operator" is the gap from the agent's
+last action to the next operator message (reading, testing, or away).
+
+| Stage | Wall clock | Duration | Agent active | Operator | Notes |
+|---|---|---|---|---|---|
+| | | | | | |
+
 ## Metrics
 
 | Metric | This milestone | Bar | Source |
