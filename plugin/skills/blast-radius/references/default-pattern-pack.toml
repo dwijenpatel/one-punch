@@ -216,7 +216,9 @@ why = "Secrets and cryptography: misuse is invisible to functional tests and exp
 paths = [
   "**/crypto/**", "**/cryptography/**", "**/secrets/**", "**/keys/**", "**/certs/**",
   "**/.env", "**/.env.*", "**/*.pem", "**/*.key", "**/*.p12", "**/*.pfx", "**/*.jks",
-  "**/*.keystore", "**/id_rsa*", "**/id_ed25519*", "**/*credentials*", "**/*secret*",
+  "**/*.keystore", "**/id_rsa*", "**/id_ed25519*",
+  "**/*credentials*.json", "**/*credentials*.yaml", "**/*credentials*.yml", "**/*credentials*.toml",
+  "**/*secret*.json", "**/*secret*.yaml", "**/*secret*.yml", "**/*secret*.toml", "**/*secret*.env",
   "**/.npmrc", "**/.pypirc", "**/.netrc", "**/kubeconfig*", "**/*.kdbx",
 ]
 

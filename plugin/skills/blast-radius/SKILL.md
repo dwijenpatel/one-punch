@@ -156,8 +156,9 @@ B2/B3 tickets get the relevant checklist in their instructions.
 Which checklists apply is computed, not chosen: every zone names its
 checklist, and the detector reports the checklists of every zone the diff
 hits at B2 or above. A B3 change whose hits name no checklist (a declared
-B3, deploy or process surfaces) gets a lens review against the ticket; the
-lens names the closest checklist if one fits.
+B3, deploy or process surfaces) has no checklist to answer; the lens reviews
+it against the ticket and may cite the closest checklist, and the other B3
+steps still apply.
 
 **Answering** is one line per item: `TC-03 pass: tests/test_ledger.py::test_concurrent_increment`,
 `MD-04 n/a: no table rewrite; additive nullable column`, or

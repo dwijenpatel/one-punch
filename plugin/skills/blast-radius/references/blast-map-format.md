@@ -216,7 +216,10 @@ Input: the change's file entries and the ledger.
 - **Checklists** — the set of `checklist` ids of zones with at least one
   hit whose hit level is `B2` or `B3`. These are the domain checklists the
   worker preamble inlines and, at effective `B3`, the ones that must be
-  answered (§7).
+  answered (§7). When the effective level is `B3` and this set is empty
+  (a declared B3, or hits only in zones without a checklist), the
+  checklist requirement is vacuously satisfied; the other B3 evidence
+  (independent acceptance tests, lens report) is still required.
 
 Report every hit as (zone, path, source `path`|`pattern`, hit level) so an
 escalation message can name what fired.
@@ -227,8 +230,9 @@ A ticket is **in** zone Z when its `Touches` globs overlap Z's `paths`
 under the same overlap predicate the scheduler uses between two tickets'
 `Touches` sets (a file in the current tree matches both, or both match the
 same not-yet-existing path prefix). Patterns play no part: scheduling
-happens before any diff exists. A B3 ticket is never co-scheduled with a
-ticket that shares any zone with it.
+happens before any diff exists, so a zone with no `paths` (pattern-only)
+is never a scheduling zone. Lowerings do not affect zone membership. A B3
+ticket is never co-scheduled with a ticket that shares any zone with it.
 
 ## 7. Checklist ids and answers
 
@@ -247,7 +251,9 @@ The seven ids, each a file in this skill's references:
 **Items.** Every checklist item is one line matching
 `^- \*\*(?P<id>[A-Z]{2}-\d{2})\*\* ` — the item id in bold, then the
 failure mode and the test that catches it. Ids are stable: an item is
-never renumbered; a retired item keeps its id with the text `Retired.`
+never renumbered; a retired item keeps its line as
+`- **XX-NN** Retired.` (matching `^- \*\*[A-Z]{2}-\d{2}\*\* Retired\.$`) and
+is excluded from answering.
 
 **Answers.** An answered checklist is a text file with one line per item,
 each matching
