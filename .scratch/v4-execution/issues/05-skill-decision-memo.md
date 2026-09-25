@@ -1,7 +1,7 @@
 # 05 — skill decision memo
 
 Type: task
-Status: ready-for-agent
+Status: done
 Blocked by: —
 Tag: contract
 Blast: B1
