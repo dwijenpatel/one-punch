@@ -1,7 +1,7 @@
 # 08 — integrate script
 
 Type: task
-Status: ready-for-agent
+Status: done
 Blocked by: 02, 03, 04, 07
 Tag: contract
 Blast: B2 — the only path to the integration branch
