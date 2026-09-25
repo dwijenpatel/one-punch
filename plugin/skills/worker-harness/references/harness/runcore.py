@@ -409,7 +409,7 @@ def plan_round(
     launch = tuple((t, routes[t.id]) for t in batch)
     stop = None
     if not inflight and not launch and not parks:
-        held = any(s.phase in ("parked", "awaiting") for s in live.values())
+        held = any(s.phase in ("parked", "awaiting", "exited") for s in live.values())  # exited: integrate pending
         stop = "ALL-COOLING" if cooling else "ALL-PARKED" if held else "FRONTIER-EMPTY"
     return Round(launch, tuple(parks), stop)
 

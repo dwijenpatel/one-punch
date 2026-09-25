@@ -578,7 +578,8 @@ def report(e: Effort, view: View, run_active: bool, now: float) -> dict[str, Any
         "done": [t.id for t in view.tickets if t.status == "done"],
         "frontier": [t.id for t in core.frontier(view.tickets) if phase[t.id] not in BUSY],
         "in_flight": [{"ticket": t, "model": getattr(states[t].candidate, "model", None),
-                       "state": "running" if run_active else "interrupted (the next run tears it down and redoes it)"}
+                       "state": "worker exited; integrates on the next pass" if p == "exited" else
+                       "running" if run_active else "interrupted (the next run tears it down and redoes it)"}
                       for t, p in phase.items() if p in ("running", "exited")],
         "awaiting_operator": [{"ticket": t, "packet": states[t].packet} for t, p in phase.items() if p == "awaiting"],
         "parked": [{"ticket": t, "kind": states[t].park_kind, "reason": states[t].park_reason} for t, p in phase.items() if p == "parked"],

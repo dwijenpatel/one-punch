@@ -29,7 +29,7 @@ import runcore
 from checks.config import ConfigError
 from core import Blast, Candidate, Size, Tag, Ticket, Tier
 from integrate import Git, integrate_ticket, load_config
-from test_integrate import EFFORT, INTEG, Repo, isolated_git
+from test_integrate import BLAST_MAP, EFFORT, INTEG, Repo, isolated_git
 
 HERE = Path(__file__).resolve().parent
 EVENTS = f".scratch/{EFFORT}/events.jsonl"
@@ -45,7 +45,7 @@ parallel = {parallel}
 park_k = 2
 poll_s = 0.05
 worker_timeout_s = 120
-ladder = {{ T4 = [{{ tool = "mock", model = "mock-small" }}], T3 = [{{ tool = "mock", model = "mock-large" }}] }}
+ladder = {{ T4 = [{{ tool = "mock", model = "mock-small" }}], T3 = [{{ tool = "mock", model = "mock-large" }}], T2 = [{{ tool = "mock", model = "mock-mid" }}] }}
 """
 
 TICKET = """# {id} — ticket {id}
@@ -256,6 +256,24 @@ class RunEndToEnd(unittest.TestCase):
             self.assertEqual((relaunched["launch"], relaunched["model"], relaunched["failures"]), (3, "mock-small", 0))
             self.assertIn("stay inside Touches", Path(relaunched["bundle"], "instructions.md").read_text())
 
+    def test_blast_escalation_raises_the_ticket_and_retries_in_place(self) -> None:
+        core_zone = '\n[[zone]]\nname = "shared-core"\nlevel = "B2"\nwhy = "Shared core."\npaths = ["src/core/**"]\n'
+        with effort() as fx:
+            fx.repo.git("checkout", "-q", INTEG)
+            fx.repo.write("docs/blast-map.md", BLAST_MAP.replace('paths = ["src/auth/**"]\n', 'paths = ["src/auth/**"]\n' + core_zone))
+            fx.repo.commit("planner: shared-core zone (operator OK)")
+            fx.repo.git("checkout", "-q", "main")
+            fx.ticket("01", touches="src/core/**", scenario='work "src/core/x.py" "x = 1"; handoff DONE\n')
+            fx.scenario("01-a2", 'mkdir -p .scratch/demo/reviews/01; work .scratch/demo/reviews/01/spec-verdict.md "Verdict: pass"; handoff DONE\n')
+            code, out = fx.main("run")
+            self.assertEqual(code, 0, out)
+            events = fx.events()
+            self.assertEqual([e["outcome"] for e in events if e["event"] == "integrate"], ["BLAST-ESCALATION", "MERGED"])
+            ticket = fx.repo.git("show", f"{INTEG}:.scratch/{EFFORT}/issues/01-t.md")
+            self.assertIn("Blast: B2 — raised from B0 by the integrate blast detector", ticket)
+            self.assertEqual([(t["tier"], t["failures"]) for t in launches(events, "01")], [("T4", 0), ("T2", 0)], "re-routed at the raised floor; not a failure")
+            self.assertEqual(fx.status("01"), "done")
+
     def test_stop_file_drains_and_stops(self) -> None:
         with effort(parallel=1) as fx:
             fx.ticket("01", scenario='touch ../STOP; ' + DEFAULT_SCENARIO)
@@ -444,6 +462,8 @@ class PlanRound(unittest.TestCase):
         cold = runcore.plan_round([T("01")], runcore.fold_ledger(cooling), (), 4, 2, {Tier.T4: (SMALL,)}, 10.0, EMPTY_MAP, ())
         self.assertEqual(cold.stop, "ALL-COOLING")
         self.assertIsNone(self.plan([T("01")], [ev("launch", "01")], inflight=("01",)).stop)
+        exited = [ev("launch", "01"), ev("worker-exit", "01", ok=True)]
+        self.assertEqual(self.plan([T("01")], exited).stop, "ALL-PARKED", "a pending integrate is never 'milestone done'")
 
     def test_holds_b3_until_relaunched_and_parks_unroutable(self) -> None:
         self.assertEqual(self.plan([T("01", blast=Blast.B3)]).park, (("01", "b3-path", runcore.B3_HOLD),))
