@@ -495,8 +495,17 @@ one-clause why, no MUST/CRITICAL. Operator-owned; the planner proposes edits.
 | swallowed errors (bare/blind except, empty catch, unchecked errors) | cyclomatic/cognitive complexity above the repo's cap |
 | unused imports/variables, commented-out code, unused exports | clone-level duplication above threshold |
 | boolean flag parameters; > N parameters | inheritance depth > framework + 1 |
-| new mutable globals; mutable default arguments | — |
+| mutable global state without a `D-NNN` reference; mutable default arguments | — |
 | formatter drift | — |
+
+**Every hard-fail rule has a sanctioned exception, and the exception is a
+decision.** An absolute rule applied by every worker on every ticket hardens
+into "never", including where the rule is wrong. So any hard-fail rule can be
+waived at a specific site with `allow(<rule>): D-NNN` pointing at an active
+ledger row that says why. The planner owns those rows (principle 3), so a
+worker can't grant itself an exception. The ref check (§3.3) keeps the
+pointers honest, and retro counts exceptions per rule: many exceptions means
+the rule is mis-drawn.
 
 Language packs ship with the skill (ruff codes verified in C; eslint, pylint,
 clippy and Go rule names from recall — verified when a repo is wired, as a
@@ -615,7 +624,10 @@ Resolved by the operator 2026-09-24:
 - **Code standards in three layers** (§3.11): approved 2026-09-24; the
   Appendix A rule text awaits operator review. Optional experiment for Trial
   2: run a ticket subset with the Layer 1 section removed (Layers 2–3
-  unchanged) to measure what the prose itself buys (K open gap).
+  unchanged) to measure what the prose itself buys (K open gap). **Adopted by
+  the operator 2026-09-24** as part of Trial 2: tickets alternate with/without
+  the Layer 1 section by ticket number; compare lint warnings, Layer 3
+  findings, verify-fail rate and tokens per ticket.
 - **Megafile threshold:** 800 lines default, per-repo in `harness.toml`.
 - **`D-NNN` refs in tests:** encouraged, not checked.
 - **Worktrees:** `.worktrees/<ticket>`, git-ignored, created and removed by
@@ -671,8 +683,12 @@ the design is unchanged.
    rest where something can act on them.
 7. **Parse at the boundary.** Turn external input into precise types once, at
    the edge; inside, trust the types and skip re-validation.
-8. **Explicit and immutable.** Pass collaborators in; add no mutable globals,
-   singletons or module caches; don't mutate arguments.
+8. **Explicit dependencies, immutable data.** Functions get collaborators as
+   parameters rather than reaching for them. Module-level constants and
+   read-once config are fine. Process-wide resources (connection pools, HTTP
+   clients, metrics registries) are created once at startup and passed down.
+   A genuinely global mutable object is a design decision: it needs a
+   `D-NNN` entry. Don't mutate arguments.
 9. **Build what the ticket asks.** No speculative parameters, flags, config or
    one-implementation interfaces. Tests and clarity refactors within `Touches`
    are always in scope.
