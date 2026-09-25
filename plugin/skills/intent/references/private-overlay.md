@@ -1,5 +1,10 @@
 # Private overlay setup (fails closed)
 
+Conditional, not default: run this only when the `intent` skill's elicitation
+turned up an answer the operator wants kept off the public record (Tier 1) —
+never as a standing setup step for every effort. Ceremony is opt-in; most
+efforts never need this file.
+
 Goal: a `.private/` directory whose contents are structurally unpublishable
 from the main repo, while both repos replicate to remotes (no laptop SPOF).
 

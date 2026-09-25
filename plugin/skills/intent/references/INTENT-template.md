@@ -1,35 +1,48 @@
 # INTENT — <effort name>
 
-Captured: <date> · Revisit at: map-complete, contract, pre-build
-Privacy: this file's tier is <0/1/2>; per-item overrides marked inline.
+Captured: <date>
+Privacy: Tier 2 (tracked) by default. Items marked `[private]` live in
+`.private/INTENT.md` or were spoken-only instead.
 
-## Why this, why now
+## Goal
 
-<the why behind the why; what happens if it never ships>
+<what we're building, why now; what happens if it never ships>
 
-## Audiences
+## Done looks like
 
-<who sees or uses the result; users, readers, employers, communities, orgs>
+<the demo you'd show at the end to prove this shipped>
 
-## Success scenarios
+## Audience
 
-- Month-after-success: <what changed>
-- Second-order happy paths: <longshots worth designing for>
+<who uses or sees the result — users, readers, employers, communities, orgs>
 
-## Do not foreclose / regret test
+## Constraints
 
-<adjacent futures to keep open; what outcome would make this a regret>
+<stack, deadline, budget, hard requirements; a one-line learning-goal note
+here if the operator raised one unprompted — propose `learning-gates` to
+type it, don't table it here>
 
-## Learning goals (typed — see learning-gates)
+## Non-goals
 
-| Goal | Type | Target (binding) | Budget (operator tickets) |
-|---|---|---|---|
-| <domain> | conceptual / tradeoff-mastery / skill-acquisition / gap-closing | <bar> | <N> |
+<explicitly out of scope for this effort>
 
-## Derived priorities (Tier-2 echo lives in the map Notes)
+## Must-not-foreclose
 
-<the engineering-altitude consequences: P0s, constraints, named deliverables>
+<adjacent futures to keep open even though this effort won't build them>
 
-## Change log
+## Catastrophes
 
-- <date>: captured.
+<what would be catastrophic if this goes wrong — data loss or corruption, a
+security or privacy breach, money moved wrongly, users locked out, anything
+irreversible or silent. Feeds the effort's blast map.>
+
+## Known prior art / seeds
+
+<prior art, competitors, reference codebases, articles, people the operator
+already knows about — research starts from these, not from a blank search>
+
+## Risk register
+
+| R-n | Assumption | Why risky | Cheapest test | Kill/pivot criterion | Status |
+|---|---|---|---|---|---|
+| R-1 | | | | | open |
