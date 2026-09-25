@@ -1,7 +1,7 @@
 # 03 — skill blast radius
 
 Type: task
-Status: ready-for-agent
+Status: done
 Blocked by: —
 Tag: contract
 Blast: B1
