@@ -1,9 +1,11 @@
 # one-punch v4 — steer-then-swarm — planning document
 
-**Status: DRAFT — design approved in session 2026-09-24 (principles, half A,
-half B with the interactive session as planner, skill inventory); this written
-spec awaits operator review.** On ratification it becomes the execution
-authority for v4, and `pipeline.md` is amended to v4 by the first ticket.
+**Status: RATIFIED — operator, 2026-09-24 ("ratified"), after section-by-section
+review in session (principles; half A; half B with the interactive session as
+planner; build loop option C; blast radius; code standards; evidence-kit in
+the front half).** This document is the execution authority for v4;
+deviations during execution are recorded here with rationale. `pipeline.md`
+is amended to v4 by ticket 01.
 
 **Evidence base:** [../evidence/2026-09-24-v4-outside-evidence.md](../evidence/2026-09-24-v4-outside-evidence.md)
 — the ckb cold-start stall, Cursor's three swarm posts, superpowers 5.0.6–6.4.1
