@@ -11,9 +11,10 @@
 # Light mode (small or timeboxed efforts: tickets run as in-session workers
 # instead of `harness run --parallel N`) still reads this same file — every
 # finished ticket branch lands through `integrate.py <ticket>` run by hand.
-# See ../light-mode.md. The [run] table below is only read by `harness run`
-# itself; light mode never needs it, but keeping it filled in means the
-# effort can switch to `harness run` later with no config changes.
+# See ../light-mode.md. `integrate.py` itself never reads [run] below — but
+# `run.py resume` and `closure` do (every run.py subcommand refuses without
+# a valid [run] table), and light mode's planner uses `resume` between
+# hand-run integrates to see what's landed. Keep [run] filled in.
 
 [integrate]
 # The effort's short name: [A-Za-z0-9_.-] only. Expands into every

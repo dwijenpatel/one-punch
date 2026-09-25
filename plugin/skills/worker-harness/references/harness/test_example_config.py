@@ -1,14 +1,16 @@
 """The shipped example config (../harness-example.toml) must always parse
-through the real loaders. It is the example a planner copies for a fresh
-effort (#10, light mode), so it can never silently drift from what
-`checks.config.parse_config` and `runcore.parse_run_config` actually accept:
-a renamed or newly-required key here would break every effort that copied
-the example, so this test fails loudly first. Run from the harness
-directory: python -m unittest -v
+through the real loaders. It is the example a planner copies to stand up a
+fresh effort's harness.toml (worker-harness SKILL.md's Light mode section
+and references/light-mode.md point to it), so it can never silently drift
+from what `checks.config.parse_config` and `runcore.parse_run_config`
+actually accept: a renamed or newly-required key here would break every
+effort that copied the example, so this test fails loudly first. Run from
+the harness directory: python -m unittest -v
 """
 
 from __future__ import annotations
 
+import re
 import tomllib
 import unittest
 from pathlib import Path
@@ -72,6 +74,27 @@ def test_example_parses_through_both_real_loaders() -> None:
     for candidates in rc.ladder.values():
         for candidate in candidates:
             assert "fable" not in candidate.model.lower()
+
+
+_UNCOMMENT_LENS = re.compile(r"^# (lens(?:_smoke)? = .*)$", re.M)
+
+
+def test_example_lens_block_parses_once_uncommented() -> None:
+    """The commented-out `lens`/`lens_smoke` lines are never exercised by
+    the default-config test above (a comment isn't parsed), so a rename or
+    a new requirement in `parse_run_config`'s lens handling could drift
+    silently. Uncomment them the way an operator would and parse for real."""
+    text = _UNCOMMENT_LENS.sub(r"\1", _filled_text())
+    text = text.replace("<CODEX_MODEL_ID>", "gpt-lens")
+    assert "\nlens = " in text and "\nlens_smoke = " in text, "uncomment regex missed the lens lines"
+
+    data = tomllib.loads(text)
+    cfg = parse_config(data)
+    rc = parse_run_config(data, cfg.effort)
+
+    assert rc.lens is not None
+    assert (rc.lens.tool, rc.lens.model) == ("codex", "gpt-lens")
+    assert rc.lens_smoke == "test -f .scratch/m1/lens-smoke-ok"  # {effort} expands
 
 
 def test_example_effort_placeholder_is_load_bearing() -> None:
