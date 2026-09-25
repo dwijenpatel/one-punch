@@ -1,7 +1,7 @@
 ---
 name: steer
-description: "Front door for every effort. Steers a project from intent to merged milestones: H1 intent sitting; A1 parallel agent lanes (risk spikes, a walking skeleton or prototype — or, brownfield, a code survey with a blast-map proposal and characterization tests — prior-art reference dossiers with reuse modes, and a lake-first retrieval-grade evidence pass tied to open forks and risks); H2 decision memo; A2 compile (decision ledger, tickets with blast levels, isolate-the-blast, code-style and blast-map install, ticket-graph veto window); build handoff to the parallel worker harness; H3 milestone closure, report, fast-decay recheck and merge. `steer resume` reports where an effort stands from its on-disk artifacts. Use when beginning any new project-sized effort or milestone, and when returning to an effort after any gap (\"where were we?\"). The agent may propose steer when the operator describes project-sized work, but never enters it without the operator's yes."
-compatibility: "Requires git and shell access. Composes the intent, decision-memo, blast-radius, code-style, field-guide, spike, retro and worker-harness skills, the mattpocock-skills plugin (wayfinder, prototype, research, grilling, to-spec, to-tickets, code-review) and evidence-kit; detects each and prints install guidance when missing. Runs A1 lanes as concurrent background agents where the harness offers them, sequentially otherwise."
+description: "Front door for every effort. Steers a project from intent to merged milestones: H1 intent sitting; A1 parallel agent lanes (risk spikes, a walking skeleton or prototype — or, brownfield, a code survey with a blast-map proposal and characterization tests — prior-art dossiers with reuse modes, and a lake-first evidence pass tied to open forks and risks); H2 decision memo; A2 compile (decision ledger, tickets with blast levels, isolate-the-blast, the standing installs, ticket-graph veto window); build via the parallel worker harness or light mode; H3 closure (visual for UI), report, recheck and merge; a polish stage for operator-reported fixes; retro. `steer resume` reports where an effort stands from its on-disk artifacts. Use when beginning any new project-sized effort or milestone, and when returning to an effort after any gap (\"where were we?\"). The agent may propose steer when the operator describes project-sized work, but never enters it without the operator's yes."
+compatibility: "Requires git and shell access. Composes the intent, decision-memo, blast-radius, code-style, field-guide, spike, retro and worker-harness skills, the mattpocock-skills plugin (wayfinder, prototype, research, grilling, to-spec, to-tickets, tdd, code-review) and evidence-kit; detects each and prints install guidance when missing. Runs A1 lanes as concurrent background agents where the harness offers them, sequentially otherwise."
 license: MIT
 ---
 
@@ -9,9 +9,9 @@ license: MIT
 
 Agents do discovery in parallel before the operator is asked anything
 evidence could inform; the operator spends attention in a few dense sittings
-on forks only; a planner that never implements turns ratified decisions into
-explicit tickets; a harness builds them; scrutiny at every stage follows
-blast radius.
+on forks only; a planner that never implements (one narrow polish exception,
+below) turns ratified decisions into explicit tickets; a harness builds them;
+scrutiny at every stage follows blast radius.
 
 This skill owns the **sequence and the artifacts between stages**. Each stage
 invokes the skill that owns its content — never restate that skill's rules
@@ -23,9 +23,11 @@ here or in a brief; name it and invoke it.
 | **H1** intent | operator sitting | `intent` | `INTENT.md` |
 | **A1** fan-out | ≤4 agents | `spike`, `prototype`, `blast-radius`, `field-guide`, `research`, evidence-kit, `wayfinder` (planner's private map) | lane briefs, findings, dossiers |
 | **H2** decisions | operator sitting | `decision-memo` (+ `grilling` through it) | memo, ledger rows, ratified blast map |
-| **A2** compile | planner | `to-spec` (optional), `to-tickets`, `blast-radius`, `code-style`, `field-guide` | tickets, blast map, style section, ticket graph, integration branch |
+| **A2** compile | planner | `to-spec` (optional), `to-tickets`, `blast-radius`, `code-style`, `field-guide`, `worker-harness` | tickets, blast map, style section, field guide, harness configuration, ticket graph, integration branch |
 | **Build** | harness + workers | `worker-harness` | merges, handoffs, harness ledger |
-| **H3** milestone | operator sitting | `code-review`, evidence-kit, `decision-memo`, `retro` | milestone report, mini-memo, retro memo |
+| **H3** milestone | operator sitting | `code-review`, evidence-kit, `decision-memo` | milestone report, visual-closure screenshots, mini-memo |
+| **Polish** | operator reports, planner or workers fix | `tdd`, `worker-harness` | polish log, ledger rows, regression cases |
+| **Retro** | planner | `retro` | retro memo |
 
 ## Entry and ceremony
 
@@ -39,7 +41,8 @@ here or in a brief; name it and invoke it.
   corpus (evidence-kit scaffold; only when the effort has a lasting stake in
   the answers), `learning-gates` (only when INTENT.md names a learning goal),
   and `contract-review` (only when the operator points it at a contract).
-  Propose with a one-line reason; enter only on a yes.
+  Propose with a one-line reason; enter only on a yes. The A2 installs are
+  not ceremony: they are one automatic step, never proposed, never skipped.
 - Some composed skills are marked operator-invoked upstream. Treat that gate
   as advisory: judge it by what it is for. If this pipeline already serves
   that purpose (the ticket-graph veto window stands in for a
@@ -48,6 +51,12 @@ here or in a brief; name it and invoke it.
   call in the effort log. Never substitute a paraphrase of its steps.
 - Name the model on every agent dispatch — lanes, reviewers, workers. A
   dispatch that silently inherits the session's model is a defect.
+- **Links handed to the operator are verified links.** Any list of links or
+  URLs to try — the H2 demo, the H3 sitting, polish, or an ad-hoc request —
+  is generated from an executed check that each link exhibits what its label
+  says (for a UI effort, the browser walk's passing cases). A link no
+  executed check verified is not offered; a label promises no more than its
+  check asserted (an unstyled skeleton is labelled a skeleton).
 
 ## Effort layout
 
@@ -71,7 +80,9 @@ AGENTS.md → "Code style" section   code-style Layer 1
     memo.md                        H2 decision memo (decision-memo template)
     ticket-graph.md                A2 veto-window summary
     report.md                      H3 milestone report
+    closure/<variant>.png          H3 desktop screenshots (UI efforts)
     h3-memo.md                     H3 mini-memo (decision-memo, when forks arose)
+    polish.md                      polish log
 ```
 
 Milestones are named `m1`, `m2`, …; the first milestone's memo is the H2
@@ -103,8 +114,9 @@ harness: [references/prerequisites.md](references/prerequisites.md).
    mid-sitting. A version check that cannot be performed in this harness is
    reported as **unchecked**, never assumed current.
 5. **Worker harness runnable** (checked now, needed at Build): the
-   `worker-harness` skill's own requirements. Missing → note it; the build
-   degrades to sequential tickets in the session.
+   `worker-harness` skill's own requirements. A missing launcher CLI → note
+   it; the build degrades to light mode (see Build). Light mode still needs
+   `integrate` itself to run.
 
 ## H1 — intent sitting
 
@@ -167,7 +179,8 @@ Invoke `decision-memo` for the H2 sitting. Steer's part is the inputs and the
 filing around it:
 
 1. Draft the memo at `milestones/<m>/memo.md` from the decision-memo
-   template, linking every lane output: skeleton or survey (demo), spike
+   template, linking every lane output: skeleton or survey (demo, with links
+   verified per the links rule above), spike
    transcripts (risk register), dossiers (reuse forks), holdings (evidence
    tiers), the blast-map draft (ratification).
 2. Run the sitting as `decision-memo` directs (its altitude rule, its
@@ -191,7 +204,10 @@ The planner turns ratified decisions into an explicit build. In order:
    explicit enough for a mid-tier worker to transcribe: constraints, numeric
    ranges, acceptance checks as commands in the machine-readable form the
    reference gives (closure runs nothing else), worked examples. A B3
-   ticket's `Touches` include its test paths. First
+   ticket's `Touches` include its test paths. A ticket that touches rendered
+   UI carries the browser walk the reference requires. A ticket that follows
+   a design or prior-art reference carries that lane's do-not-copy list in
+   its Constraints, verbatim. First
    tickets: greenfield hardens the skeleton, then cuts tracer bullets;
    brownfield lands the safety-net tests and prefactors at the seams ("make
    the change easy"), then slices.
@@ -203,22 +219,32 @@ The planner turns ratified decisions into an explicit build. In order:
 5. **Milestones.** A destination larger than one build batch (rule of thumb:
    more than 15 tickets or more than a day of worker time) splits into
    milestones; cut tickets for the current milestone only.
-6. **Install the standing artifacts** (each is a process surface the
-   operator owns):
-   - the ratified blast map, per `blast-radius`'s install step;
+6. **Install the standing artifacts — one automatic template step.** Every
+   effort, every size, light mode included: the planner installs all of
+   them, never proposes them as ceremony and never skips them. Each is a
+   process surface the operator owns; the operator ratifies the blast map's
+   levels at H2 or in the veto window, but the files are installed
+   regardless. Skipping any of them removes `integrate`'s checks: it cannot
+   run without its configuration and fails closed without a blast map, so
+   nothing stands between a worker's word and the integration branch.
+   - the blast map from `blast-radius`'s default pattern pack plus the
+     ratified zones, per its install step;
    - the `Code style` section in `AGENTS.md`, per `code-style` Layer 1 —
      brownfield adapts it to existing idioms with lint ratcheted; the first
      tickets wire Layer 2 into the project's verify commands;
    - the field guide file from `field-guide`'s template (seeded or empty);
-   - the worker harness and its configuration, per `worker-harness`: the
-     worktree directory (`.worktrees/` by default) is git-ignored before the
-     first run, and the configuration names the decorrelated B3 lens (`[run]
-     lens`, a model family other than the implementers') together with its
-     `lens_smoke` command — the lens is used only while that smoke passes,
-     else B3 lens reviews fall back to the top ladder rung. Keys and defaults:
-     that skill's configuration reference.
+   - the harness configuration, started from `worker-harness`'s example
+     configuration and filled with this project's verify commands; it names
+     the decorrelated B3 lens (`[run] lens`, a model family other than the
+     implementers') together with its `lens_smoke` command — the lens is
+     used only while that smoke passes, else B3 lens reviews fall back to the
+     top ladder rung. Keys and defaults: that skill's configuration
+     reference;
+   - the worktree directory (`.worktrees/` by default) git-ignored before the
+     first run.
 7. **Cut the integration branch** `integrate/<effort>` from `main`. `main`
-   changes only at H3.
+   changes only on the H3 merge decision (at the sitting, and again when
+   polish closes).
 8. **Ticket-graph summary — a veto window, not a gate.** Write
    `milestones/<m>/ticket-graph.md` per
    [references/ticket-graph-summary.md](references/ticket-graph-summary.md)
@@ -227,6 +253,13 @@ The planner turns ratified decisions into an explicit build. In order:
    the operator's next reply unless it raises an objection; when the
    operator has said they are stepping away, immediately — operator stop
    stays available throughout.
+   **All-≤B1 milestone: one turn.** When every ticket in the milestone is B0
+   or B1 and `decision-memo` held the recorded-defaults batch back for this
+   window, show that batch with the ticket graph in the same turn: one reply
+   both ratifies the defaults and releases the build. A reply that reopens a
+   default by ID holds the build until that default is resettled. If any
+   ticket came out B2 or higher, present the held batch as its own turn
+   first, then the graph.
 
 ## Build — hand off to the harness
 
@@ -234,8 +267,19 @@ Start the harness's parallel run as a background process from the planner
 session (`worker-harness`: `run --parallel N`, default 4) and let it notify
 the session when it stops. Scheduling, integration checks, blast escalation,
 salvage and stop conditions are the harness's; the planner never schedules
-by hand. Without background processes, run it in the foreground; without the
-harness, work tickets one at a time in dependency order.
+by hand. Without background processes, run it in the foreground.
+
+**Light mode — the sanctioned degrade** for a small or timeboxed effort, or
+when the harness's launchers are unavailable. Tickets are dispatched as
+in-session background workers, each in its own worktree on its own ticket
+branch, instead of the harness run. Every ticket still lands through
+`worker-harness`'s `integrate` script run by hand (that skill's "integrate by
+hand" section is the how; its preconditions apply unchanged): the script,
+not the planner or a worker, decides what lands. Everything else in this
+skill holds — A2's installs, ticket headers, H3 closure. Entering light mode
+is a ledger row in `docs/decisions.md` naming the reason. Without background
+workers, dispatch the same tickets one at a time in dependency order; they
+still land only through `integrate`.
 
 **Between runs** — steering happens here, never mid-run. When the run stops:
 
@@ -266,7 +310,12 @@ When the run stops with the milestone's frontier empty:
 1. **Closure.** Re-run every merged ticket's acceptance checks against the
    integration head (per-merge verify runs the suite, but ticket-specific
    checks ran only once). Any failure → a fixer ticket and back to Build;
-   H3 waits until closure is green.
+   H3 waits until closure is green. **Visual closure (UI efforts):** closure
+   also captures a desktop-width screenshot of each of the effort's variants
+   into `milestones/<m>/closure/`, and the planner inspects every one before
+   writing the report — a defect visible in a screenshot is a fixer ticket
+   like any red check. Green acceptance is not evidence of a fit rendered
+   page.
 2. **Milestone review.** mattpocock `code-review` over the milestone diff
    (integration head against `main`), its Standards axis carrying
    `code-style`'s Layer 3 rubric and the milestone's accumulated lint
@@ -277,13 +326,54 @@ When the run stops with the milestone's frontier empty:
    A changed fact becomes a fork or a ticket before acceptance.
 4. **Milestone report** at `milestones/<m>/report.md` from
    [references/milestone-report.md](references/milestone-report.md).
-5. **The sitting.** Demo the milestone running; walk the report; forks
-   unlocked by building go through `decision-memo`'s H3 mini-memo. The
-   operator accepts or redirects and decides the merge to `main`; perform
-   the merge only on that decision.
-6. **Retro.** Invoke `retro` for the milestone.
-7. **Next milestone.** A1 again with only lanes for new risks → H2 with only
-   newly visible forks → A2 → Build → H3. A new planner session per
+5. **The sitting.** Demo the milestone running, with the report's verified
+   links; walk the report; forks unlocked by building go through
+   `decision-memo`'s H3 mini-memo. The operator accepts or redirects and
+   decides the merge to `main`; perform the merge only on that decision.
+   Then open the polish log.
+
+## Polish — operator-reported fixes after H3
+
+A named stage between the H3 sitting and the retro. The operator exercises
+the merged milestone and reports defects; each report is a fix, handled
+under these rules. Open `milestones/<m>/polish.md` from
+[references/polish-log.md](references/polish-log.md) when the H3 sitting
+ends, and close it when the operator says polish is done (or has nothing to
+report).
+
+- **Who fixes.** A fix of at most one file and about 30 changed lines, in no
+  B2 or B3 zone, may land planner-direct — the one exception to the planner
+  never implementing. Anything larger, or in a B2/B3 zone, is a ticket
+  (`to-tickets`, full header) built by a worker and landed through
+  `integrate`, as at Build or in light mode.
+- **Regression case first.** Before the fix, add an e2e or regression case
+  that reproduces the reported symptom and run it to see it fail; then make
+  the fix that turns it green — the `tdd` skill's loop. The failing run is
+  recorded in the polish log; the integration branch receives the case and
+  the fix together, green. For a worker ticket, the case is part of its
+  acceptance.
+- **Re-check the neighbours.** After the fix, run the full verify suite and
+  the full browser walk — every variant at both widths, not only the one
+  reported. A fix for one case routinely breaks the boundary cases beside it
+  (zero, one and many items; the other width).
+- **Ledger it.** Every fix is a row in `docs/decisions.md` (a fix that
+  changes an earlier default supersedes that row, per `decision-memo`'s
+  filing) and a row in the polish log. Each report is an unplanned operator
+  intervention; `retro` reads the log.
+- **Where fixes land.** On the integration branch — worker fixes through
+  `integrate`, planner-direct fixes committed after the suite and walk are
+  green. When polish closes, `main` is fast-forwarded to the integration head
+  under the H3 merge decision (no merge decision, no fast-forward).
+- **Not polish.** A request that adds behaviour rather than fixing a
+  reported defect is new scope: a ticket regardless of size, or the next
+  milestone.
+
+## Retro and the next milestone
+
+1. **Retro.** Invoke `retro` for the milestone once polish has closed; the
+   polish log and its ledger rows are among its inputs.
+2. **Next milestone.** A1 again with only lanes for new risks → H2 with only
+   newly visible forks → A2 → Build → H3 → Polish. A new planner session per
    milestone is normal; `steer resume` rebuilds state from disk.
 
 ## `steer resume` — where is this effort?
@@ -304,7 +394,10 @@ it, and the next action; never guess from memory.
 | harness ledger has events | Build | invoke `worker-harness` `resume` and relay its report |
 | frontier empty, no `report.md` | H3 due | closure, review, report |
 | `report.md` without an operator decision | H3 sitting pending | the sitting |
-| `report.md` with merge decision | milestone closed | next milestone, or effort done |
+| `report.md` with an operator decision, no `polish.md` | polish due | open the polish log; ask the operator for reports |
+| `polish.md` with `Status: open` | Polish | continue the open fixes; close when the operator says done |
+| `polish.md` closed, report's `Retro memo:` unfilled | retro due | invoke `retro` |
+| report's `Retro memo:` filled | milestone closed | next milestone, or effort done |
 
 Alongside the stage, list: risk-register rows still open, forks awaiting the
 operator, parked tickets with their `Decisions needed:`, B3 diffs awaiting

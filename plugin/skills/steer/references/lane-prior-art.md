@@ -44,6 +44,19 @@ When a candidate is ruled out early (wrong license, abandoned, solves a
 different problem), record it in one line in the findings with the reason —
 negative results save the next search.
 
+## Borrowed style: tokens and structure only
+
+A reference whose look or flow we borrow — a codebase, or a product or site
+with no code to clone (a design reference) — contributes **design tokens**
+(spacing, type scale, colour roles, density) and **structure** (layout,
+information hierarchy, component patterns, interaction flow) only. Its
+**brand terms, badges and program names** — membership badges, "X's Choice"
+labels, named programs, trademarks, its own marketing copy — are never
+copied. List every one you see in the findings' do-not-copy list; A2 carries
+that list verbatim into the Constraints of every ticket that follows the
+reference. A design reference gets no clone or dossier: record it in the
+findings' design-references table.
+
 Use the mattpocock `research` skill's primary-source discipline for any
 claim about a candidate that the code itself doesn't show (production users,
 maintenance status); cite the source.
@@ -54,6 +67,9 @@ Write `milestones/<m>/a1/prior-art-findings.md`:
 
 ```
 | Problem area | Serves | Candidates with dossiers | Recommended reuse mode | Dossier |
+Design references: | Reference | Serves | Tokens taken | Structure taken |
+Do not copy: <every brand term, badge and program name seen, one per line,
+              with the reference it belongs to — or "none seen">
 Ruled out: <candidate — one-line reason>
 Absence claims: <"found nothing for X" — with the searches run and the date;
                  the operator confirms or contradicts these at H2>

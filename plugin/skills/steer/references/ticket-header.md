@@ -56,6 +56,35 @@ After the header, in this order:
    never re-run.
 5. **Worked examples with exact values** — input, expected output.
 
+## Tickets that touch rendered UI
+
+Acceptance that asserts presence — a marker class, an element, a string in
+the served HTML — passes on a page that renders wrong. A ticket that touches
+rendered UI therefore carries, among its acceptance commands, a **browser
+walk**: a Playwright script or an equivalent headless-browser check,
+invoked as a command so closure re-runs it.
+
+- **Variants.** The walk covers every one of the effort's example URLs and
+  variants. The planner lists them once at A2 — each a URL (or route plus
+  state), a label, and its defining behaviour in one sentence — in the first
+  UI ticket, which creates the walk; later UI tickets extend it and put its
+  path in their `Touches`. The same list, with its passing results, is what
+  links handed to the operator are generated from.
+- **Two widths.** Every variant is walked at desktop width (about 1280px) and
+  at phone width (about 375px).
+- **Defining behaviour, not presence.** Each variant's assertion checks what
+  makes it that variant: a comparison view lays the compared items out side
+  by side with aligned attributes; a strip spans the width of the grid below
+  it; no image overflows its card at either width; a filter changes which
+  items render. Asserting that the element exists is not acceptance.
+- **Boundary cases are variants.** Where a layout depends on a count, the
+  walk includes the zero, one and many cases.
+
+```
+Acceptance:
+  npx playwright test e2e/variants.spec.ts
+```
+
 Explicitness is the cost lever: a `code-complete` ticket a mid-tier worker
 can transcribe is cheaper than a vague one a top-tier worker must interpret.
 

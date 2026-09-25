@@ -32,15 +32,25 @@ is a small patch to its output, not a new sitting.
 
 ## The opening — concise, conversational
 
+**Restate the scope before asking.** First read what the effort already
+states — the repo's README, a task brief, the operator's kickoff message.
+When one exists, restate the task's scope back in one or two lines, naming
+every in-scope surface it lists (all the pages, endpoints, commands or
+audiences — not the first one), and ask only what it leaves open. A question
+the brief already answers is a framing error, not a follow-up. When no
+brief exists, say so in the opening and start from the operator's words.
+
 The question list below is YOUR checklist, never a pasted wall of text. Open
-in three lines or fewer: what this is, that candor is safe, then question 1
-alone. Example shape:
+in a few lines: what this is, that candor is safe, the scope restatement
+when there is a brief, then the first question the brief leaves open, alone.
+Example shape:
 
 > Before we plan: a few open questions, one at a time, about fifteen minutes
 > total. Be as candid as you can — embarrassing or self-interested reasons are
 > exactly the useful ones, and if anything feels too exposed to write down,
-> say so and it stays out of the file. First: what are we building, why now,
-> and what does *done* look like?
+> say so and it stays out of the file. From the README: the CLI and the HTTP
+> API are both in scope, sharing one config format. What's open is why now,
+> and what *done* looks like — the demo you'd show?
 
 One question per turn, threading from answers. Never enumerate the full list
 upfront, and never open with the privacy tier menu — that surfaces later,

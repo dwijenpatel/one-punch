@@ -99,6 +99,14 @@ Compile and walk the operator through, in order:
    ratification at once (the operator reopens any single one by ID rather
    than approving them one at a time); defaults that touch a **B2** zone are
    flagged inline so they don't scroll past unnoticed.
+   **Hold the batch for the build veto window** when the milestone will
+   likely be all B0/B1 — no default is B2-flagged and no fork this sitting
+   was B2 or higher — and the orchestrating pipeline ends compilation with a
+   ticket-graph veto window: the batch is then shown with the ticket graph
+   in one turn, and one reply both ratifies it and releases the build. If
+   any ticket comes out B2 or higher, the held batch is presented as its own
+   turn first. Tell the operator at the end of the sitting that the
+   defaults will arrive with the ticket graph.
 
 Close with a **not-yet-specified list**: items that are genuinely undecidable
 now. Name the milestone that will make each one decidable. Fog stays fog —
@@ -137,6 +145,14 @@ not-yet-specified list are meant to be skimmed as a list, not asked
 question-by-question, since neither is a question. Never enumerate the full
 fork list up front; the operator sees fork *n+1* after answering fork *n*,
 and sees the whole defaults batch at once only when it's time to ratify it.
+
+**Low-blast forks may share a turn.** Up to three forks go in one turn when
+every fork in that batch is B0 or B1 and none is a one-way door — so a reuse
+fork never qualifies. Take them consecutively in fan-out order, and never
+batch a fork whose options depend on another answer in the same batch. B2
+and B3 forks and every one-way door stay one per turn. The governing test
+still applies to each fork in a batch: every one must be a question the
+operator is glad they were asked.
 
 ## Filing
 

@@ -23,10 +23,20 @@ reply unless you object | now — you said you are stepping away>.
 Critical path: <01 → 04 → 07> (<n> tickets)
 First batch (disjoint Touches): <01, 02, 03, 05>
 
-Installed this A2 (operator-owned surfaces — object to any):
+Installed this A2 (operator-owned surfaces — always installed; object to
+any content, e.g. a blast-map level):
 - blast map: <new | changed zones: …>
 - Code style section in AGENTS.md: <installed | unchanged | adapted: …>
 - field guide: <empty | seeded with n entries from the survey>
+- harness configuration: <installed from the example | unchanged | changed: …>
+- worktree directory git-ignored: <yes>
+- build mode: <harness run | light mode — ledger row D-NNN>
+
+Recorded defaults — only when every ticket above is B0/B1 and the H2
+sitting held the batch for this window; otherwise omit this block:
+- D-NNN — <decision> — <one-line rationale>
+Your reply ratifies these and releases the build; reopen any by ID (that
+holds the build until it is resettled).
 
 Not in this milestone: <what the next milestone will take, one line>
 ```
@@ -39,3 +49,7 @@ Checks before showing it:
 - B3 count is small relative to the milestone; a high share means the
   seams need recutting before the operator sees it.
 - No ledger ID appears in two `Decides` lines.
+- A recorded-defaults block appears only when every ticket is B0 or B1.
+- Every ticket touching rendered UI has a browser walk among its acceptance
+  commands; every ticket following a design or prior-art reference carries
+  the do-not-copy list.

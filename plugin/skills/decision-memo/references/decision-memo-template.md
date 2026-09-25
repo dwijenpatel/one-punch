@@ -100,6 +100,8 @@ than approving them one at a time. Rows touching a B2 zone are flagged.
 | D-<NNN> | <craft decision> | <one line> | — |
 | D-<NNN> | <craft decision touching a B2 zone> | <one line> | **B2** |
 
+**Presented:** <in this sitting / held for the ticket-graph veto window —
+no B2 flag, no B2+ fork>
 **Operator response to the batch:** <ratified as-is / reopened: D-<NNN> —
 new answer and why>
 

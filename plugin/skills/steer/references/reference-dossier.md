@@ -49,6 +49,10 @@ correctness. Each line below cites its source.
   collides with>
 - **Blast zones it would touch:** <levels, from the blast-map draft — B2/B3
   reuse prefers a vetted reference; say whether this one qualifies>
+- **Borrowable:** <design tokens and structure we may take from it>
+- **Do not copy:** <its brand terms, badges, program names and marketing
+  copy, one per line — carried into the findings' do-not-copy list; "none
+  seen" if none>
 
 ## Recommended reuse mode
 

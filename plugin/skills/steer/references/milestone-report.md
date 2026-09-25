@@ -1,7 +1,8 @@
 # Milestone report — H3
 
-Written to `milestones/<m>/report.md` after closure, milestone review and the
-fast-decay recheck, and walked with the operator at the H3 sitting. Every
+Written to `milestones/<m>/report.md` after closure (visual closure included,
+for UI efforts), milestone review and the fast-decay recheck, and walked with
+the operator at the H3 sitting. Every
 row links its evidence; a missing artifact is written `not recorded`, never
 filled from memory. Forks unlocked by building are not decided here — they go
 to the `decision-memo` H3 mini-memo, linked below.
@@ -15,10 +16,20 @@ Tickets merged: <n> · parked: <n> · still open: <n>
 ## Demo
 <what runs and the exact command to run it>
 
+Links to try (each verified by an executed check; unverified links are not listed):
+| Link | Label | Check that verified it | Result |
+|---|---|---|---|
+
 ## Closure — every merged ticket's acceptance checks, re-run on the integration head
 | Ticket | Acceptance command | Result on head | If failed: fixer ticket |
 |---|---|---|---|
 Closure: green | red (H3 waits; fixer tickets cut: <…>)
+
+## Visual closure (UI efforts; otherwise "not a UI effort")
+| Variant | URL | Defining behaviour | Browser walk, desktop / ~375px | Desktop screenshot | Planner inspection |
+|---|---|---|---|---|---|
+| <label> | <url> | <one sentence> | pass / pass | closure/<variant>.png | fit | defect → fixer ticket <NN> |
+Screenshots inspected by the planner before this report: yes
 
 ## B2 and B3 changes
 | Ticket | Declared → effective blast | Evidence |
@@ -50,5 +61,6 @@ Field-guide entries curated: <added n, promoted n, pruned n>
 Mini-memo (forks unlocked by building): <link to h3-memo.md | none>
 Decision: accept | redirect — <notes>
 Merge integrate/<effort> → main: yes (<date>) | no — <why>
-Retro memo: <link>
+Polish log: <link to polish.md>
+Retro memo: <link — filled after polish closes and retro runs>
 ```
