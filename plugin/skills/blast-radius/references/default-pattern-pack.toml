@@ -1,0 +1,419 @@
+# one-punch default blast-map pattern pack, version 1.
+#
+# Schema: blast-map-format.md (schema = 1). To install, copy this whole file
+# into the ```toml blast-map fence of the project's docs/blast-map.md and
+# append the project's own zones below it. The installed copy is the only
+# copy the harness reads; this file is the template.
+#
+# Levels are floors: a zone hit sets the minimum blast level of the change.
+# False positives cost one extra review and are accepted; lowering a level
+# is the operator's call, recorded as a [[lowering]] with a ledger ID.
+# Regexes are Python `re` syntax, matched per changed line (added or
+# removed) with re.search; case-insensitivity is written inline as (?i).
+
+schema = 1
+pack = "one-punch-default/1"
+
+# Prose files mention every sensitive word; patterns never scan them.
+# Path rules still apply to them.
+pattern_skip = [
+  "**/*.md", "**/*.markdown", "**/*.rst", "**/*.adoc", "**/*.txt",
+  "**/LICENSE*", "**/CHANGELOG*",
+]
+
+# ---------------------------------------------------------------------------
+# Process and rule surfaces (gate integrity). A worker that edits these
+# steers every later spawn or loosens the checks that judge it. Protected:
+# no [[lowering]] may target these zones.
+# ---------------------------------------------------------------------------
+
+[[zone]]
+name = "process-rules"
+level = "B3"
+protected = true
+why = "Agent instructions, decision ledger, blast map, field guide, harness config, tickets and the harness itself: editing them changes how every later change is judged."
+paths = [
+  "**/AGENTS.md", "**/CLAUDE.md", "**/GEMINI.md",
+  ".claude/**", ".agents/**", ".codex/**", ".cursor/**", ".cursorrules",
+  ".github/copilot-instructions.md", ".github/instructions/**",
+  "docs/blast-map.md", "docs/decisions.md", "docs/field-guide/**",
+  "**/harness.toml", ".scratch/**/harness/**", ".scratch/**/issues/**",
+  ".github/CODEOWNERS", "CODEOWNERS", "docs/CODEOWNERS",
+]
+
+[[zone]]
+name = "lint-config"
+level = "B3"
+protected = true
+why = "Lint, type-check, format and pre-commit configuration: the cheapest way for an agent to reach green is to loosen these."
+paths = [
+  "ruff.toml", "**/ruff.toml", "**/.ruff.toml", "**/.flake8", "**/mypy.ini", "**/.mypy.ini",
+  "**/.pylintrc", "**/pylintrc", "**/pyrightconfig.json", "**/.pre-commit-config.yaml",
+  "**/.eslintrc", "**/.eslintrc.*", "**/eslint.config.*", "**/.prettierrc", "**/.prettierrc.*",
+  "**/prettier.config.*", "**/biome.json", "**/biome.jsonc", "**/tsconfig*.json",
+  "**/.golangci.yml", "**/.golangci.yaml", "**/rustfmt.toml", "**/.rustfmt.toml",
+  "**/clippy.toml", "**/.clippy.toml", "**/.rubocop.yml", "**/.swiftlint.yml",
+  "**/.clang-format", "**/.clang-tidy", "**/.editorconfig", "**/.stylelintrc*",
+  "**/.husky/**", "**/.githooks/**", "**/lefthook.yml", "**/lefthook.yaml",
+]
+
+  # Lint/test config embedded in multi-purpose manifests. Per-line matching
+  # catches section headers and the loosening keys themselves.
+  [[zone.pattern]]
+  regex = '(?i)^\s*\[tool\.(ruff|mypy|pylint|black|isort|pytest|coverage|pyright|flake8|pyflakes)\b'
+  files = ["**/pyproject.toml"]
+  match = ['[tool.ruff.lint]', '[tool.mypy]']
+  nomatch = ['[project]', '[tool.uv]']
+
+  [[zone.pattern]]
+  regex = '^\s*(select|extend-select|ignore|extend-ignore|per-file-ignores|exclude|extend-exclude|strict|disallow_[a-z_]+|disable_error_code|warn_[a-z_]+|ignore_missing_imports|ignore_errors|fail_under|fail-under|addopts|testpaths|python_files|norecursedirs|typeCheckingMode|reportMissingImports)\s*='
+  files = ["**/pyproject.toml", "**/setup.cfg", "**/tox.ini", "**/.coveragerc"]
+  match = ['ignore = ["E501"]', 'strict = false', 'addopts = "-x -q"']
+  nomatch = ['version = "1.2.0"', 'dependencies = [']
+
+  [[zone.pattern]]
+  regex = '"(eslintConfig|prettier|stylelint|jest|vitest|lint-staged|husky)"\s*:|"(test|lint|typecheck|type-check|check|verify|ci|format|pretest|posttest)(:[\w-]+)?"\s*:'
+  files = ["**/package.json"]
+  match = ['    "test": "vitest run",', '  "eslintConfig": {', '    "lint:fix": "eslint ."']
+  nomatch = ['    "react": "^19.0.0",', '    "build": "vite build",']
+
+[[zone]]
+name = "ci-verify"
+level = "B3"
+protected = true
+why = "CI workflows and build-file verify targets are the repo's verify commands on the remote; a skipped test or dropped job passes silently."
+paths = [
+  ".github/workflows/**", ".github/actions/**", ".gitlab-ci.yml", ".gitlab/ci/**",
+  ".circleci/**", ".buildkite/**", "Jenkinsfile", "**/Jenkinsfile",
+  "azure-pipelines.yml", "bitbucket-pipelines.yml", ".travis.yml", ".woodpecker/**",
+  ".woodpecker.yml", ".drone.yml",
+]
+
+  [[zone.pattern]]
+  regex = '^[\w.-]*(test|lint|check|verify|typecheck|ci|fmt|format)[\w.-]*\s*:(?!=)'
+  files = ["**/Makefile", "**/makefile", "**/GNUmakefile", "**/*.mk", "**/justfile", "**/Justfile", "**/.justfile"]
+  match = ['test: build', 'lint:', 'check-types: deps']
+  nomatch = ['build: deps', 'TEST_FLAGS := -v', '	pytest -q']
+
+# ---------------------------------------------------------------------------
+# Build, dependencies, deploy.
+# ---------------------------------------------------------------------------
+
+[[zone]]
+name = "build-config"
+level = "B2"
+why = "Build configuration has wide fan-in: every module and every later ticket builds through it."
+paths = [
+  "**/Makefile", "**/makefile", "**/GNUmakefile", "**/*.mk", "**/justfile", "**/Justfile",
+  "**/Dockerfile", "**/Dockerfile.*", "**/*.dockerfile", "**/.dockerignore",
+  "**/docker-compose*.yml", "**/docker-compose*.yaml", "**/compose.yml", "**/compose.yaml",
+  "**/webpack.config.*", "**/vite.config.*", "**/rollup.config.*", "**/tsup.config.*",
+  "**/babel.config.*", "**/.babelrc", "**/next.config.*", "**/turbo.json", "**/nx.json",
+  "**/build.gradle", "**/build.gradle.kts", "**/settings.gradle", "**/settings.gradle.kts",
+  "**/CMakeLists.txt", "**/meson.build", "**/BUILD", "**/BUILD.bazel", "**/WORKSPACE",
+  "**/MODULE.bazel", "**/build.rs", "**/setup.py", "**/Rakefile",
+]
+
+[[zone]]
+name = "dependency-manifests"
+level = "B2"
+why = "Dependency upgrades and additions change behavior everywhere the dependency is used, often without a failing test."
+paths = [
+  "**/package.json", "**/package-lock.json", "**/npm-shrinkwrap.json", "**/pnpm-lock.yaml",
+  "**/pnpm-workspace.yaml", "**/yarn.lock", "**/bun.lockb", "**/bun.lock",
+  "**/pyproject.toml", "**/uv.lock", "**/poetry.lock", "**/Pipfile", "**/Pipfile.lock",
+  "**/requirements*.txt", "**/requirements/**", "**/constraints*.txt", "**/setup.cfg",
+  "**/Cargo.toml", "**/Cargo.lock", "**/go.mod", "**/go.sum", "**/go.work",
+  "**/Gemfile", "**/Gemfile.lock", "**/*.gemspec", "**/pom.xml", "**/gradle.lockfile",
+  "**/*.csproj", "**/packages.lock.json", "**/Directory.Packages.props",
+  "**/composer.json", "**/composer.lock", "**/mix.exs", "**/mix.lock",
+  "**/Package.swift", "**/Package.resolved", "**/Podfile", "**/Podfile.lock",
+  "**/pubspec.yaml", "**/pubspec.lock", "**/deno.json", "**/deno.lock",
+]
+
+[[zone]]
+name = "deploy-infra"
+level = "B3"
+why = "Deploy and infrastructure definitions act on live systems; mistakes are irreversible or outage-shaped and rarely covered by tests."
+paths = [
+  "**/*.tf", "**/*.tfvars", "**/*.tf.json", "**/.terraform.lock.hcl", "**/terraform/**",
+  "**/terragrunt.hcl", "**/Pulumi.yaml", "**/Pulumi.*.yaml", "**/cdk.json",
+  "**/k8s/**", "**/kubernetes/**", "**/helm/**", "**/charts/**", "**/kustomization.yaml",
+  "**/kustomization.yml", "**/skaffold.yaml", "**/ansible/**", "**/playbooks/**",
+  "deploy/**", "deployment/**", "infra/**", "infrastructure/**", "ops/**",
+  "**/serverless.yml", "**/serverless.yaml", "**/fly.toml", "**/vercel.json",
+  "**/netlify.toml", "**/render.yaml", "**/app.yaml", "**/Procfile", "**/railway.json",
+  "**/wrangler.toml", "**/wrangler.json", "**/cloudbuild.yaml", "**/appspec.yml",
+  "**/nginx.conf", "**/nginx/**", "**/Caddyfile",
+]
+
+# ---------------------------------------------------------------------------
+# Exposure: authentication, authorization, secrets, crypto, PII.
+# ---------------------------------------------------------------------------
+
+[[zone]]
+name = "auth-sessions"
+level = "B3"
+checklist = "auth-sessions"
+why = "Authentication, sessions, credentials and tokens: a wrong check fails open and passes every happy-path test."
+paths = [
+  "**/auth/**", "**/authn/**", "**/authentication/**", "**/session/**", "**/sessions/**",
+  "**/login/**", "**/oauth/**", "**/oidc/**", "**/saml/**", "**/sso/**", "**/identity/**",
+  "**/middleware/auth*", "**/*_auth.*", "**/auth_*.*", "**/auth.*",
+]
+
+  [[zone.pattern]]
+  regex = '(?i)auth(?!or(s?\b|s?_|ed|ing|ship|it))'
+  match = ['@require_auth', 'def authenticate(user, pw):', 'class OAuthClient:', 'raise Unauthorized()', 'authorization_header = h']
+  nomatch = ['author = "Ada"', 'git log --author', 'authority_score = 3', 'authoritative_source = s', 'authors_list = []']
+
+  [[zone.pattern]]
+  regex = '(?i)passw(or)?d|passphrase|\bpwd\b|credential'
+  match = ['user.password_hash = h', 'if not check_passwd(p):', 'load_credentials()']
+  nomatch = ['cwd = os.getcwd()', 'pass  # nothing']
+
+  [[zone.pattern]]
+  regex = '(?i)(access|refresh|id|auth|bearer|csrf|xsrf|api|session|reset|verify|verification|magic)[_-]?token|token[_-]?(secret|expir|valid|verif|revok|rotat)|\bjwt\b|jsonwebtoken|\bjwk|\bjws\b|\bjwe\b|\bbearer\b'
+  match = ['refresh_token = issue()', 'accessToken: string', 'claims = jwt.decode(raw, key)', 'headers["Authorization"] = f"Bearer {t}"']
+  nomatch = ['tokens = lexer.tokenize(src)', 'next_token()']
+
+  [[zone.pattern]]
+  regex = '(?i)session[_-]?(id|key|token|store|cookie|fixation|expir|timeout)|\bsessionid\b|set-cookie|\bcookies?\b|\bcsrf\b|\bxsrf\b|samesite|httponly|\bmfa\b|\b2fa\b|\btotp\b|\bwebauthn\b|\bpasskey|\bsignin\b|sign_in|\blogin\b|\blogout\b'
+  match = ['session_id = request.cookies["sid"]', 'response.set_cookie("sid", sid, httponly=True)', 'def login(req):']
+  nomatch = ['http_session = requests.Session()', 'plugin_login_page_text = 1']
+
+[[zone]]
+name = "authz-tenancy"
+level = "B3"
+checklist = "authz-tenancy"
+why = "Authorization, roles and tenant boundaries: a missing or removed check leaks data silently."
+paths = [
+  "**/authz/**", "**/authorization/**", "**/permissions/**", "**/permission/**",
+  "**/rbac/**", "**/abac/**", "**/acl/**", "**/policies/**", "**/policy/**",
+  "**/tenancy/**", "**/tenants/**", "**/tenant/**", "**/access_control/**",
+]
+
+  [[zone.pattern]]
+  regex = '(?i)permission(?!error)|privilege|\bacl\b|\brbac\b|\babac\b|is_?admin|is_?staff|is_?superuser|is_?owner|has_?perm|has_?role|can_?(access|read|write|edit|view|delete|manage)\b|@?(login|permission|role)_required|requires?_(role|perm|scope)|check_access|access_control|forbidden|\b403\b'
+  match = ['if not user.has_perm("orders.view"):', 'isAdmin && showPanel()', '@permission_required("x")', 'raise Forbidden()']
+  nomatch = ['chmod 644 file', 'admin_email_template = "x"', 'except (ProcessLookupError, PermissionError):']
+
+  [[zone.pattern]]
+  regex = '(?i)(has|requires?|check|assign|grant|revoke)_?roles?\b|\buser\.roles?\b|roles\.(includes|contains|has|index_?of)\b|\brole_[a-z]+\s*=|\broles?\s*(==|!=)|\broles?\s+(not\s+)?in\s|@roles\b|roleguard|role_required'
+  match = ['user.role == "admin"', 'if not has_role(u, "admin"):', 'userRoles.includes("admin")', 'ROLE_ADMIN = 1', 'grant_role(u, r)']
+  nomatch = ['controller = Controller()', 'enrolled = True', '{"role": "user", "content": msg}', 'role = str(params.get("role", ""))']
+
+  [[zone.pattern]]
+  regex = '(?i)tenant|org(anization|anisation)?_?id\b|account_?id\b|owner_?id\b|workspace_?id\b|row[_ ]level[_ ]security|\brls\b|\bcreate policy\b'
+  match = ['q.filter(tenant_id=ctx.tenant)', 'where orgId = $1', 'owner_id = request.user.id']
+  nomatch = ['organization_name_label = "Org"']
+
+[[zone]]
+name = "secrets-crypto"
+level = "B3"
+checklist = "secrets-crypto"
+why = "Secrets and cryptography: misuse is invisible to functional tests and exposure is irreversible."
+paths = [
+  "**/crypto/**", "**/cryptography/**", "**/secrets/**", "**/keys/**", "**/certs/**",
+  "**/.env", "**/.env.*", "**/*.pem", "**/*.key", "**/*.p12", "**/*.pfx", "**/*.jks",
+  "**/*.keystore", "**/id_rsa*", "**/id_ed25519*", "**/*credentials*", "**/*secret*",
+  "**/.npmrc", "**/.pypirc", "**/.netrc", "**/kubeconfig*", "**/*.kdbx",
+]
+
+  [[zone.pattern]]
+  regex = '^\s*(from|import)\s+(cryptography|Crypto|Cryptodome|nacl|hashlib|hmac|secrets|ssl|jwt|jose|authlib|passlib|bcrypt|argon2|itsdangerous|keyring|OpenSSL)\b'
+  match = ['from cryptography.fernet import Fernet', 'import hashlib', 'import secrets']
+  nomatch = ['from myapp.crypto_utils_docs import x', 'import json']
+
+  [[zone.pattern]]
+  regex = '''(require\(|from\s+|import\s+)["'](node:)?(crypto|bcrypt|bcryptjs|argon2|jsonwebtoken|jose|tweetnacl|libsodium[\w-]*|crypto-js|node-forge|@noble/[\w-]+|openpgp)["'/]'''
+  match = ['import crypto from "node:crypto";', "const jwt = require('jsonwebtoken')", 'import { sha256 } from "@noble/hashes/sha256";']
+  nomatch = ['import React from "react";']
+
+  [[zone.pattern]]
+  regex = '"crypto/[\w/]+"|"golang\.org/x/crypto|^\s*use\s+(ring|rustls|openssl|sha2|sha1|hmac|aes|aes_gcm|chacha20poly1305|argon2|bcrypt|ed25519_dalek|x25519_dalek|rsa|jsonwebtoken)\b|import\s+(javax\.crypto|java\.security)\.|using\s+System\.Security\.Cryptography'
+  match = ['	"crypto/rand"', 'use ring::aead;', 'import javax.crypto.Cipher;']
+  nomatch = ['	"fmt"', 'use serde::Deserialize;']
+
+  [[zone.pattern]]
+  regex = '(?i)\b(md5|sha-?1|sha-?224|sha-?256|sha-?384|sha-?512|sha3|blake2\w*|hmac|pbkdf2|scrypt|bcrypt|argon2\w*|hkdf|aes(-?gcm|-?cbc|-?ctr|-?ecb)?|chacha20|rsa|ecdsa|ecdh|ed25519|x25519|x509|nonce|\biv\b|cipher|encrypt\w*|decrypt\w*|signing_key|private_key|public_key|kms|keyring)\b'
+  match = ['digest = hashlib.sha256(b).hexdigest()', 'ciphertext = encrypt(key, pt)', 'nonce = os.urandom(12)']
+  nomatch = ['commit_sha = head.hexsha', 'shared_value = 1']
+
+  [[zone.pattern]]
+  regex = '(?i)-----BEGIN [A-Z ]*PRIVATE KEY-----|\bAKIA[0-9A-Z]{16}\b|\bgh[pousr]_[A-Za-z0-9]{36,}|\bxox[baprs]-[A-Za-z0-9-]{10,}|\bsk_(live|test)_[A-Za-z0-9]{10,}|(secret|api[_-]?key|private[_-]?key|client[_-]?secret|access[_-]?key)\w*\s*[:=]'
+  match = ['-----BEGIN RSA PRIVATE KEY-----', 'API_KEY = "abc123"', 'client_secret: xyz']
+  nomatch = ['key = cache_key(user)']
+
+  [[zone.pattern]]
+  regex = '(?i)verify\s*=\s*False|rejectUnauthorized\s*:\s*false|InsecureSkipVerify\s*:\s*true|CERT_NONE|check_hostname\s*=\s*False|NODE_TLS_REJECT_UNAUTHORIZED|\brandom\.(random|randint|choice|getrandbits)\(|Math\.random\('
+  match = ['requests.get(u, verify=False)', 'tok = Math.random().toString(36)', 'code = random.randint(0, 999999)']
+  nomatch = ['rng = secrets.token_hex(16)']
+
+[[zone]]
+name = "pii"
+level = "B3"
+checklist = "secrets-crypto"
+why = "Personal data: leaks through logs, exports and responses are silent and cannot be recalled."
+paths = ["**/pii/**", "**/gdpr/**", "**/privacy/**"]
+
+  [[zone.pattern]]
+  regex = '(?i)\bssn\b|social_?security|date_?of_?birth|\bdob\b|birth_?date|passport|driver_?s?_?licen[cs]e|national_?id|tax_?id|\btin\b|credit_?card|card_?number|\bpan\b|\bcvv\b|\bcvc\b|\biban\b|phone_?number|\bmsisdn\b|home_?address|street_?address|email_?address|\bgdpr\b|\bccpa\b|\bhipaa\b|\bpii\b|\bphi\b|redact'
+  match = ['user.date_of_birth = dob', 'log.info("card_number=%s", n)', 'fields = ["email_address", "name"]']
+  nomatch = ['address = alloc(16)', 'phone_home_interval = 30']
+
+# ---------------------------------------------------------------------------
+# Consistency and irreversibility: transactions, concurrency, schema,
+# destructive data operations.
+# ---------------------------------------------------------------------------
+
+[[zone]]
+name = "transactions"
+level = "B3"
+checklist = "transactions-concurrency"
+why = "Transaction boundaries and isolation: wrong choices corrupt data under concurrency and pass every single-threaded test."
+paths = []
+
+  [[zone.pattern]]
+  regex = '\b(BEGIN( TRANSACTION| WORK| IMMEDIATE| EXCLUSIVE| DEFERRED)?|COMMIT|ROLLBACK|SAVEPOINT|RELEASE SAVEPOINT|START TRANSACTION|FOR (NO KEY )?UPDATE|FOR SHARE|SKIP LOCKED|NOWAIT)\b'
+  match = ['cur.execute("BEGIN IMMEDIATE")', 'ROLLBACK TO SAVEPOINT s1;']
+  nomatch = ['git commit -m "x"', 'begin = time.time()']
+
+  [[zone.pattern]]
+  regex = '(?i)isolation[_ ]level|read[_ ]committed|read[_ ]uncommitted|repeatable[_ ]read|\bserializable\b|snapshot[_ ]isolation|\bselect\b.*\bfor\s+(no\s+key\s+)?(update|share)\b|skip\s+locked|lock\s+table|advisory[_ ]lock|select_for_update|with_for_update|with_lockmode'
+  match = ['SET TRANSACTION ISOLATION LEVEL SERIALIZABLE', 'qs.select_for_update().get(pk=1)', 'SELECT * FROM t WHERE id = 1 FOR UPDATE']
+  nomatch = ['for update in updates:']
+
+  [[zone.pattern]]
+  regex = '(?i)transaction\.atomic|@transactional|\batomic\(|\.atomic\b|begin_nested|\.begin\(\)|\.transaction\(|\bwithTransaction\b|\$transaction|\bdb\.tx\b|\bBeginTx\b|\bsession\.(commit|rollback|flush)\(|\bconn(ection)?\.(commit|rollback)\(|autocommit|on_commit|after_commit|\boutbox\b|idempoten'
+  match = ['with transaction.atomic():', 'await prisma.$transaction([a, b])', 'tx, err := db.BeginTx(ctx, nil)', 'session.commit()']
+  nomatch = ['git_repo.commit(tree)']
+
+[[zone]]
+name = "concurrency-caching"
+level = "B2"
+checklist = "transactions-concurrency"
+why = "Concurrency primitives and caches: races and stale reads are intermittent and invisible to sequential tests."
+paths = []
+
+  [[zone.pattern]]
+  regex = '\bthreading\.|\bmultiprocessing\b|concurrent\.futures|asyncio\.(Lock|Semaphore|Event|Condition|gather|create_task|TaskGroup|Queue)|\bMutex\b|\bRwLock\b|\bRWMutex\b|sync\.(Mutex|RWMutex|WaitGroup|Once|Map)|sync/atomic|\batomic\.|Atomic[A-Z]\w*|\bgo func\b|\bsynchronized\b|ConcurrentHashMap|\bvolatile\b|\bflock\b|\bfcntl\b|\bSemaphore\b|worker_threads|SharedArrayBuffer|Arc<Mutex'
+  match = ['lock = threading.Lock()', 'var mu sync.Mutex', 'results = await asyncio.gather(*tasks)']
+  nomatch = ['thread_title = "x"']
+
+  [[zone.pattern]]
+  regex = '(?i)lru_cache|functools\.cache\b|@cache\b|@cached|cachetools|\bredis\b|memcache|\bcache[_-]?(key|ttl|invalidat\w*|evict\w*|control)\b|stale-while-revalidate|\betag\b|max-age'
+  match = ['@functools.lru_cache(maxsize=None)', 'r = redis.Redis()', 'res.headers["Cache-Control"] = "max-age=60"']
+  nomatch = ['cached_count = 0']
+
+[[zone]]
+name = "migrations"
+level = "B3"
+checklist = "migrations-destructive"
+why = "Schema migrations run once against production data; a wrong transform or drop is irreversible."
+paths = [
+  "**/migrations/**", "**/migrate/**", "**/alembic/**", "**/flyway/**", "**/liquibase/**",
+  "**/db/changelog/**", "**/schema_migrations/**", "**/backfills/**", "**/backfill/**",
+  "**/data_migrations/**",
+]
+
+[[zone]]
+name = "schema"
+level = "B2"
+checklist = "migrations-destructive"
+why = "Additive schema changes are wide: every reader and writer of the table depends on them."
+paths = [
+  "**/schema.prisma", "**/schema.rb", "**/structure.sql", "**/schema.sql", "**/*.sql",
+  "**/schema.graphql", "**/*.proto", "**/openapi.yaml", "**/openapi.yml", "**/openapi.json",
+]
+
+  [[zone.pattern]]
+  regex = '(?i)\bcreate\s+(table|(unique\s+)?index|view|materialized\s+view|schema|type|sequence|trigger|function)\b|\balter\s+table\s+\S+\s+add\b|\bop\.(create_|add_column)|migrations\.(CreateModel|AddField|AddIndex|AddConstraint)|\badd_column\b|\bcreate_table\b|\baddColumn\b|\bcreateTable\b'
+  match = ['CREATE UNIQUE INDEX ix ON t (a);', 'op.add_column("users", sa.Column("x", sa.Integer))', 'migrations.AddField(model_name="u", name="x")']
+  nomatch = ['create_user(name)']
+
+[[zone]]
+name = "destructive-data"
+level = "B3"
+checklist = "migrations-destructive"
+why = "Deletes, drops, truncations, narrowing type changes and backfills: irreversible, and a wrong WHERE clause passes tests on small fixtures."
+paths = []
+
+  [[zone.pattern]]
+  regex = '(?i)\bdrop\s+(table|column|index|schema|database|view|materialized\s+view|constraint|type|sequence|trigger|function)\b|\btruncate\b|\bdelete\s+from\b|\bupdate\s+[\w."]+\s+set\b|\balter\s+table\s+\S+\s+(drop|rename|alter|modify)\b|\balter\s+column\b|\brename\s+(to|column)\b|\bmerge\s+into\b'
+  match = ['DELETE FROM sessions WHERE expires_at < now()', 'ALTER TABLE users DROP COLUMN legacy_id;', 'UPDATE accounts SET balance = 0']
+  nomatch = ['drop_down_menu = True', 'update_ui(state)']
+
+  [[zone.pattern]]
+  regex = '\bop\.(drop_|alter_column|execute)|migrations\.(RemoveField|DeleteModel|AlterField|RenameField|RenameModel|RemoveIndex|RemoveConstraint|RunSQL|RunPython)|\b(remove_column|drop_table|rename_column|change_column|drop_column|removeColumn|dropTable|renameColumn|changeColumn)\b|\.delete\(\)|\b(delete_many|deleteMany|bulk_delete|bulk_update|update_many|updateMany|destroy_all|delete_all|deleteAll)\b|\.(destroy|truncate)\('
+  match = ['op.drop_column("users", "legacy_id")', 'Session.objects.filter(expired=True).delete()', 'await db.user.deleteMany({ where })']
+  nomatch = ['cache.delete(key)', 'params.delete("q")']
+
+[[zone]]
+name = "destructive-fs"
+level = "B2"
+checklist = "migrations-destructive"
+why = "Filesystem and history destruction: a wrong or empty path variable deletes more than intended."
+paths = []
+
+  [[zone.pattern]]
+  regex = '\brm\s+-[a-zA-Z]*[rR][a-zA-Z]*\b|shutil\.rmtree|\bos\.(remove|unlink|rmdir|removedirs)\(|\.unlink\(|fs\.(rm|rmSync|rmdir|rmdirSync|unlink|unlinkSync)\(|\brimraf\b|os\.RemoveAll|remove_dir_all|git\s+(push\s+[^\n]*(-f\b|--force)|reset\s+--hard|clean\s+-[a-zA-Z]*f|branch\s+-D|filter-branch|filter-repo)'
+  match = ['rm -rf "$BUILD_DIR"', 'shutil.rmtree(tmp)', 'git push --force origin main']
+  nomatch = ['rmdir_hint = "x"', 'git push origin main']
+
+# ---------------------------------------------------------------------------
+# Money.
+# ---------------------------------------------------------------------------
+
+[[zone]]
+name = "money"
+level = "B3"
+checklist = "money"
+why = "Payments, balances and prices: money moved or mispriced cannot be recalled, and rounding errors are silent."
+paths = [
+  "**/billing/**", "**/payments/**", "**/payment/**", "**/checkout/**", "**/invoices/**",
+  "**/invoicing/**", "**/subscriptions/**", "**/pricing/**", "**/payouts/**", "**/wallet/**",
+]
+
+  [[zone.pattern]]
+  regex = '(?i)\b(stripe|braintree|adyen|paypal|squareup|razorpay|mollie|klarna|plaid|paddle|lemonsqueezy|chargebee|recurly|gocardless|checkout\.com|worldpay|authorize\.net|dwolla)\b'
+  match = ['import stripe', 'const paypal = require("@paypal/checkout-server-sdk")']
+  nomatch = ['stripes = draw_background()']
+
+  [[zone.pattern]]
+  regex = '(?i)refund|payout|chargeback|invoice|\bcurrency\b|currency_?code|amount_?(cents|minor|due|paid|total)|minor_?units|\bmoney\b|price|subtotal|\bvat\b|sales_?tax|\bbalance\b|\bdebit\b|\bcredit\b(?!s? ?card)|ledger_?entr|\bcharge[sd]?\b|payment'
+  match = ['order.amount_cents = total', 'refund(charge_id)', 'unit_price * qty']
+  nomatch = ['credits_screen = CreditsView()', 'load_balancer_rule = 1', 'proc = run(cmd, capture_output=True)']
+
+# ---------------------------------------------------------------------------
+# Untrusted input at a trust boundary.
+# ---------------------------------------------------------------------------
+
+[[zone]]
+name = "unsafe-parsing"
+level = "B3"
+checklist = "untrusted-input"
+why = "Deserializing, evaluating or interpolating external input: injection and code execution pass every well-formed-input test."
+paths = []
+
+  [[zone.pattern]]
+  regex = '\bpickle\.loads?\b|\bcPickle\b|\bdill\.loads?\b|\bmarshal\.loads?\b|\bshelve\.open\b|jsonpickle|yaml\.(load|unsafe_load|full_load)\(|\bObjectInputStream\b|\breadObject\(|BinaryFormatter|\bunserialize\(|Marshal\.load|\beval\(|\bexec\(|new Function\(|vm\.runIn|\bXMLParser\b|xml\.etree|xml\.dom|xml\.sax|\blxml\b|DocumentBuilderFactory|SAXParserFactory|XMLInputFactory|\blibxml|resolve_entities'
+  match = ['obj = pickle.loads(body)', 'cfg = yaml.load(f)', 'tree = xml.etree.ElementTree.fromstring(data)', 'result = eval(expr)']
+  nomatch = ['cfg = yaml.safe_load(f)', 'data = json.loads(s)']
+
+  [[zone.pattern]]
+  regex = '''shell\s*=\s*True|\bos\.(system|popen)\(|\bchild_process\b|\bexecSync\(|\bspawnSync\(|Runtime\.getRuntime\(\)\.exec|exec\.Command\(\s*"(sh|bash)"|\b(execute|executemany|raw|query|exec)\s*\(\s*(f["']|["'][^"']*["']\s*(%|\+|\.format))|\$\{[^}]*\}\s*(WHERE|AND|OR|VALUES)\b|render_template_string|\|\s*safe\b|dangerouslySetInnerHTML|\.innerHTML\s*=|v-html|mark_safe\('''
+  match = ['subprocess.run(cmd, shell=True)', 'cur.execute(f"SELECT * FROM t WHERE id = {uid}")', 'el.innerHTML = userBio', '<div dangerouslySetInnerHTML={{ __html: html }} />']
+  nomatch = ['cur.execute("SELECT * FROM t WHERE id = %s", (uid,))', 'subprocess.run(["ls", path])']
+
+[[zone]]
+name = "request-input"
+level = "B2"
+checklist = "untrusted-input"
+why = "Handlers reading request bodies, parameters, headers, uploads or fetched URLs sit on a trust boundary; missing validation passes well-formed tests."
+paths = ["**/webhooks/**", "**/webhook/**", "**/uploads/**", "**/upload/**"]
+
+  [[zone.pattern]]
+  regex = '\brequest\.(json|get_json|data|form|args|files|values|body|query_params|GET|POST|FILES|headers|cookies)\b|\breq\.(body|query|params|headers|files|file|cookies)\b|\bctx\.(request\.body|query|params)\b|\bc\.(Bind|ShouldBind|Query|Param|FormFile|PostForm)\w*\(|\br\.(FormValue|URL\.Query|Body|MultipartForm)\b|@(RequestBody|RequestParam|PathVariable)\b|\bmultipart\b|UploadFile|\burlopen\(|requests\.(get|post)\(\s*[a-z_]*url|\bfetch\(\s*[a-z_]*url'
+  match = ['payload = request.json', 'const { id } = req.params;', 'file: UploadFile = File(...)']
+  nomatch = ['requests_count = 0']
