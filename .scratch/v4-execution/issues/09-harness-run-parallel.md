@@ -29,3 +29,8 @@ exec-loop prior art (Reference: outrigger@9fa7023:tools/exec-loop/loop.py, patte
 - Workers launch with `bypassPermissions` in their worktree (no walls; spike 02).
 - Ledger records the headline metric's inputs: every operator intervention
   (AWAITING-OPERATOR review, parked-ticket steer, manual relaunch) as an event.
+2026-09-25 — from spike 02: default N = 4 (ceiling ≥ 4 measured). Preamble
+must (a) carry TDD / code-style / blast-checklist guidance inline, because
+worker skill availability is unreliable; (b) say: stage only files within your
+`Touches`, never `git add -A` (workers committed `__pycache__` otherwise). No
+limit-error shape observed yet; keep error_summary classification.

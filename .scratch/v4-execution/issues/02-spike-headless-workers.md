@@ -1,7 +1,7 @@
 # 02 — spike headless workers
 
 Type: spike
-Status: ready-for-agent (quota-spending runs are operator-triggered, per run)
+Status: done
 Blocked by: —
 Tag: contract
 Blast: B1 — throwaway probes; findings gate B2 tickets 08/09/10
@@ -73,3 +73,9 @@ not worth the cost), so it was removed. The copied `smoke_codex_escape.sh` was
 deleted; `smoke_codex.sh` was deleted too (its purpose was the read-wall probe),
 replaced by `smoke_workers.sh`. `test_codex_p.py` stays until ticket 11 strips
 the wall code it tests.
+
+2026-09-25 — done. P1 CONFIRMED · P2 CEILING ≥ 4 · P3 CONFIRMED · P4
+CONFIRMED (3 Rust corrections; Go open). Transcripts in `spikes/`. Outputs:
+default N = 4 stands; preamble rule "never `git add -A`, stage only your
+Touches" (ticket 09); skill-availability self-reports are unreliable, so
+guidance goes inline (09); no limit-error shape observed yet.
