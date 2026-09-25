@@ -14,10 +14,14 @@ signal for whether the build half is pulling its weight.
 
 - Numerator: tickets that reached the integration branch this milestone.
   Source: ledger event.
-- Denominator: distinct operator touches this milestone — steering sittings,
-  operator-hold approvals, answers to a parked "decisions needed" item, and
-  any manual fix the operator made directly. Source: operator report +
-  ledger event (hold/park events).
+- Denominator: **unplanned** operator interventions this milestone — answers
+  to a parked "decisions needed" item, relaunches after a stalled or failed
+  run, and any manual fix the operator made directly. Source: operator report
+  + ledger event (park/relaunch events).
+- Reported beside it, not in the ratio: **designed oversight**, meaning
+  scheduled sittings and highest-blast-level diff reviews. Those are scrutiny
+  spent on purpose, not babysitting; count them, and their minutes, so their
+  load stays visible without penalizing a milestone for doing its reviews.
 - Value this milestone: <n> merged / <n> interventions = <ratio>. Prior
   milestone: <ratio>. Trend: <rising | flat | falling>.
 
