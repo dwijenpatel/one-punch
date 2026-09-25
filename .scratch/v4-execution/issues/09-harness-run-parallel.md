@@ -1,7 +1,7 @@
 # 09 — harness run parallel
 
 Type: task
-Status: ready-for-agent
+Status: done
 Blocked by: 02, 07, 08
 Tag: contract
 Blast: B2
