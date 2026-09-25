@@ -34,3 +34,17 @@ must (a) carry TDD / code-style / blast-checklist guidance inline, because
 worker skill availability is unreliable; (b) say: stage only files within your
 `Touches`, never `git add -A` (workers committed `__pycache__` otherwise). No
 limit-error shape observed yet; keep error_summary classification.
+2026-09-25 — from ticket 08 (integrate is merged; read its handoff `handoffs/08.md`):
+- Call `integrate_ticket(repo, cfg, ticket, WorkerInfo)`; branch on exit
+  codes 0 MERGED · 10 AWAITING-OPERATOR · 20 FAILED · 21 BLAST-ESCALATION ·
+  22 CONFLICT (→ ticket 10's merge agent) · 30 REFUSED · 31 INTEGRATE-LOCKED ·
+  32 HEAD-MOVED.
+- The harness, not the worker, flips a ticket's `Status: done` after MERGED
+  (planner-direct commit on the integration branch; plan §9). Workers must not
+  edit their own ticket file: `integrate` fails that as TOUCHES-B3.
+- Decide whether `events.jsonl` and review packets are committed (needed for
+  "resume from a bare clone") or stay on disk.
+- `integrate.py` is 753 lines: put new shell code in new modules; split
+  packet/approve out if you must touch it.
+- Lint commands run on clean checkouts before verify, so the repo's lint
+  must install its own dependencies.

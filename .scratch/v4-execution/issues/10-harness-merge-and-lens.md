@@ -16,3 +16,11 @@ The agent paths the loop invokes (plan §3.1, §3.5 step 2, §3.9, §2b): merge 
 Acceptance: mock-launcher tests: conflict → merge agent → re-integrate; B3 ticket produces tests-first commit order, lens report, packet; lens falls back to Opus when codex smoke is absent.
 
 ## Comments
+2026-09-25 — from ticket 08, the scrutiny-evidence convention integrate checks:
+reviewers commit under `<review_dir>/<ticket>/` on the ticket branch
+`spec-verdict.md` and `lens.md` (each with a `Verdict: pass|concerns|fail`
+line; fail fails), and `checklist-<id>.md` in blast-map-format §7 answer
+grammar. Tests-first: the first commit touching anything beyond the handoff
+and review files may touch only `test_globs` files. Git cannot prove the test
+author was independent, so this ticket's dispatch must guarantee it (a separate
+agent, dispatched before the implementer).

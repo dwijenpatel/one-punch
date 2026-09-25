@@ -22,3 +22,9 @@ ticket 11, the worker-harness skill also hold (ticket header §7.1, stop
 conditions §6.2, tier ladder §8). Once 11 lands, replace those with pointers
 to the skill (compose, don't paraphrase — three copies drift). Also: the
 README may still describe v3 stages; update it here.
+2026-09-25 — from ticket 08: one-punch's own harness source
+(`plugin/skills/worker-harness/references/harness/**`) lands as B3 under the
+default pack, because it names auth/money/destructive domains in code and
+fixtures. The pack's `.scratch/**/harness/**` zone doesn't cover it. When
+one-punch dogfoods v4, its blast map needs a repo zone or a lowering for it.
+Record this in the packaging README / dogfood notes.

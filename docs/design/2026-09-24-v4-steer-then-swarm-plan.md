@@ -794,3 +794,12 @@ the design is unchanged.
 - **2026-09-25 — T5 unrouted (operator).** After the tag split, v3 `trivial`
   floors at T4. T5 (mini/local) carries no traffic until a retro shows
   Haiku is overkill for B0 work.
+- **2026-09-25 — planner edits reach the integration branch directly
+  (planner call, from ticket 08).** `integrate` is the only path for *worker*
+  changes. The planner session commits ledger rows and ticket edits (incl.
+  status flips after MERGED) straight onto `integrate/<effort>` between runs.
+  A mid-run edit is absorbed by integrate's compare-and-swap re-entry. The
+  blast map is the exception: it is operator-ratified, so the planner commits
+  blast-map edits only with the operator's OK. Megafile rule clarified to the
+  plan's wording: fail on crossing the threshold *or* on a pre-existing
+  megafile growing.
