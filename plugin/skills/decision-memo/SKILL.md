@@ -18,6 +18,10 @@ building surfaces new forks).
 
 ## The altitude rule — the heart of this skill
 
+**The governing test:** ask only what the operator, in hindsight, is glad
+they were asked. The categories below are where that test usually lands; when
+a category and the test disagree, the test wins.
+
 Every design decision the upstream work surfaced gets classified before it
 reaches the operator:
 

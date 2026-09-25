@@ -63,8 +63,13 @@ walls; `integrate` guards what lands (§6.9). Per-ticket review for everyone
 - **v4.1 Agents run ahead of the human.** Research, spikes, prototypes and
   code survey run in parallel before the operator is asked anything evidence
   can inform. The operator ratifies forks; they do not drive discovery.
-- **v4.2 Question altitude.** The operator is asked only about one-way doors,
-  product boundaries, and conflicts with recorded intent. Everything else is
+- **v4.2 Question altitude.** Governing test (operator, 2026-09-24): ask only
+  what the operator, in hindsight, is glad to have been asked. In practice
+  that means one-way doors, product boundaries, and conflicts with recorded
+  intent. Upstream "operator-invoked only" gates on composed skills are
+  advisory, judged by their purpose: where v4 already serves it or the ask
+  would fail the test, the planner follows the skill itself (composing by
+  loading its instructions, never paraphrasing). Everything else is
   decided by the agent, recorded with a one-line rationale, and reopenable by
   ID. Fan-out ordering (0a) still orders what is asked.
 - **v4.3 Planners decide, workers execute.** Every design decision has one

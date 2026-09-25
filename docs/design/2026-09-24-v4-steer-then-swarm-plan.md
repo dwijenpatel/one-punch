@@ -777,3 +777,20 @@ the design is unchanged.
   integrity: agents loosen their own checks to reach green. (4) Headline
   metric added to §6. (5) Single-writer `flock` per repository. Carried in
   tickets 03, 08, 09, 14.
+- **2026-09-24 — the glad-I-was-asked test; upstream user-only gates are
+  advisory (operator).** The altitude rule's governing statement is now: ask
+  only what the operator, in hindsight, is glad they were asked. The v3
+  front half failed this test. mattpocock `wayfinder`, `to-tickets` and
+  `to-spec` are marked user-invocable-only upstream. Their gates assume a
+  heavier hands-on user, so v4 judges them by purpose:
+  - `wayfinder`'s per-session HITL resolution is replaced by `decision-memo`.
+    The planner uses its fog-of-war and frontier discipline privately.
+  - `to-tickets`' quiz-the-human step is served by the A2 veto window.
+  - Whether `to-spec` runs is a craft call.
+
+  The planner loads and follows those skills itself, still never
+  paraphrasing them. Found by ticket 13; recorded in `pipeline.md` v4.2,
+  `decision-memo`, and `steer`.
+- **2026-09-25 — T5 unrouted (operator).** After the tag split, v3 `trivial`
+  floors at T4. T5 (mini/local) carries no traffic until a retro shows
+  Haiku is overkill for B0 work.

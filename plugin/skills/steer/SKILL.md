@@ -40,9 +40,12 @@ here or in a brief; name it and invoke it.
   the answers), `learning-gates` (only when INTENT.md names a learning goal),
   and `contract-review` (only when the operator points it at a contract).
   Propose with a one-line reason; enter only on a yes.
-- Some harnesses reserve certain composed skills for operator invocation.
-  When a stage reaches one, ask the operator to invoke it by name at that
-  point; never substitute a paraphrase of its steps.
+- Some composed skills are marked operator-invoked upstream. Treat that gate
+  as advisory: judge it by what it is for. If this pipeline already serves
+  that purpose (the ticket-graph veto window stands in for a
+  quiz-the-operator step), or asking would fail the glad-I-was-asked test,
+  load that skill's own instructions and follow them yourself; record the
+  call in the effort log. Never substitute a paraphrase of its steps.
 - Name the model on every agent dispatch — lanes, reviewers, workers. A
   dispatch that silently inherits the session's model is a defect.
 
