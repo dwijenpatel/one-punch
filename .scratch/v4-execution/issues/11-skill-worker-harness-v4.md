@@ -1,7 +1,7 @@
 # 11 — skill worker harness v4
 
 Type: task
-Status: ready-for-agent
+Status: done
 Blocked by: 08, 09, 10
 Tag: contract
 Blast: B2 — harness core split + launcher changes
