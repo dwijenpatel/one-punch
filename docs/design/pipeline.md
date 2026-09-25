@@ -140,9 +140,10 @@ agent stages. The planner is the operator's interactive session.
 | **H1 — intent + destination** (once per effort, one sitting, ≤15 min target) | operator + planner | `intent`, invoked by `steer` | `INTENT.md` (≤1 page) including **Catastrophes** (seed of the blast map) and a **risk register** (`R-n`, each with a kill/pivot criterion) | answers one fan-out-ordered round, conversationally |
 | **A1 — parallel fan-out** (≤4 concurrent agents, timeboxed) | background agents; planner drafts the decision map privately (mattpocock `wayfinder` as its own tool) | `steer` lane briefs: **risk** lane — `spike` per top `R-n`; **shape** lane — mattpocock `prototype` / walking skeleton, or a brownfield code survey with a blast-map proposal (`blast-radius`); **safety net** (brownfield) — characterization tests; **prior art** — reference dossiers; **evidence** — evidence-kit retrieval-grade pass (§5) | findings on disk; blast-map proposal; brownfield field-guide seed | none, unless a lane hits a kill criterion: that stops the fan-out and is an H2-now event |
 | **H2 — decision memo + demo** (one sitting; follow-up rounds in the same sitting) | operator + planner | `decision-memo`; mattpocock `grilling` rounds for newly unlocked forks; `blast-radius` for the map | ratified forks (reuse fork included), updated risk register, ratified blast map, batch-ratified defaults `D-NNN` | decides forks only; reopens any default by ID |
-| **A2 — compile** | planner | decision ledger `docs/decisions.md`; mattpocock `to-spec` only when handoff-sized (otherwise the ledger + INTENT.md are the contract); mattpocock `to-tickets` plus the v4 fields (§7.1); `code-style` installs Layer 1; `field-guide` index; `Blast:` per ticket (`blast-radius`) | ledger, tickets cut to isolate the blast, integration branch `integrate/<effort>` cut from `main`, one-screen ticket-graph summary with the B3 count | veto window, not a gate: building starts unless the operator objects |
-| **Build** | headless workers, ≤4 at once | `worker-harness`: `harness run --parallel N` and `integrate` (§6); workers use mattpocock `tdd` at the ticket's seams; conflicts go to a merge agent with mattpocock `resolving-merge-conflicts` discipline | merged tickets on an always-green integration branch; handoffs; JSONL event ledger | reads B3 diffs before they merge; steers between runs when the run stops |
-| **H3 — milestone demo + merge** (recurs) | operator + planner | mattpocock `code-review` over the milestone diff; `decision-memo` mini-memo for forks unlocked by building; evidence-kit decay recheck; `retro` at milestones | milestone report (every B2/B3 change with its evidence, every blast escalation) | sees it running, accepts or redirects, decides the merge to `main` |
+| **A2 — compile** | planner | decision ledger `docs/decisions.md`; mattpocock `to-spec` only when handoff-sized (otherwise the ledger + INTENT.md are the contract); mattpocock `to-tickets` plus the v4 fields (§7.1); `code-style` installs Layer 1; `field-guide` index; `Blast:` per ticket (`blast-radius`) | ledger, tickets cut to isolate the blast, integration branch `integrate/<effort>` cut from `main`, one-screen ticket-graph summary with the B3 count. Installs (blast map, `code-style` Layer 1, field guide, `harness.toml` from worker-harness's example, `.worktrees/` ignored) are one automatic step, never optional: skipping them removes `integrate`'s checks | veto window, not a gate: building starts unless the operator objects. When every ticket is ≤B1, the defaults batch rides in the same turn: one reply ratifies and releases |
+| **Build** | headless workers, ≤4 at once | `worker-harness`: `harness run --parallel N` and `integrate` (§6); workers use mattpocock `tdd` at the ticket's seams; conflicts go to a merge agent with mattpocock `resolving-merge-conflicts` discipline | merged tickets on an always-green integration branch; handoffs; JSONL event ledger. **Light mode** (small or timeboxed efforts, recorded as a ledger row): in-session workers instead of `harness run`, but every ticket still lands through `integrate` run by hand, so the script still decides what lands | reads B3 diffs before they merge; steers between runs when the run stops |
+| **H3 — milestone demo + merge** (recurs) | operator + planner | mattpocock `code-review` over the milestone diff; `decision-memo` mini-memo for forks unlocked by building; evidence-kit decay recheck; `retro` at milestones | milestone report (every B2/B3 change with its evidence, every blast escalation); for UI efforts a browser walk at desktop and ~375px plus desktop screenshots of each variant, inspected by the planner | sees it running, accepts or redirects, decides the merge to `main` |
+| **Polish** (after H3, before retro) | planner; workers for anything larger than one file / ~30 lines | `steer` | each operator-reported fix: a ledger row, a failing regression case for the symptom added *before* the fix, full suite + neighbouring variants re-checked | reports what they see; nothing else |
 
 Plan §2 holds the H1 question set, the A1 lane table, the memo format and the
 A2 rules; the named skills carry them.
@@ -261,8 +262,11 @@ The operator appears at:
 
 1. **H1**, once per effort: one sitting, ≤15 minutes target.
 2. **H2**, per milestone: one sitting; forks only; follow-up rounds happen in
-   the same sitting, never as new sessions. An A1 lane that hits a kill
-   criterion brings H2 forward.
+   the same sitting, never as new sessions. Up to 3 forks share a turn when
+   every one is ≤B1 and none is a one-way door; B2+ and one-way doors are
+   asked one at a time. An A1 lane that hits a kill criterion brings H2
+   forward. Any link or URL handed to the operator ("try these") has been
+   verified by an executed check to show what its label claims. (Trial 1, `docs/evidence/2026-09-25-trial1-jit-storefront.md`)
 3. **A2 ticket-graph summary**: a veto window, not a gate.
 4. **B3 diffs**: read before merge. `integrate` holds the ticket
    `AWAITING-OPERATOR` with a review packet; the run continues with other
@@ -273,6 +277,8 @@ The operator appears at:
    surfaces parked decisions and the operator steers. There is no mid-run
    steering.
 6. **H3**, per milestone: demo, accept or redirect, merge to `main`.
+7. **Polish**, after H3: the operator reports what they see; the planner
+   turns each report into a regression case first, then a fix. (Trial 1, `docs/evidence/2026-09-25-trial1-jit-storefront.md`)
 
 Reserved to the operator: every fork (one-way doors, product boundaries,
 conflicts with intent, every B3 design decision, the reuse fork, the blast
@@ -563,8 +569,18 @@ calibration channel for §12 gates. The process is under the same regime as
 the code: measured, ledgered, amended on evidence. Spend figures are quota
 proxies on a fixed subscription.
 
+When the harness exposes session transcripts, retro compiles per-stage wall
+clock, agent-active vs operator time, and an operator interaction log from
+them by default. It does not estimate.
+
 v4 earns its seat in two trials: **Trial 1** greenfield (the next fresh
-effort), **Trial 2** brownfield (one real change in an existing repo). The
+effort), **Trial 2** brownfield (one real change in an existing repo).
+**Trial 1 result (2026-09-25):** front half passed. It reached a first
+runnable artifact in 44 min, in 3 sittings, and no fork reopened. The build
+ran in light mode, so the full `harness run` path remains unexercised; Trial 2
+should use it. Escaped defects were all rendered-UI or label defects, which
+led to the visual-closure, verified-links and polish-stage amendments above.
+(Trial 1, `docs/evidence/2026-09-25-trial1-jit-storefront.md`). The
 **headline metric** is unattended tickets merged per operator intervention,
 recorded per milestone; a falling trend means the build half is not earning
 its keep. The full pre-registered metric table is plan §6. **Kill/revise:**
