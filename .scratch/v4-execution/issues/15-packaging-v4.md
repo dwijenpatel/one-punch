@@ -4,9 +4,9 @@ Type: task
 Status: ready-for-agent
 Blocked by: 01, 11, 13, 14
 Tag: contract
-Blast: B1
+Blast: B2 — pipeline.md trim (process authority) + removal of start
 Size: medium
-Touches: plugin/skills/start/**, plugin/skills/learning-gates/SKILL.md, README.md, .claude-plugin/**, plugin/.claude-plugin/**
+Touches: plugin/**, README.md, AGENTS.md, docs/design/pipeline.md, .claude-plugin/**, docs/vendor-smoke.md
 Authority: docs/design/2026-09-24-v4-steer-then-swarm-plan.md
 
 ## What
@@ -37,3 +37,11 @@ B3 tickets' `Touches` to include their test paths (the independent test
 author may write only test files inside Touches; otherwise the ticket parks
 as `stage`). Also document `[run] lens` + `lens_smoke` in harness.toml setup
 at A2 (lens model used only while its smoke passes).
+2026-09-25 — from ticket 11: launcher tests (`launchers/test_codex_p.py`,
+`launchers/test_launchers.py`) are not collected by `python -m unittest`;
+make one repo-level verify command that runs the harness suite AND both
+launcher suites AND `mypy --strict` on all harness .py (tickets 07–10 checked
+subsets and missed 127 errors). Document it in AGENTS.md as the repo's verify.
+Touches widened by planner: plugin/**, README.md, AGENTS.md,
+docs/design/pipeline.md, .claude-plugin/**, docs/vendor-smoke.md. Blast B2
+(pipeline.md trim is the process authority).
