@@ -382,10 +382,12 @@ def test_attribution_check() -> None:
 
 def test_megafile_check() -> None:
     grown = _added("src/big.py", "x")
-    head = {"src/big.py": "x\n" * 801, "src/old.py": "y\n" * 900, "uv.lock": "z\n" * 5000}
-    base = {"src/big.py": 790, "src/old.py": 850}
-    others = [_added("src/old.py", "y"), _added("uv.lock", "z", status="A")]
+    head = {"src/big.py": "x\n" * 801, "src/old.py": "y\n" * 900, "src/shrunk.py": "s\n" * 880, "uv.lock": "z\n" * 5000}
+    base = {"src/big.py": 790, "src/old.py": 850, "src/shrunk.py": 900}
+    others = [_added("src/shrunk.py", "s"), _added("uv.lock", "z", status="A")]
     assert megafile_check(others, base, head, 800, ("**/*.lock",), LEDGER_ROWS, REF).ok
+    grew_above = megafile_check([_added("src/old.py", "y")], base, head, 800, (), LEDGER_ROWS, REF)
+    assert grew_above.failures == ("MEGAFILE src/old.py (850 -> 900 lines, threshold 800)",)
     red = megafile_check([grown], base, head, 800, (), LEDGER_ROWS, REF)
     assert red.failures == ("MEGAFILE src/big.py (790 -> 801 lines, threshold 800)",)
     waived = {"src/big.py": "# allow(megafile): D-001 generated table\n" + "x\n" * 800}

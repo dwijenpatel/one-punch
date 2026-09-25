@@ -327,11 +327,12 @@ def megafile_check(
     ledger: Mapping[str, str],
     ref_pattern: str,
 ) -> CheckResult:
-    """A changed file that crossed `threshold` lines in this change (before
-    <= threshold < after; a new file counts from 0) fails with `MEGAFILE
-    <path>`. A file already above the threshold at the base passes: only the
-    crossing counts. `allow(megafile): D-NNN` anywhere in the file, citing
-    an active row, waives it."""
+    """A changed file that ends above `threshold` lines AND grew in this
+    change (after > threshold and after > before; a new file counts from 0)
+    fails with `MEGAFILE <path>`. Covers both crossing the threshold and a
+    pre-existing megafile growing further; a pre-existing megafile that
+    shrinks or stays the same size passes. `allow(megafile): D-NNN` anywhere
+    in the file, citing an active row, waives it."""
     skip = compile_globs(skip_globs)
     failures: list[str] = []
     exceptions: list[str] = []
@@ -340,7 +341,7 @@ def megafile_check(
             continue
         before_path = entry.old_path if entry.status == "R" and entry.old_path else entry.path
         before, after = base_lines.get(before_path, 0), count_lines(head_text[entry.path])
-        if not before <= threshold < after:
+        if not (after > threshold and after > before):
             continue
         waiver = allowance(head_text[entry.path], "megafile", ledger, ref_pattern)
         if waiver is not None:
