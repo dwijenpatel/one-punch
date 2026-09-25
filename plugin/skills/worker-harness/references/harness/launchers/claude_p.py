@@ -188,7 +188,17 @@ def binary_provenance(resolve_version):
     return prov
 
 
-def build_argv(worker, settings_path, instructions_path):
+def permission_mode(isolation):
+    """acceptEdits when a wall is requested (legacy isolation intent); otherwise
+    bypassPermissions. one-punch v4 requests no walls (plan §9, operator
+    2026-09-24): workers run unattended in their own worktree and the
+    integrate gate, not containment, guards what lands."""
+    if isolation.get("sandbox") or isolation.get("deny_read"):
+        return "acceptEdits"
+    return "bypassPermissions"
+
+
+def build_argv(worker, settings_path, instructions_path, mode="acceptEdits"):
     with open(instructions_path, encoding="utf-8") as fh:
         prompt = fh.read()
     argv = [
@@ -205,7 +215,7 @@ def build_argv(worker, settings_path, instructions_path):
         # (sandbox.filesystem.denyRead) stays enforced. bypassPermissions was
         # falsified by smoke run 2: it dropped the read wall.
         "--permission-mode",
-        "acceptEdits",
+        mode,
         # Structured output so the session's own token/cost usage is captured
         # in result.json instead of being lost (D14/R4: the harness must
         # measure its own spend). stdout becomes one JSON object; the human
@@ -306,7 +316,8 @@ def main(argv=None):
         json.dump(settings, fh, indent=2, sort_keys=True)
         fh.write("\n")
 
-    argv_out = build_argv(params["worker"], settings_path, instructions)
+    argv_out = build_argv(params["worker"], settings_path, instructions,
+                          permission_mode(params.get("isolation", {})))
     # Auto-memory would leak the operator's accumulated context into a worker
     # that is supposed to see only its bundle. Env-var name is community-
     # reported, unverified on this build — harmless if ignored, and smoke
