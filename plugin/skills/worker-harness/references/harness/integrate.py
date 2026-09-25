@@ -91,7 +91,6 @@ from checks.hygiene import (
     Commit,
     attribution_check,
     blast_check,
-    compile_globs,
     conflict_partners,
     count_lines,
     decide,
@@ -106,6 +105,7 @@ from checks.config import ConfigError, IntegrateConfig, parse_config
 from checks.ledger import LedgerError, active_decisions, parse_ledger
 from checks.lint import LintRun, lint_check
 from core import Ticket, TicketHeaderError, parse_ticket_header
+from review import packet_readme
 
 LOCK_NAME = "one-punch-writer.lock"
 AWAITING_REF = "refs/one-punch/awaiting/{ticket}"
@@ -121,7 +121,7 @@ EXIT_CODES = {
 EXIT_LOCKED = 31
 VERIFY_TAIL = 4000  # characters of a failed verify command's output kept in the event
 _SCRUBBED_ENV = ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_OBJECT_DIRECTORY", "GIT_COMMON_DIR")
-_DIFF_ARGS = ("diff", "--no-color", "--no-ext-diff", "--no-textconv", "-M", "--src-prefix=a/", "--dst-prefix=b/")
+DIFF_ARGS = ("diff", "--no-color", "--no-ext-diff", "--no-textconv", "-M", "--src-prefix=a/", "--dst-prefix=b/")
 
 
 class Refused(Exception):
@@ -171,7 +171,7 @@ class _Judgement:
 # --------------------------------------------------------------------------
 
 
-def _env() -> dict[str, str]:
+def git_env() -> dict[str, str]:
     env = {k: v for k, v in os.environ.items() if k not in _SCRUBBED_ENV}
     env.update(GIT_TERMINAL_PROMPT="0", GIT_EDITOR="true", GIT_SEQUENCE_EDITOR="true", LC_ALL="C")
     return env
@@ -185,7 +185,7 @@ class Git:
         proc = subprocess.run(
             ["git", *args],
             cwd=cwd or self.repo,
-            env=_env(),
+            env=git_env(),
             capture_output=True,
             text=True,
             encoding="utf-8",
@@ -234,7 +234,7 @@ def run_command(command: str, cwd: Path, timeout_s: int) -> CommandRun:
         command,
         shell=True,
         cwd=cwd,
-        env=_env(),
+        env=git_env(),
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
@@ -360,7 +360,7 @@ def _load_ticket(git: Git, cfg: IntegrateConfig, base: str, ticket_id: str) -> T
         raise Refused(str(exc)) from None
 
 
-def _checklist_sources(git: Git, cfg: IntegrateConfig, base: str, ids: frozenset[str]) -> dict[str, str | None]:
+def checklist_sources(git: Git, cfg: IntegrateConfig, base: str, ids: frozenset[str]) -> dict[str, str | None]:
     sources: dict[str, str | None] = {}
     configured = cfg.checklists_dir
     fallback = Path(__file__).resolve().parents[3] / "blast-radius" / "references"
@@ -433,7 +433,7 @@ def _judge(git: Git, cfg: IntegrateConfig, ticket_id: str, ticket_sha: str, base
             failures = tuple(f"CONFLICT {p}" for p in conflicted)
             return _Judgement("CONFLICT", base, ticket, results=(CheckResult("rebase", failures),), conflicted=tuple(conflicted))
         judged = git.out("rev-parse", "HEAD", cwd=wt).strip()
-        entries = parse_diff(git.out(*_DIFF_ARGS, "--unified=0", base, judged))
+        entries = parse_diff(git.out(*DIFF_ARGS, "--unified=0", base, judged))
         if not entries:
             raise Refused(f"NOTHING-TO-INTEGRATE {ticket_id}: empty diff against the integration head")
         lint_runs = _lint_runs(git, cfg, wt, base, judged)
@@ -471,7 +471,7 @@ def _judge(git: Git, cfg: IntegrateConfig, ticket_id: str, ticket_sha: str, base
             artifacts,
             commits,
             evaluation.checklists,
-            _checklist_sources(git, cfg, base, evaluation.checklists),
+            checklist_sources(git, cfg, base, evaluation.checklists),
             cfg.test_globs,
             evidence,
         ),
@@ -568,32 +568,25 @@ def _write_packet(git: Git, cfg: IntegrateConfig, ticket: str, event: Mapping[st
     shutil.rmtree(root, ignore_errors=True)
     root.mkdir(parents=True)
     base, judged = str(event["base"]), str(event["judged"])
-    (root / "diff.patch").write_text(git.out(*_DIFF_ARGS, "--stat", "--patch", base, judged), encoding="utf-8")
+    (root / "diff.patch").write_text(git.out(*DIFF_ARGS, "--stat", "--patch", base, judged), encoding="utf-8")
     review_root = cfg.review_path(ticket)
+    reviews: dict[str, str] = {}
     for path in [cfg.handoff_path(ticket), *git.ls(judged, review_root)]:
         text = git.show(judged, path)
         if text is not None:
             (root / Path(path).name).write_text(text, encoding="utf-8")
-    tests = compile_globs(cfg.test_globs)
-    lines = [
-        f"# Review packet — ticket {ticket} (AWAITING-OPERATOR)",
-        "",
-        f"Integration base {base}; judged commit {judged} (pinned at {AWAITING_REF.format(ticket=ticket)}).",
-        f"Declared {event['declared_blast']}, effective {event['effective_blast']}; checklists: {', '.join(event['checklists']) or 'none'}.",
-        "",
-        "Blast hits:",
-        *(f"- {h['zone']} {h['path']} ({h['source']}, {h['level']})" for h in event["hits"]),
-        "",
-        "Test files in this change:",
-        *(f"- {p}" for p in event["files"] if any(r.fullmatch(p) for r in tests)),
-        "",
-        "Warnings:",
-        *(f"- {w}" for w in event["warnings"]),
-        "",
-        "Read diff.patch, the lens report and the checklist answers here, then approve with",
-        f"`integrate.py --approve {ticket}` or leave it parked.",
-    ]
-    (root / "README.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+            if path.startswith(review_root + "/"):
+                reviews[Path(path).name] = text
+    readme = packet_readme(
+        ticket=ticket,
+        event=event,
+        reviews=reviews,
+        commits=_commits(git, base, judged),
+        test_globs=cfg.test_globs,
+        evidence_globs=cfg.evidence_globs(ticket),
+        awaiting_ref=AWAITING_REF.format(ticket=ticket),
+    )
+    (root / "README.md").write_text(readme, encoding="utf-8")
     (root / "packet.json").write_text(json.dumps(event, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return root
 

@@ -45,8 +45,8 @@ parallel = {parallel}
 park_k = 2
 poll_s = 0.05
 worker_timeout_s = 120
-ladder = {{ T4 = [{{ tool = "mock", model = "mock-small" }}], T3 = [{{ tool = "mock", model = "mock-large" }}], T2 = [{{ tool = "mock", model = "mock-mid" }}] }}
-"""
+ladder = {{ T4 = [{{ tool = "mock", model = "mock-small" }}], T3 = [{{ tool = "mock", model = "mock-large" }}], T2 = [{{ tool = "mock", model = "mock-mid" }}], T0 = [{{ tool = "mock", model = "mock-opus" }}] }}
+{extra}"""
 
 TICKET = """# {id} — ticket {id}
 
@@ -63,12 +63,16 @@ Acceptance:
   test -f src/{id}/x.py
 """
 
-# The mock launcher runs this in the worker's worktree. It finds the ticket
-# from the branch and the attempt from params.json, then sources the
-# scenario `$SCEN/<ticket>-a<attempt>.sh` or `$SCEN/<ticket>.sh`.
+# The mock launcher runs this in the dispatch's worktree. It finds the
+# ticket from the bundle path (<bundles>/<ticket>/<launch>), the role and
+# attempt from params.json, then sources `$SCEN/<ticket>-<role>-a<attempt>.sh`
+# or `$SCEN/<ticket>-<role>.sh`, and for the implementer (`author`) also
+# `$SCEN/<ticket>-a<attempt>.sh` or `$SCEN/<ticket>.sh`.
 DISPATCH = r"""set -e
-T=$(git rev-parse --abbrev-ref HEAD); T=${T#t/}
+T=$(basename "$(dirname "$MOCK_BUNDLE")")
 A=$(sed -n 's/.*"attempt": \([0-9]*\).*/\1/p' "$MOCK_BUNDLE/params.json")
+R=$(sed -n 's/.*"role": "\([a-z_]*\)".*/\1/p' "$MOCK_BUNDLE/params.json")
+put() { mkdir -p "$(dirname "$1")"; printf '%s\n' "$2" > "$1"; }
 work() { mkdir -p "$(dirname "$1")"; printf '%s\n' "$2" > "$1"; git add -- "$1"; git commit -q --allow-empty -m "$T: $1"; }
 handoff() {
   mkdir -p .scratch/demo/handoffs
@@ -76,7 +80,8 @@ handoff() {
   git add -- .scratch/demo/handoffs/$T.md; git commit -qm "$T: handoff"
 }
 stamp() { python3 -c 'import time; print(time.time())' > "$OUT/$T.$1"; }
-S="$SCEN/$T-a$A.sh"; [ -f "$S" ] || S="$SCEN/$T.sh"
+S="$SCEN/$T-$R-a$A.sh"; [ -f "$S" ] || S="$SCEN/$T-$R.sh"
+if [ "$R" = author ] && [ ! -f "$S" ]; then S="$SCEN/$T-a$A.sh"; [ -f "$S" ] || S="$SCEN/$T.sh"; fi
 . "$S"
 """
 DEFAULT_SCENARIO = 'stamp start; work "src/$T/x.py" "x = 1"; handoff DONE; stamp end\n'
@@ -85,7 +90,7 @@ DEFAULT_SCENARIO = 'stamp start; work "src/$T/x.py" "x = 1"; handoff DONE; stamp
 class Effort:
     """A throwaway repository with an integration branch, tickets, and mock scenarios."""
 
-    def __init__(self, root: Path, parallel: int = 4) -> None:
+    def __init__(self, root: Path, parallel: int = 4, extra: str = "") -> None:
         self.root = root
         (root / "repo").mkdir()
         self.repo = Repo(root / "repo")
@@ -94,13 +99,14 @@ class Effort:
         self.out.mkdir()
         (root / "dispatch.sh").write_text(DISPATCH, encoding="utf-8")
         self.repo.git("checkout", "-q", "main")
-        self.repo.write("harness.toml", HARNESS_TOML.format(parallel=parallel))
+        self.repo.write("harness.toml", HARNESS_TOML.format(parallel=parallel, extra=extra))
         self.repo.commit("harness: [run] table")
         self.env = {"MOCK_SCRIPT": str(root / "dispatch.sh"), "SCEN": str(self.scen), "OUT": str(self.out)}
 
-    def ticket(self, tid: str, touches: str = "", blocked: str = "—", scenario: str = DEFAULT_SCENARIO) -> None:
+    def ticket(self, tid: str, touches: str = "", blocked: str = "—", scenario: str = DEFAULT_SCENARIO, blast: str = "B0") -> None:
         self.repo.git("checkout", "-q", INTEG)
-        self.repo.write(f".scratch/{EFFORT}/issues/{tid}-t.md", TICKET.format(id=tid, touches=touches or f"src/{tid}/**", blocked=blocked))
+        text = TICKET.format(id=tid, touches=touches or f"src/{tid}/**", blocked=blocked).replace("Blast: B0", f"Blast: {blast}")
+        self.repo.write(f".scratch/{EFFORT}/issues/{tid}-t.md", text)
         self.repo.commit(f"planner: ticket {tid}")
         self.repo.git("checkout", "-q", "main")
         self.scenario(tid, scenario)
@@ -127,9 +133,9 @@ class Effort:
 
 
 @contextmanager
-def effort(parallel: int = 4) -> Iterator[Effort]:
+def effort(parallel: int = 4, extra: str = "") -> Iterator[Effort]:
     with tempfile.TemporaryDirectory() as tmp, isolated_git():
-        yield Effort(Path(tmp).resolve(), parallel)
+        yield Effort(Path(tmp).resolve(), parallel, extra)
 
 
 def launches(events: list[dict[str, Any]], tid: str) -> list[dict[str, Any]]:
@@ -264,14 +270,16 @@ class RunEndToEnd(unittest.TestCase):
             fx.repo.commit("planner: shared-core zone (operator OK)")
             fx.repo.git("checkout", "-q", "main")
             fx.ticket("01", touches="src/core/**", scenario='work "src/core/x.py" "x = 1"; handoff DONE\n')
-            fx.scenario("01-a2", 'mkdir -p .scratch/demo/reviews/01; work .scratch/demo/reviews/01/spec-verdict.md "Verdict: pass"; handoff DONE\n')
+            fx.scenario("01-a2", 'work "src/core/y.py" "y = 1"; handoff DONE\n')
+            fx.scenario("01-spec_verdict", 'put .scratch/demo/reviews/01/spec-verdict.md "Verdict: pass"\n')
             code, out = fx.main("run")
             self.assertEqual(code, 0, out)
             events = fx.events()
             self.assertEqual([e["outcome"] for e in events if e["event"] == "integrate"], ["BLAST-ESCALATION", "MERGED"])
             ticket = fx.repo.git("show", f"{INTEG}:.scratch/{EFFORT}/issues/01-t.md")
             self.assertIn("Blast: B2 — raised from B0 by the integrate blast detector", ticket)
-            self.assertEqual([(t["tier"], t["failures"]) for t in launches(events, "01")], [("T4", 0), ("T2", 0)], "re-routed at the raised floor; not a failure")
+            self.assertEqual([(t["role"], t["tier"], t["failures"]) for t in launches(events, "01")],
+                             [("author", "T4", 0), ("author", "T2", 0), ("spec_verdict", "T2", 0)], "re-routed at the raised floor; not a failure; then reviewed")
             self.assertEqual(fx.status("01"), "done")
 
     def test_stop_file_drains_and_stops(self) -> None:
@@ -421,7 +429,10 @@ class Fold(unittest.TestCase):
         def after(outcome: str, **extra: Any) -> runcore.TicketState:
             return runcore.fold_ledger([ev("launch", "01"), ev("worker-exit", "01", ok=True), {"event": "integrate", "ticket": "01", "outcome": outcome, **extra}]).states["01"]
 
-        self.assertEqual(after("CONFLICT").park_kind, "conflict")
+        conflict = after("CONFLICT", conflicted_paths=["src/x.py"], conflict_with=["02"])
+        self.assertEqual((conflict.phase, conflict.conflict_paths, conflict.conflict_with), ("conflict", ("src/x.py",), ("02",)))
+        thrice = runcore.fold_ledger([ev("launch", "01"), ev("worker-exit", "01", ok=True)] + [{"event": "integrate", "ticket": "01", "outcome": "CONFLICT"}] * 3)
+        self.assertEqual(thrice.states["01"].park_kind, "conflict", "the merge agent gets MAX_CONFLICTS - 1 tries")
         self.assertEqual(after("HEAD-MOVED").phase, "exited")
         self.assertEqual(after("BLAST-ESCALATION", effective_blast="B2").escalated_to, "B2")
         self.assertEqual(after("BLAST-ESCALATION", effective_blast="B3").park_kind, "blast-b3")
@@ -442,13 +453,13 @@ class PlanRound(unittest.TestCase):
     def test_candidates_disjoint_from_in_flight_tickets(self) -> None:
         tickets = [T("01", "src/a/**"), T("02", "src/a/**"), T("03", "src/b/**")]
         rnd = self.plan(tickets, [ev("launch", "01")], inflight=("01",))
-        self.assertEqual([t.id for t, _ in rnd.launch], ["03"])
+        self.assertEqual([t.id for t, _, _ in rnd.launch], ["03"])
         self.assertIsNone(rnd.stop)
 
     def test_slots_and_routing(self) -> None:
         rnd = self.plan([T(f"0{i}") for i in range(1, 6)], n=3)
         self.assertEqual(len(rnd.launch), 3)
-        self.assertEqual({r.candidate for _, r in rnd.launch}, {SMALL})
+        self.assertEqual({r.candidate for _, r, _ in rnd.launch}, {SMALL})
         self.assertEqual(self.plan([T("01", attempts=1)]).launch[0][1].candidate, LARGE)
 
     def test_stops(self) -> None:
@@ -465,12 +476,10 @@ class PlanRound(unittest.TestCase):
         exited = [ev("launch", "01"), ev("worker-exit", "01", ok=True)]
         self.assertEqual(self.plan([T("01")], exited).stop, "ALL-PARKED", "a pending integrate is never 'milestone done'")
 
-    def test_holds_b3_until_relaunched_and_parks_unroutable(self) -> None:
-        self.assertEqual(self.plan([T("01", blast=Blast.B3)]).park, (("01", "b3-path", runcore.B3_HOLD),))
-        relaunched = [ev("intervention", "01", kind="relaunch", note="")]
-        self.assertEqual(self.plan([T("01", blast=Blast.B3)], relaunched).park[0][1], "unroutable", "the ladder has no T0 rung")
-        top = runcore.plan_round([T("01", blast=Blast.B3)], runcore.fold_ledger(relaunched), (), 4, 2, {Tier.T0: (LARGE,)}, 0.0, EMPTY_MAP, ())
-        self.assertEqual([r.tier for _, r in top.launch], [Tier.T0])
+    def test_b3_starts_with_its_test_author_and_parks_unroutable(self) -> None:
+        self.assertEqual(self.plan([T("01", blast=Blast.B3)]).park[0][1], "unroutable", "the ladder has no T0 rung")
+        top = runcore.plan_round([T("01", blast=Blast.B3)], runcore.fold_ledger([]), (), 4, 2, {Tier.T0: (LARGE,)}, 0.0, EMPTY_MAP, ())
+        self.assertEqual([(r.tier, role) for _, r, role in top.launch], [(Tier.T0, "test_author")], "no B3 hold: the tests come first")
         self.assertEqual(self.plan([T("01", blast=Blast.B1)]).park[0][1], "unroutable")
 
 

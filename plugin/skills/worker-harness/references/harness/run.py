@@ -14,7 +14,7 @@ ledger -> reconcile -> frontier -> route (core.route) -> batch
 worktrees `.worktrees/<t>` on `t/<t>` serially -> launch the workers
 concurrently -> as each exits, gate its handoff and call
 `integrate_ticket` -> refill. Every decision is `core.py` or a pure
-function in `runcore.py`; this file executes them.
+function in `runcore.py` or `review.py`; this file and `stages.py` execute them.
 
 State has no file of its own: ticket `Status:` at the integration head H,
 the `t/<t>` branches and the append-only JSONL ledger (`[integrate]
@@ -34,8 +34,17 @@ events_file`, shared with integrate) are folded on every iteration.
   is kept and the retry routes one tier up with a root-cause note
   (core.route; a second failure parks, `escalation`). BLAST-ESCALATION:
   the raised level is committed to the ticket's `Blast:` line and the work
-  is retried in place; to B3 it parks (`blast-b3`) for the B3 path.
-  CONFLICT parks (`conflict`) for the merge agent. HEAD-MOVED twice parks.
+  is retried in place; to B3 it parks (`blast-b3`): a `relaunch` runs the
+  B3 path on it. CONFLICT launches the merge agent, whose rebased result
+  re-enters integrate. HEAD-MOVED twice parks.
+- Stage dispatches (plan §2b ladder; `review.py` decides, `stages.py`
+  executes): a B3 ticket's acceptance tests are written by a separate test
+  author before its implementer launches (the tests-first commit); after a
+  clean implementer exit, B1 `contract`, B2 and B3 tickets get a spec
+  verdict and B3 a decorrelated lens (`[run] lens` while `lens_smoke`
+  passes, else the top ladder rung) before integrate. Stages of started
+  tickets take free slots before new tickets. Reviewers are read-only: the
+  harness commits their review files and rejects any other change.
 - The ledger is committed: every planner-direct commit carries a snapshot
   of the on-disk ledger at `[run] ledger_snapshot`, and so does the run's
   stop. A clone without the on-disk ledger (bare or fresh) reads the
@@ -69,6 +78,11 @@ harness.toml `[run]` (ladder required; the rest default):
   ledger_snapshot ".scratch/{effort}/ledger/events.jsonl" ·
   field_guide "docs/field-guide/index.md" · field_guide_budget 150 ·
   limit_patterns (rate limit, usage limit, 429, overloaded, quota, ...)
+  lens              {tool, model, effort?}: the decorrelated lens (a model
+                    family other than the implementers', e.g. codex); needs
+  lens_smoke        a shell command run once per run; exit 0 = the lens
+                    launcher's smoke passes (e.g. a check of the recorded
+                    `smoke_workers.sh codex --review` result)
 """
 
 from __future__ import annotations
@@ -91,15 +105,15 @@ from pathlib import Path
 from typing import Any
 
 import core
+import review
+import stages
 from checks.blastmap import BlastMapError, extract_blast_map, load_blast_map
 from checks.config import ConfigError, IntegrateConfig, parse_config
 from checks.ledger import LedgerError, handoff_status, parse_ledger
-from core import Blast, Candidate, Routed, Ticket, TicketHeaderError
+from core import Blast, Routed, Ticket, TicketHeaderError
 from integrate import (
     Git,
     LockHeld,
-    _checklist_sources,
-    _env,
     append_event,
     integrate_ticket,
     read_bundle,
@@ -123,6 +137,7 @@ from runcore import (
     plan_round,
     set_header,
 )
+from stages import Worker, remove_worktree
 
 HERE = Path(__file__).resolve().parent
 STOP_CODES = {"FRONTIER-EMPTY": 0, "ALL-PARKED": 3, "DECISIONS-NEEDED": 4, "ALL-COOLING": 5, "STOPPED": 6, "KILLED": 7}
@@ -152,10 +167,7 @@ def planner_commit(git: Git, ref: str, edit: Callable[[str], Mapping[str, str]],
     """A planner-direct commit (plan §9) onto `ref` without checking it out:
     temp index -> commit-tree -> compare-and-swap; re-read on a lost race.
     `edit(base)` maps paths to new text; None when nothing changes."""
-    env = _env()
-    if git.run("var", "GIT_COMMITTER_IDENT", check=False).returncode != 0:
-        env.update(GIT_AUTHOR_NAME="one-punch harness", GIT_AUTHOR_EMAIL="harness@localhost")
-        env.update(GIT_COMMITTER_NAME="one-punch harness", GIT_COMMITTER_EMAIL="harness@localhost")
+    env = stages.ident_env(git)
     for _ in range(5):
         base = git.rev(ref)
         if base is None:
@@ -312,12 +324,6 @@ def preflight(e: Effort) -> None:
         raise RunRefused(f"FIELD-GUIDE-OVER-BUDGET {e.rc.field_guide}: over {e.rc.field_guide_budget} lines")
 
 
-def remove_worktree(git: Git, path: Path) -> None:
-    git.run("worktree", "remove", "--force", "--force", str(path), check=False)
-    shutil.rmtree(path, ignore_errors=True)
-    git.run("worktree", "prune", check=False)
-
-
 def ensure_worktree(e: Effort, tid: str, head: str) -> Path:
     """Reuse the kept worktree; else check out the ticket branch (local, then
     origin's), else cut it from the integration head."""
@@ -337,23 +343,9 @@ def ensure_worktree(e: Effort, tid: str, head: str) -> Path:
     return path
 
 
-def checklists_for(e: Effort, view: View, ticket: Ticket) -> dict[str, str]:
-    if ticket.blast.value < Blast.B2.value:
-        return {}
-    valid = load_blast_map(e.git.show(view.head, e.cfg.blast_map_file), e.cfg.ref_pattern)
-    names = core.ticket_zones(ticket.touches, view.blast_map, view.tree)
-    ids = frozenset(z.checklist for z in valid.zones if z.name in names and z.checklist)
-    return {cid: text for cid, text in _checklist_sources(e.git, e.cfg, view.head, ids).items() if text}
-
-
-@dataclass
-class Worker:
-    proc: subprocess.Popen[bytes]
-    bundle: Path
-    candidate: Candidate
-
-
-def launch(e: Effort, view: View, ticket: Ticket, routed: Routed) -> Worker:
+def launch(e: Effort, view: View, ticket: Ticket, routed: Routed, role: str) -> Worker:
+    if role != review.AUTHOR:
+        return stages.launch_stage(e, view, ticket, routed, role)
     git, cfg, rc = e.git, e.cfg, e.rc
     state = view.ledger.states.get(ticket.id, TicketState())
     number = state.launches + 1
@@ -361,7 +353,6 @@ def launch(e: Effort, view: View, ticket: Ticket, routed: Routed) -> Worker:
     start = git.rev(f"refs/heads/{e.branch(ticket.id)}") or view.head
     bundle = git.repo / rc.bundles_dir / ticket.id / f"launch-{number}"
     shutil.rmtree(bundle, ignore_errors=True)
-    bundle.mkdir(parents=True)
     instructions = build_instructions(
         ticket=ticket,
         ticket_text=view.texts[ticket.id],
@@ -372,19 +363,15 @@ def launch(e: Effort, view: View, ticket: Ticket, routed: Routed) -> Worker:
         agents_md=git.show(view.head, "AGENTS.md") is not None,
         field_guide=git.show(view.head, rc.field_guide),
         depends_rows=depends_rows(git.show(view.head, cfg.ledger_file) or "", ticket.depends_on),
-        checklists=checklists_for(e, view, ticket),
+        checklists={cid: text for cid, text in stages.zone_checklists(e, view, ticket).items() if text},
         state=state,
     )
-    (bundle / "instructions.md").write_text(instructions, encoding="utf-8")
     c = routed.candidate
-    worker: dict[str, str] = {"tool": c.tool, "model": c.model, **({"effort": c.effort} if c.effort else {})}
-    params = {"contract": 1, "role": "author", "worker": worker, "isolation": {}, "cwd": str(worktree), "timeout_s": rc.worker_timeout_s, "attempt": number}
-    (bundle / "params.json").write_text(json.dumps(params, indent=2) + "\n", encoding="utf-8")
-    with open(bundle / "launcher.out", "wb") as out, open(bundle / "launcher.err", "wb") as err:
-        proc = subprocess.Popen([sys.executable, str(rc.launchers[c.tool]), str(bundle)], cwd=bundle, stdout=out, stderr=err, start_new_session=True)
-    _append(e.events, "launch", ticket=ticket.id, launch=number, tool=c.tool, model=c.model, effort=c.effort, tier=routed.tier.name,
-            explored=routed.explored, escalated=routed.escalated, failures=ticket.attempts, start=start, base=view.head, bundle=str(bundle))
-    return Worker(proc, bundle, c)
+    worker = stages.spawn(e, bundle, instructions, c, review.AUTHOR, worktree, number)
+    _append(e.events, "launch", ticket=ticket.id, role=review.AUTHOR, launch=number, tool=c.tool, model=c.model, effort=c.effort,
+            tier=routed.tier.name, explored=routed.explored, escalated=routed.escalated, failures=ticket.attempts, start=start,
+            base=view.head, bundle=str(bundle))
+    return worker
 
 
 def record_exit(e: Effort, tid: str, w: Worker) -> bool:
@@ -398,28 +385,33 @@ def record_exit(e: Effort, tid: str, w: Worker) -> bool:
     if not ok and not summary:
         summary = f"launcher exit {w.proc.returncode}, no result.json summary; see {w.bundle}/launcher.err"
     limit = not ok and is_limit(summary, e.rc.limit_patterns)
-    _append(e.events, "worker-exit", ticket=tid, ok=ok, exit=result.get("exit"), launcher_exit=w.proc.returncode, summary=summary,
+    _append(e.events, "worker-exit", ticket=tid, role=w.role, ok=ok, exit=result.get("exit"), launcher_exit=w.proc.returncode, summary=summary,
             limit=limit, retry_at=time.time() + e.rc.cooldown_s if limit else None, tokens=result.get("usage"),
             tool=w.candidate.tool, model=w.candidate.model, effort=w.candidate.effort)
     return limit
 
 
-def settle(e: Effort, view: View, tid: str, state: TicketState) -> None:
-    """Gate a cleanly exited worker's handoff, then integrate it."""
+def settle(e: Effort, view: View, tid: str, state: TicketState) -> bool:
+    """Gate an exited ticket's handoff; integrate it once no review is due
+    (review.next_role). True when it parked or integrated."""
     git, cfg = e.git, e.cfg
     tip = git.rev(f"refs/heads/{e.branch(tid)}")
     handoff = git.show(tip, cfg.handoff_path(tid)) if tip else None
     status = handoff_status(handoff)
     if handoff is not None and status in ("BLOCKED", "NEEDS_CONTEXT"):
         _append(e.events, "park", ticket=tid, kind="blocked", reason=f"handoff Status: {status} ({cfg.handoff_path(tid)})")
-        return
+        return True
     one_way = [text for text, reversible in decision_items(handoff or "") if not reversible]
     if one_way:
         _append(e.events, "park", ticket=tid, kind="decision", reason=" | ".join(one_way)[:2000])
-        return
-    result = integrate_ticket(git.repo, cfg, tid, read_bundle(Path(state.bundle) if state.bundle else None))
+        return True
+    ticket = next((t for t in view.tickets if t.id == tid), None)
+    if ticket is not None and review.next_role(ticket, "exited", bool(state.tests), state.reviewed) is not None:
+        return False  # a review is due; plan_round dispatches it
+    result = integrate_ticket(git.repo, cfg, tid, read_bundle(Path(state.author_bundle) if state.author_bundle else None))
     if result.outcome in ("MERGED", "AWAITING-OPERATOR"):
         finish(e, tid, result.event)
+    return True
 
 
 def finish(e: Effort, tid: str, event: Mapping[str, Any]) -> None:
@@ -453,15 +445,18 @@ def reconcile(e: Effort, view: View, inflight: Collection[str]) -> bool:
             continue
         ticket = by_id.get(tid)
         if s.phase == "running":  # interrupted: tear down, reset the branch, redo
-            remove_worktree(e.git, e.worktree(tid))
+            remove_worktree(e.git, stages.teardown_path(e, tid, s.role))
             branch = f"refs/heads/{e.branch(tid)}"
             if s.start and e.git.rev(branch) and e.git.rev(branch) != s.start:
                 e.git.run("update-ref", branch, s.start)
-            _append(e.events, "teardown", ticket=tid, launch=s.launches)
+            _append(e.events, "teardown", ticket=tid, role=s.role, launch=s.launches)
+        elif s.phase == "pending":
+            stages.accept_stage(e, view, tid, s)
         elif s.phase == "exited":
             if e.git.checked_out().get(e.integ_ref) is not None:
                 continue  # integrate would refuse; wait until the operator switches away
-            settle(e, view, tid, s)
+            if not settle(e, view, tid, s):
+                continue
         elif s.phase == "merged" and ticket is not None and ticket.status != "done":
             finish(e, tid, {"outcome": "MERGED", "judged": s.judged, "ticket_head": s.ticket_head})
         elif s.phase == "awaiting" and e.worktree(tid).exists():
@@ -512,6 +507,7 @@ def run(e: Effort, n: int) -> str:
     limits = 0
     draining = ""
     _append(e.events, "run-start", parallel=n, park_k=e.rc.park_k, pid=os.getpid())
+    lens = stages.lens_candidate(e)
     try:
         while True:
             for tid, w in list(inflight.items()):
@@ -529,7 +525,8 @@ def run(e: Effort, n: int) -> str:
                 if not reconcile(e, view, inflight):
                     break
                 view = derive(e)
-            rnd = plan_round(view.tickets, view.ledger, inflight, max(1, n - limits), e.rc.park_k, e.rc.ladder, time.time(), view.blast_map, view.tree)
+            rnd = plan_round(view.tickets, view.ledger, inflight, max(1, n - limits), e.rc.park_k, e.rc.ladder, time.time(),
+                             view.blast_map, view.tree, lens)
             for tid, kind, why in rnd.park:
                 _append(e.events, "park", ticket=tid, kind=kind, reason=why)
             if rnd.stop == "DECISIONS-NEEDED":
@@ -539,9 +536,9 @@ def run(e: Effort, n: int) -> str:
                     reason = draining
                     break
             else:
-                for ticket, routed in rnd.launch:
+                for ticket, routed, role in rnd.launch:
                     try:
-                        inflight[ticket.id] = launch(e, view, ticket, routed)
+                        inflight[ticket.id] = launch(e, view, ticket, routed, role)
                     except (RunRefused, RuntimeError) as exc:
                         _append(e.events, "park", ticket=ticket.id, kind="refused", reason=f"LAUNCH-FAILED {exc}")
                 if rnd.stop and not inflight and not rnd.launch:
@@ -577,10 +574,12 @@ def report(e: Effort, view: View, run_active: bool, now: float) -> dict[str, Any
         "tickets": len(view.tickets),
         "done": [t.id for t in view.tickets if t.status == "done"],
         "frontier": [t.id for t in core.frontier(view.tickets) if phase[t.id] not in BUSY],
-        "in_flight": [{"ticket": t, "model": getattr(states[t].candidate, "model", None),
-                       "state": "worker exited; integrates on the next pass" if p == "exited" else
+        "in_flight": [{"ticket": t, "role": states[t].role, "model": states[t].model or None,
+                       "state": "worker exited; reviews or integrate next" if p == "exited" else
+                       f"{states[t].role} exited; the harness accepts it next" if p == "pending" else
+                       "rebase conflict; the merge agent runs next" if p == "conflict" else
                        "running" if run_active else "interrupted (the next run tears it down and redoes it)"}
-                      for t, p in phase.items() if p in ("running", "exited")],
+                      for t, p in phase.items() if p in ("running", "exited", "pending", "conflict")],
         "awaiting_operator": [{"ticket": t, "packet": states[t].packet} for t, p in phase.items() if p == "awaiting"],
         "parked": [{"ticket": t, "kind": states[t].park_kind, "reason": states[t].park_reason} for t, p in phase.items() if p == "parked"],
         "cooling": [{"tool": c.tool, "model": c.model, "until": datetime.datetime.fromtimestamp(u, datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")}
@@ -596,7 +595,7 @@ def report(e: Effort, view: View, run_active: bool, now: float) -> dict[str, Any
 def format_report(r: Mapping[str, Any]) -> str:
     lines = [f"effort {r['effort']} — {r['integration_branch']} @ {r['head'][:12]} — {len(r['done'])}/{r['tickets']} tickets done"]
     lines.append(f"frontier: {', '.join(r['frontier']) or '—'}")
-    lines += [f"in flight: {x['ticket']} ({x['model']}) {x['state']}" for x in r["in_flight"]]
+    lines += [f"in flight: {x['ticket']} {x['role']} ({x['model']}) {x['state']}" for x in r["in_flight"]]
     lines += [f"AWAITING-OPERATOR: {x['ticket']} — packet {x['packet']}; approve: integrate.py --approve {x['ticket']}" for x in r["awaiting_operator"]]
     lines += [f"parked: {x['ticket']} [{x['kind']}] {x['reason']}" for x in r["parked"]]
     lines += [f"cooling: {x['tool']}/{x['model']} until {x['until']}" for x in r["cooling"]]
