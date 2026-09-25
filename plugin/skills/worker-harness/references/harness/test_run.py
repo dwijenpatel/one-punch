@@ -25,7 +25,10 @@ from unittest import mock
 
 import core
 import run
+import runcore
+from checks.config import ConfigError
 from core import Blast, Candidate, Size, Tag, Ticket, Tier
+from integrate import Git, integrate_ticket, load_config
 from test_integrate import EFFORT, INTEG, Repo, isolated_git
 
 HERE = Path(__file__).resolve().parent
@@ -166,6 +169,18 @@ class RunEndToEnd(unittest.TestCase):
             self.assertEqual(params["worker"], {"tool": "mock", "model": "mock-small"})
             self.assertEqual(params["isolation"], {})
 
+            code, out = fx.main("closure")
+            self.assertEqual(code, 0, out)
+            self.assertIn("01: ok  test -f src/01/x.py", out)
+            fx.repo.git("checkout", "-q", INTEG)
+            fx.repo.git("rm", "-q", "src/01/x.py")
+            fx.repo.git("commit", "-q", "-m", "a later change breaks ticket 01's promise")
+            fx.repo.git("checkout", "-q", "main")
+            code, out = fx.main("closure")
+            self.assertEqual(code, 1, out)
+            self.assertIn("01: FAIL test -f src/01/x.py", out)
+            self.assertIn("closure RED", out)
+
     def test_overlapping_touches_are_serialized(self) -> None:
         slow = 'stamp start; sleep 0.8; work "src/shared/$T.py" "x = 1"; handoff DONE; stamp end\n'
         with effort() as fx:
@@ -250,17 +265,45 @@ class RunEndToEnd(unittest.TestCase):
             self.assertEqual(fx.status("01"), "done", "the in-flight worker drains and lands")
             self.assertEqual(launches(fx.events(), "02"), [])
 
+    def start_run(self, fx: Effort, tid: str) -> subprocess.Popen[str]:
+        """`run.py run` as a process, returned once it has launched `tid`."""
+        proc = subprocess.Popen([sys.executable, str(HERE / "run.py"), "--repo", str(fx.repo.root), "run"], env={**os.environ, **fx.env},
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        deadline = time.monotonic() + 20
+        while not ((fx.repo.root / EVENTS).is_file() and launches(fx.events(), tid)):
+            self.assertLess(time.monotonic(), deadline, f"the run never launched {tid}")
+            time.sleep(0.05)
+        return proc
+
+    def test_one_sigint_drains_in_flight_work_and_stops(self) -> None:
+        with effort(parallel=1) as fx:
+            fx.ticket("01", scenario="sleep 1.5; " + DEFAULT_SCENARIO)
+            fx.ticket("02")
+            proc = self.start_run(fx, "01")
+            proc.send_signal(signal.SIGINT)
+            out, err = proc.communicate(timeout=60)
+            self.assertEqual(proc.returncode, 6, out + err)
+            self.assertEqual(fx.status("01"), "done", "the in-flight worker finishes and lands")
+            self.assertEqual(launches(fx.events(), "02"), [], "nothing new launches after the stop")
+            self.assertEqual(fx.events()[-1]["reason"], "STOPPED")
+
+    def test_a_merge_landed_outside_the_run_is_flipped_done(self) -> None:
+        with effort() as fx:
+            fx.ticket("01")
+            fx.repo.work("01", [{"src/01/x.py": "x = 1\n"}])
+            cfg = load_config(fx.repo.root / "harness.toml")
+            self.assertEqual(integrate_ticket(fx.repo.root, cfg, "01").outcome, "MERGED")
+            self.assertEqual(fx.status("01"), "ready-for-agent")
+            code, out = fx.main("run")
+            self.assertEqual(code, 0, out)
+            self.assertEqual(fx.status("01"), "done")
+            self.assertEqual(launches(fx.events(), "01"), [])
+
     def test_sigint_mid_run_leaves_a_resumable_ledger(self) -> None:
         with effort(parallel=1) as fx:
             fx.ticket("01", scenario="sleep 4; exit 1\n")
             fx.ticket("02")
-            env = {**os.environ, **fx.env}
-            proc = subprocess.Popen([sys.executable, str(HERE / "run.py"), "--repo", str(fx.repo.root), "run"], env=env,
-                                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-            deadline = time.monotonic() + 20
-            while not ((fx.repo.root / EVENTS).is_file() and launches(fx.events(), "01")):
-                self.assertLess(time.monotonic(), deadline, "the run never launched 01")
-                time.sleep(0.05)
+            proc = self.start_run(fx, "01")
             proc.send_signal(signal.SIGINT)
             time.sleep(0.3)
             proc.send_signal(signal.SIGINT)
@@ -302,8 +345,8 @@ def ev(event: str, tid: str, **fields: Any) -> dict[str, Any]:
 
 class Grammars(unittest.TestCase):
     def test_decision_items(self) -> None:
-        self.assertEqual(run.decision_items("Status: DONE\nDecisions needed: none\nFindings / concerns: x\n"), [])
-        items = run.decision_items(
+        self.assertEqual(runcore.decision_items("Status: DONE\nDecisions needed: none\nFindings / concerns: x\n"), [])
+        items = runcore.decision_items(
             "Decisions needed (question → local option → reversibility):\n"
             "1. Tag mapping? I chose contract.\n   Reversible with one line.\n"
             "2. Schema key — local option: snake — NOT reversible\n"
@@ -313,24 +356,26 @@ class Grammars(unittest.TestCase):
         )
         self.assertEqual([r for _, r in items], [True, False, False, False], "unmarked fails closed")
         self.assertIn("Reversible with one line", items[0][0])
-        self.assertEqual(run.decision_items("Decisions needed: pick X — reversible\n"), [("pick X — reversible", True)])
-        self.assertEqual(run.decision_items("Decisions needed: it is irreversible\n")[0][1], False)
+        self.assertEqual(runcore.decision_items("Decisions needed: pick X — reversible\n"), [("pick X — reversible", True)])
+        self.assertEqual(runcore.decision_items("Decisions needed: it is irreversible\n")[0][1], False)
+        self.assertEqual(runcore.decision_items("Decisions needed: key names — not locally reversible\n")[0][1], False)
+        self.assertEqual(runcore.decision_items("Decisions needed: X — NOT reversible\n")[0][1], False)
 
     def test_acceptance_commands(self) -> None:
         ticket = "# 07\n\nStatus: done\n\nAcceptance:\n  python -m pytest a -q\n  # comment\n  test -f b\n\nExample: prose\n"
-        self.assertEqual(run.acceptance_commands(ticket), ["python -m pytest a -q", "test -f b"])
+        self.assertEqual(runcore.acceptance_commands(ticket), ["python -m pytest a -q", "test -f b"])
         fenced = "## Acceptance\n\nRun these:\n\n```sh\nrg -q x f\ntest -f g\n```\n\n## Comments\n```\nnot me\n```\n"
-        self.assertEqual(run.acceptance_commands(fenced), ["rg -q x f", "test -f g"])
-        self.assertEqual(run.acceptance_commands("Acceptance: integration tests pass.\n\nMore prose.\n"), [])
+        self.assertEqual(runcore.acceptance_commands(fenced), ["rg -q x f", "test -f g"])
+        self.assertEqual(runcore.acceptance_commands("Acceptance: integration tests pass.\n\nMore prose.\n"), [])
 
     def test_set_header_replaces_or_inserts(self) -> None:
         text = "# 01\n\nStatus: ready-for-agent\nTag: contract\n\nStatus: body line\n"
-        self.assertEqual(run.set_header(text, "Status", "done"), text.replace("ready-for-agent", "done"))
-        self.assertIn("Status: ready-for-agent\nBlast: B2 — raised\nTag", run.set_header(text, "Blast", "B2 — raised"))
+        self.assertEqual(runcore.set_header(text, "Status", "done"), text.replace("ready-for-agent", "done"))
+        self.assertIn("Status: ready-for-agent\nBlast: B2 — raised\nTag", runcore.set_header(text, "Blast", "B2 — raised"))
 
     def test_is_limit(self) -> None:
-        self.assertTrue(run.is_limit("Claude AI usage limit reached|1759", run.DEFAULT_LIMIT_PATTERNS))
-        self.assertFalse(run.is_limit("AssertionError: 2 != 3", run.DEFAULT_LIMIT_PATTERNS))
+        self.assertTrue(runcore.is_limit("Claude AI usage limit reached|1759", runcore.DEFAULT_LIMIT_PATTERNS))
+        self.assertFalse(runcore.is_limit("AssertionError: 2 != 3", runcore.DEFAULT_LIMIT_PATTERNS))
 
 
 class Fold(unittest.TestCase):
@@ -342,21 +387,21 @@ class Fold(unittest.TestCase):
             ev("worker-exit", "01", ok=True),
             {"event": "integrate", "ticket": "01", "outcome": "FAILED", "checks": [{"failures": ["TOUCHES-OUTSIDE docs/x"]}], "ts": "2026-09-25T00:00:00Z"},
         ]
-        s = run.fold_ledger(events).states["01"]
+        s = runcore.fold_ledger(events).states["01"]
         self.assertEqual((s.phase, s.failures, s.launches), ("idle", 2, 2))
         self.assertIn("TOUCHES-OUTSIDE", s.last_failure)
-        s = run.fold_ledger([*events, ev("intervention", "01", kind="relaunch", note="n")]).states["01"]
+        s = runcore.fold_ledger([*events, ev("intervention", "01", kind="relaunch", note="n")]).states["01"]
         self.assertEqual((s.phase, s.failures, s.notes), ("idle", 0, ["n"]))
-        self.assertEqual([o.ok for o in run.fold_ledger(events).core_events if isinstance(o, core.Outcome)], [False, False])
+        self.assertEqual([o.ok for o in runcore.fold_ledger(events).core_events if isinstance(o, core.Outcome)], [False, False])
 
     def test_limit_exit_cools_without_failing(self) -> None:
-        ledger = run.fold_ledger([ev("launch", "01"), ev("worker-exit", "01", ok=False, limit=True, retry_at=99.0)])
+        ledger = runcore.fold_ledger([ev("launch", "01"), ev("worker-exit", "01", ok=False, limit=True, retry_at=99.0)])
         self.assertEqual((ledger.states["01"].phase, ledger.states["01"].failures), ("idle", 0))
         self.assertEqual(core.fold(ledger.core_events)[1].cooling_until(SMALL), 99.0)
 
     def test_integrate_outcomes(self) -> None:
-        def after(outcome: str, **extra: Any) -> run.TicketState:
-            return run.fold_ledger([ev("launch", "01"), ev("worker-exit", "01", ok=True), {"event": "integrate", "ticket": "01", "outcome": outcome, **extra}]).states["01"]
+        def after(outcome: str, **extra: Any) -> runcore.TicketState:
+            return runcore.fold_ledger([ev("launch", "01"), ev("worker-exit", "01", ok=True), {"event": "integrate", "ticket": "01", "outcome": outcome, **extra}]).states["01"]
 
         self.assertEqual(after("CONFLICT").park_kind, "conflict")
         self.assertEqual(after("HEAD-MOVED").phase, "exited")
@@ -365,16 +410,16 @@ class Fold(unittest.TestCase):
         self.assertEqual(after("REFUSED", reason="HANDOFF-STATUS BLOCKED (x)").park_kind, "blocked")
         self.assertEqual(after("REFUSED", reason="HANDOFF-MISSING (x)").failures, 1)
         self.assertEqual(after("AWAITING-OPERATOR", packet="p").phase, "awaiting")
-        twice = run.fold_ledger([ev("launch", "01"), ev("worker-exit", "01", ok=True)] + [{"event": "integrate", "ticket": "01", "outcome": "HEAD-MOVED"}] * 2)
+        twice = runcore.fold_ledger([ev("launch", "01"), ev("worker-exit", "01", ok=True)] + [{"event": "integrate", "ticket": "01", "outcome": "HEAD-MOVED"}] * 2)
         self.assertEqual(twice.states["01"].park_kind, "head-moved")
-        approved = run.fold_ledger([{"event": "integrate", "ticket": "01", "outcome": "MERGED", "approved": True, "judged": "j"}])
+        approved = runcore.fold_ledger([{"event": "integrate", "ticket": "01", "outcome": "MERGED", "approved": True, "judged": "j"}])
         self.assertEqual((approved.merged, approved.interventions, approved.states["01"].phase), (1, 1, "merged"))
-        self.assertEqual(run.fold_ledger([ev("launch", "01")]).states["01"].phase, "running")
+        self.assertEqual(runcore.fold_ledger([ev("launch", "01")]).states["01"].phase, "running")
 
 
 class PlanRound(unittest.TestCase):
-    def plan(self, tickets: list[Ticket], events: list[dict[str, Any]] = [], inflight: tuple[str, ...] = (), n: int = 4, now: float = 0.0) -> run.Round:
-        return run.plan_round(tickets, run.fold_ledger(events), inflight, n, 2, LADDER, now, EMPTY_MAP, ())
+    def plan(self, tickets: list[Ticket], events: list[dict[str, Any]] = [], inflight: tuple[str, ...] = (), n: int = 4, now: float = 0.0) -> runcore.Round:
+        return runcore.plan_round(tickets, runcore.fold_ledger(events), inflight, n, 2, LADDER, now, EMPTY_MAP, ())
 
     def test_candidates_disjoint_from_in_flight_tickets(self) -> None:
         tickets = [T("01", "src/a/**"), T("02", "src/a/**"), T("03", "src/b/**")]
@@ -396,17 +441,25 @@ class PlanRound(unittest.TestCase):
         parked = [ev("launch", "01"), ev("park", "01", kind="blocked", reason="r")]
         self.assertEqual(self.plan([T("01"), T("02", blocked=("01",))], parked).stop, "ALL-PARKED")
         cooling = [ev("launch", "01"), ev("worker-exit", "01", ok=False, limit=True, retry_at=50.0)]
-        cold = run.plan_round([T("01")], run.fold_ledger(cooling), (), 4, 2, {Tier.T4: (SMALL,)}, 10.0, EMPTY_MAP, ())
+        cold = runcore.plan_round([T("01")], runcore.fold_ledger(cooling), (), 4, 2, {Tier.T4: (SMALL,)}, 10.0, EMPTY_MAP, ())
         self.assertEqual(cold.stop, "ALL-COOLING")
         self.assertIsNone(self.plan([T("01")], [ev("launch", "01")], inflight=("01",)).stop)
+
+    def test_holds_b3_until_relaunched_and_parks_unroutable(self) -> None:
+        self.assertEqual(self.plan([T("01", blast=Blast.B3)]).park, (("01", "b3-path", runcore.B3_HOLD),))
+        relaunched = [ev("intervention", "01", kind="relaunch", note="")]
+        self.assertEqual(self.plan([T("01", blast=Blast.B3)], relaunched).park[0][1], "unroutable", "the ladder has no T0 rung")
+        top = runcore.plan_round([T("01", blast=Blast.B3)], runcore.fold_ledger(relaunched), (), 4, 2, {Tier.T0: (LARGE,)}, 0.0, EMPTY_MAP, ())
+        self.assertEqual([r.tier for _, r in top.launch], [Tier.T0])
+        self.assertEqual(self.plan([T("01", blast=Blast.B1)]).park[0][1], "unroutable")
 
 
 class Preamble(unittest.TestCase):
     def build(self, ticket: Ticket, **kw: Any) -> str:
         args: dict[str, Any] = dict(ticket=ticket, ticket_text="# 01 — t\n\nStatus: ready-for-agent\n", branch="t/01", base="a" * 40,
                                     handoff_path=".scratch/demo/handoffs/01.md", verify=["make test"], agents_md=True, field_guide="- trap: X",
-                                    depends_rows=[], checklists={}, state=run.TicketState())
-        return run.build_instructions(**{**args, **kw})
+                                    depends_rows=[], checklists={}, state=runcore.TicketState())
+        return runcore.build_instructions(**{**args, **kw})
 
     def test_contract_surfaces(self) -> None:
         text = self.build(T("01", "src/a/**", blast=Blast.B1))
@@ -426,20 +479,20 @@ class Preamble(unittest.TestCase):
         self.assertIn("No domain-checklist zone", b3)
 
     def test_retry_note(self) -> None:
-        state = run.TicketState(launches=1, last_failure="VERIFY-FAILED make test", notes=["use B"])
+        state = runcore.TicketState(launches=1, last_failure="VERIFY-FAILED make test", notes=["use B"])
         text = self.build(T("01"), state=state)
         self.assertIn("VERIFY-FAILED make test", text)
         self.assertIn("Operator note (decided", text)
 
     def test_depends_rows(self) -> None:
         ledger = "| ID | Decision |\n|---|---|\n| D-001 | a |\n| **D-002** | b |\n"
-        self.assertEqual(run.depends_rows(ledger, ["D-002"]), ["| ID | Decision |", "|---|---|", "| **D-002** | b |"])
-        self.assertEqual(run.depends_rows(ledger, []), [])
+        self.assertEqual(runcore.depends_rows(ledger, ["D-002"]), ["| ID | Decision |", "|---|---|", "| **D-002** | b |"])
+        self.assertEqual(runcore.depends_rows(ledger, []), [])
 
 
 class Config(unittest.TestCase):
-    def parse(self, run_table: dict[str, Any]) -> run.RunConfig:
-        return run.parse_run_config({"run": run_table}, "demo")
+    def parse(self, run_table: dict[str, Any]) -> runcore.RunConfig:
+        return runcore.parse_run_config({"run": run_table}, "demo")
 
     def test_valid_and_defaults(self) -> None:
         rc = self.parse({"ladder": {"T0": [{"tool": "claude", "model": "claude-opus-4-8", "effort": "high"}]}})
@@ -447,7 +500,7 @@ class Config(unittest.TestCase):
         self.assertEqual((rc.parallel, rc.park_k, rc.ledger_snapshot), (4, 2, ".scratch/demo/ledger/events.jsonl"))
 
     def test_refusals(self) -> None:
-        bad = [
+        bad: list[dict[str, Any]] = [
             {},
             {"ladder": {"T0": [{"tool": "claude", "model": "claude-fable-5"}]}},
             {"ladder": {"T0": [{"tool": "claude", "model": "FABLE-5.1"}]}},
@@ -458,16 +511,64 @@ class Config(unittest.TestCase):
             {"ladder": {"T0": [{"tool": "claude", "model": "m"}]}, "parallel": 0},
         ]
         for table in bad:
-            with self.assertRaises(run.ConfigError, msg=str(table)):
+            with self.assertRaises(ConfigError, msg=str(table)):
                 self.parse(table)
+
+
+FAKE_CLAUDE = """#!/bin/sh
+if [ "$1" = "--version" ]; then echo "fake 0.0"; exit 0; fi
+trap 'echo term > "$MARK"; exit 143' TERM
+echo started > "$MARK.started"
+sleep 30 &
+wait
+"""
+
+
+class ClaudeLauncher(unittest.TestCase):
+    def bundle(self, root: Path) -> Path:
+        bundle = root / "bundle"
+        bundle.mkdir()
+        (bundle / "instructions.md").write_text("do it\n")
+        params = {"contract": 1, "role": "author", "worker": {"tool": "claude", "model": "claude-sonnet-5"}, "isolation": {}, "cwd": str(root), "timeout_s": 60}
+        (bundle / "params.json").write_text(json.dumps(params))
+        return bundle
+
+    def test_empty_isolation_is_bypass_permissions_with_the_model_named(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            out = subprocess.run([sys.executable, str(HERE / "launchers" / "claude_p.py"), "--dry-run", str(self.bundle(Path(tmp)))],
+                                 capture_output=True, text=True, check=True).stdout
+            argv = json.loads(out)["argv"]
+            self.assertEqual(argv[argv.index("--permission-mode") + 1], "bypassPermissions")
+            self.assertEqual(argv[argv.index("--model") + 1], "claude-sonnet-5")
+
+    def test_sigterm_reaches_the_worker_and_is_reported(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            fake = root / "bin" / "claude"
+            fake.parent.mkdir()
+            fake.write_text(FAKE_CLAUDE)
+            fake.chmod(0o755)
+            bundle = self.bundle(root)
+            env = {**os.environ, "PATH": f"{fake.parent}:{os.environ['PATH']}", "MARK": str(root / "mark")}
+            proc = subprocess.Popen([sys.executable, str(HERE / "launchers" / "claude_p.py"), str(bundle)], env=env, start_new_session=True)
+            deadline = time.monotonic() + 20
+            while not (root / "mark.started").exists():
+                self.assertLess(time.monotonic(), deadline)
+                time.sleep(0.05)
+            os.killpg(proc.pid, signal.SIGTERM)
+            self.assertEqual(proc.wait(timeout=20), 1)
+            self.assertEqual((root / "mark").read_text().strip(), "term", "the worker's own group got SIGTERM")
+            result = json.loads((bundle / "result.json").read_text())
+            self.assertEqual((result["ok"], result["interrupted"]), (False, True))
+            self.assertIn("interrupted by signal", result["error_summary"])
 
 
 class PlannerCommit(unittest.TestCase):
     def test_commits_without_checkout_and_retries_a_lost_race(self) -> None:
         with tempfile.TemporaryDirectory() as tmp, isolated_git():
             repo = Repo(Path(tmp))
-            git = run.Git(repo.root)
-            moved = []
+            git = Git(repo.root)
+            moved: list[str] = []
 
             def edit(base: str) -> dict[str, str]:
                 if not moved:  # a planner edit lands between our read and our swap

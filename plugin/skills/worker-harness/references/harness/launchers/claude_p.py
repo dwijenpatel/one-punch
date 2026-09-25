@@ -24,22 +24,23 @@ import signal
 import subprocess
 import sys
 import time
+from typing import Any
 
 KNOWN_ISOLATION_KEYS = {"deny_read", "sandbox", "network", "unix_sockets"}
 KNOWN_WORKER_KEYS = {"tool", "model", "effort"}
 
 
-def utcnow():
+def utcnow() -> str:
     return datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def write_result(bundle, payload):
+def write_result(bundle: str, payload: dict[str, Any]) -> None:
     with open(os.path.join(bundle, "result.json"), "w", encoding="utf-8") as fh:
         json.dump(payload, fh, indent=2, sort_keys=True)
         fh.write("\n")
 
 
-def refuse(bundle, reason):
+def refuse(bundle: str, reason: str) -> int:
     write_result(
         bundle,
         {
@@ -55,7 +56,7 @@ def refuse(bundle, reason):
     return 2
 
 
-def validate(params):
+def validate(params: dict[str, Any]) -> str | None:
     """Return a refusal reason, or None if this launcher can express the intent."""
     if params.get("contract", 1) != 1:
         # Unknown bundle major: refuse fail-closed (T11 policy). Absence is
@@ -100,7 +101,24 @@ def validate(params):
     return None
 
 
-def build_settings(isolation):
+class Interrupted(Exception):
+    def __init__(self, signum: int) -> None:
+        super().__init__(signum)
+        self.signum = signum
+
+
+def _raise_interrupted(signum: int, frame: object) -> None:
+    raise Interrupted(signum)
+
+
+def _kill_group(pid: int, sig: int) -> None:
+    try:
+        os.killpg(pid, sig)
+    except (ProcessLookupError, PermissionError):
+        pass
+
+
+def build_settings(isolation: dict[str, Any]) -> dict[str, Any]:
     """Translate isolation intent into a Claude Code settings object.
 
     Two layers, learned from smoke runs 1-2 (2026-07-12) + doc research:
@@ -124,7 +142,7 @@ def build_settings(isolation):
     vendor-build — the smoke probe is the arbiter on the target build.
     """
     deny_read = [p.rstrip("/") for p in isolation.get("deny_read", [])]
-    settings = {}
+    settings: dict[str, Any] = {}
     if deny_read:
         # `f"Read(/{path})"` where path already starts with "/" yields "//path"
         # = absolute per the permission-rule path syntax.
@@ -134,7 +152,7 @@ def build_settings(isolation):
             rules.append(f"Read(/{path}/**)")
         settings["permissions"] = {"deny": rules}
     if isolation.get("sandbox"):
-        sandbox = {
+        sandbox: dict[str, Any] = {
             "enabled": True,
             "failIfUnavailable": True,          # sandbox can't start (missing deps/platform)
                                                 # -> abort at startup; the documented default
@@ -166,7 +184,7 @@ def build_settings(isolation):
     return settings
 
 
-def binary_provenance(resolve_version):
+def binary_provenance(resolve_version: bool) -> dict[str, str | None]:
     """Which `claude` will actually run, and (on real runs) its version.
 
     Vendor builds are the fastest-decaying dependency in the system and the
@@ -177,7 +195,7 @@ def binary_provenance(resolve_version):
     only.
     """
     path = shutil.which("claude")
-    prov = {"path": path}
+    prov: dict[str, str | None] = {"path": path}
     if path and resolve_version:
         try:
             r = subprocess.run([path, "--version"], capture_output=True,
@@ -188,7 +206,7 @@ def binary_provenance(resolve_version):
     return prov
 
 
-def permission_mode(isolation):
+def permission_mode(isolation: dict[str, Any]) -> str:
     """acceptEdits when a wall is requested (legacy isolation intent); otherwise
     bypassPermissions. one-punch v4 requests no walls (plan §9, operator
     2026-09-24): workers run unattended in their own worktree and the
@@ -198,7 +216,7 @@ def permission_mode(isolation):
     return "bypassPermissions"
 
 
-def build_argv(worker, settings_path, instructions_path, mode="acceptEdits"):
+def build_argv(worker: dict[str, Any], settings_path: str, instructions_path: str, mode: str = "acceptEdits") -> list[str]:
     with open(instructions_path, encoding="utf-8") as fh:
         prompt = fh.read()
     argv = [
@@ -209,11 +227,12 @@ def build_argv(worker, settings_path, instructions_path, mode="acceptEdits"):
         worker["model"],
         "--settings",
         settings_path,
-        # acceptEdits (NOT bypassPermissions): covers the Edit/Write tool for
-        # in-cwd edits so it won't prompt->abort headless; mutating bash is
-        # handled by sandbox.autoAllowBashIfSandboxed, so the OS filesystem wall
-        # (sandbox.filesystem.denyRead) stays enforced. bypassPermissions was
-        # falsified by smoke run 2: it dropped the read wall.
+        # From permission_mode(): bypassPermissions when the bundle requests
+        # no walls (one-punch v4 always: plan §9; spike 02 P1/P2 on 2.1.281
+        # ran unattended edits, tests, pipes, env-prefixed commands and
+        # commits with it). acceptEdits only for a legacy walled intent,
+        # where bypassPermissions was falsified by smoke run 2 (it dropped
+        # the read wall).
         "--permission-mode",
         mode,
         # Structured output so the session's own token/cost usage is captured
@@ -242,7 +261,7 @@ def build_argv(worker, settings_path, instructions_path, mode="acceptEdits"):
     return argv
 
 
-def parse_session(stdout):
+def parse_session(stdout: str) -> tuple[str, dict[str, Any], bool | None]:
     """Parse `claude -p --output-format json` stdout.
 
     Returns (transcript_text, usage, is_error):
@@ -286,7 +305,7 @@ def parse_session(stdout):
     return (text if isinstance(text, str) else (stdout or ""), usage, bool(obj.get("is_error")))
 
 
-def main(argv=None):
+def main(argv: list[str] | None = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
     dry_run = "--dry-run" in args
     if dry_run:
@@ -357,15 +376,29 @@ def main(argv=None):
         env={**os.environ, **env_extra},
     )
     timed_out = False
+    interrupted: int | None = None
+    # The worker runs in its own session, so a signal to this launcher's
+    # process group (the harness's operator stop) never reaches it: forward
+    # SIGTERM/SIGINT to the worker's group, then report, never orphan a
+    # session that keeps spending quota and committing.
+    for sig in (signal.SIGTERM, signal.SIGINT):
+        signal.signal(sig, _raise_interrupted)
     try:
         out, errout = proc.communicate(timeout=params["timeout_s"])
     except subprocess.TimeoutExpired:
         timed_out = True
-        try:
-            os.killpg(proc.pid, signal.SIGKILL)
-        except (ProcessLookupError, PermissionError):
-            pass
+        _kill_group(proc.pid, signal.SIGKILL)
         out, errout = proc.communicate()
+    except Interrupted as exc:
+        interrupted = exc.signum
+        for sig in (signal.SIGTERM, signal.SIGINT):
+            signal.signal(sig, signal.SIG_IGN)
+        _kill_group(proc.pid, signal.SIGTERM)
+        try:
+            out, errout = proc.communicate(timeout=10)
+        except subprocess.TimeoutExpired:
+            _kill_group(proc.pid, signal.SIGKILL)
+            out, errout = proc.communicate()
 
     transcript_text, usage, is_error = parse_session(out or "")
     with open(os.path.join(bundle, "transcript.txt"), "w", encoding="utf-8") as fh:
@@ -377,8 +410,8 @@ def main(argv=None):
 
     # Fail-closed on a vendor-reported session error (is_error), on top of the
     # exit/timeout checks. is_error is None when unparseable -> exit governs.
-    ok = (not timed_out) and proc.returncode == 0 and not is_error
-    payload = {
+    ok = (not timed_out) and interrupted is None and proc.returncode == 0 and not is_error
+    payload: dict[str, Any] = {
         "contract": 1,
         "ok": ok,
         "exit": None if timed_out else proc.returncode,
@@ -386,6 +419,7 @@ def main(argv=None):
         "finished_at": utcnow(),
         "duration_s": round(time.monotonic() - t0, 3),
         "timed_out": timed_out,
+        "interrupted": interrupted is not None,
         "binary": binary,
         "usage": usage,
     }
@@ -393,8 +427,9 @@ def main(argv=None):
         # Surface the vendor's own words so the caller can classify the
         # failure (environment vs solution — e.g. the usage-window wall).
         payload["error_summary"] = (
-            (transcript_text or "").strip()[:300]
-            or (errout or "").strip()[-300:]
+            f"interrupted by signal {interrupted}; worker process group terminated"
+            if interrupted is not None
+            else (transcript_text or "").strip()[:300] or (errout or "").strip()[-300:]
         )
     write_result(bundle, payload)
     return 0 if ok else 1
