@@ -1,7 +1,7 @@
 # 07 — harness core v4
 
 Type: task
-Status: ready-for-agent
+Status: done
 Blocked by: 03
 Tag: contract
 Blast: B2 — routing and batching every build depends on
