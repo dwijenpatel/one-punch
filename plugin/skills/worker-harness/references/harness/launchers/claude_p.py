@@ -1,19 +1,24 @@
 #!/usr/bin/env python3
 """claude_p — launcher for Claude Code headless workers (`claude -p`).
 
-Implements the tool-neutral launcher contract (CONTRACT.md): translates the
-bundle's isolation INTENT into Claude Code mechanisms (a generated per-spawn
-settings file with Read-deny rules + sandbox config), builds the `claude -p`
-invocation from the worker params, enforces the timeout, writes result.json
-and transcript.txt.
+Implements the tool-neutral launcher contract (CONTRACT.md): builds the
+`claude -p` invocation from the worker params, enforces the timeout, forwards
+an operator stop (SIGTERM/SIGINT) to the worker's process group, and writes
+result.json (with binary provenance and the session's usage) and
+transcript.txt.
 
-Fail-closed: any part of the intent this launcher cannot express -> refuse
-(nonzero exit, refused_reason in result.json), never launch unwalled.
+No isolation walls (operator decision, 2026-09-24): the worker runs with
+`bypassPermissions` in its own worktree and the harness's integrate step
+guards what lands. The bundle's `isolation` must therefore be empty; any
+field is an intent this launcher does not express, and it refuses
+(fail-closed: nonzero exit, refused_reason in result.json). Hygiene flags
+keep ambient configuration (settings hooks, MCP servers, slash commands,
+auto-memory, session persistence) away from the worker.
 
-Vendor-mechanism honesty: the exact settings/flag semantics are vendor-build
-behavior, verified only by the operator-run smoke probe (--dry-run shows what
-would be attempted). Self-contained by design — a new tool's launcher copies
-this file's shape, not its imports.
+Vendor-mechanism honesty: flag semantics are vendor-build behavior, verified
+only by the operator-run smoke (`smoke_workers.sh claude`); --dry-run shows
+what would run. Self-contained by design — a new tool's launcher copies this
+file's shape, not its imports.
 """
 
 import datetime
@@ -26,7 +31,6 @@ import sys
 import time
 from typing import Any
 
-KNOWN_ISOLATION_KEYS = {"deny_read", "sandbox", "network", "unix_sockets"}
 KNOWN_WORKER_KEYS = {"tool", "model", "effort"}
 
 
@@ -76,22 +80,10 @@ def validate(params: dict[str, Any]) -> str | None:
     isolation = params.get("isolation", {})
     if not isinstance(isolation, dict):
         return "params.isolation must be an object"
-    unknown = sorted(set(isolation) - KNOWN_ISOLATION_KEYS)
-    if unknown:
-        # Fail-closed: an unknown intent field is an unexpressible intent field.
-        return f"unknown isolation field(s) this launcher cannot express: {', '.join(unknown)}"
-    deny = isolation.get("deny_read", [])
-    if not isinstance(deny, list) or not all(
-        isinstance(p, str) and os.path.isabs(p) for p in deny
-    ):
-        return "isolation.deny_read must be a list of absolute paths"
-    network = isolation.get("network", True)
-    if network is not True and isolation.get("sandbox") is not True:
-        return "network policy requires sandbox=true (no non-sandbox mechanism expresses it)"
-    if not (network in (True, False) or (isinstance(network, list) and all(isinstance(d, str) for d in network))):
-        return "isolation.network must be true, false, or a list of allowed domains"
-    if isolation.get("unix_sockets") not in (None, True, False):
-        return "isolation.unix_sockets must be a boolean"
+    if isolation:
+        # Fail-closed: this launcher expresses no isolation (no walls; the
+        # integrate gate guards what lands), so every field is unexpressible.
+        return f"isolation field(s) this launcher does not express (it takes {{}}): {', '.join(sorted(isolation))}"
 
     cwd = params.get("cwd")
     if not cwd or not os.path.isdir(cwd):
@@ -118,72 +110,6 @@ def _kill_group(pid: int, sig: int) -> None:
         pass
 
 
-def build_settings(isolation: dict[str, Any]) -> dict[str, Any]:
-    """Translate isolation intent into a Claude Code settings object.
-
-    Two layers, learned from smoke runs 1-2 (2026-07-12) + doc research:
-    - The OS wall for arbitrary bash (cat/ls/python open()) is
-      `sandbox.filesystem.denyRead` (Seatbelt/bubblewrap-enforced,
-      independent of permission mode). This is the load-bearing wall.
-    - `permissions.deny: Read(...)` additionally blocks Claude's in-process
-      Read TOOL (which is NOT sandboxed). Absolute paths need the `//` prefix
-      (a single leading `/` is project-relative — a real footgun).
-    - `sandbox.autoAllowBashIfSandboxed` runs sandboxed bash unattended (no
-      approval prompt, so headless git commit / python3 do not abort) WHILE
-      the filesystem wall stays up. This is why bypassPermissions (which
-      dropped the wall in smoke run 2) is not used.
-    - `sandbox.failIfUnavailable` turns sandbox-start failure (missing
-      dependencies, unsupported platform) into a startup abort. The
-      documented default is to WARN AND RUN UNSANDBOXED — a fail-open that
-      would silently void every wall above (operator-caught, 2026-07-12).
-
-    Confidence: doc-grounded (code.claude.com/docs sandboxing + settings), but
-    the commit-under-auto-allow and denyRead-blocks-bash behaviors are
-    vendor-build — the smoke probe is the arbiter on the target build.
-    """
-    deny_read = [p.rstrip("/") for p in isolation.get("deny_read", [])]
-    settings: dict[str, Any] = {}
-    if deny_read:
-        # `f"Read(/{path})"` where path already starts with "/" yields "//path"
-        # = absolute per the permission-rule path syntax.
-        rules = []
-        for path in deny_read:
-            rules.append(f"Read(/{path})")
-            rules.append(f"Read(/{path}/**)")
-        settings["permissions"] = {"deny": rules}
-    if isolation.get("sandbox"):
-        sandbox: dict[str, Any] = {
-            "enabled": True,
-            "failIfUnavailable": True,          # sandbox can't start (missing deps/platform)
-                                                # -> abort at startup; the documented default
-                                                # WARNS AND RUNS UNSANDBOXED (fail-open)
-            "autoAllowBashIfSandboxed": True,   # unattended sandboxed bash; no prompt/abort
-            "allowUnsandboxedCommands": False,  # close the dangerouslyDisableSandbox escape hatch
-            "excludedCommands": [],             # nothing runs outside the wall
-        }
-        if deny_read:
-            sandbox["filesystem"] = {"denyRead": deny_read}
-        network = isolation.get("network", True)
-        # Probed on build 2.1.220 (2026-08-07): the sandbox default pre-allows
-        # NOTHING and headless network prompts hang/deny; loopback TCP is
-        # blocked and NOT allowlistable by hostname; TCP listen/bind is blocked
-        # even on 127.0.0.1. Local services are reached via unix sockets
-        # (isolation.unix_sockets -> allowUnixSockets) + a host-side bridge
-        # (e.g. socat unix-listen -> tcp). Env-prefixed commands (`VAR=x cmd`,
-        # `export ...;`) and pipes are approval-gated even under
-        # autoAllowBashIfSandboxed: put env in config files (.cargo/config.toml
-        # [env] etc.) and have workers run PLAIN commands.
-        if network is False:
-            sandbox["network"] = {"allowedDomains": [], "strictAllowlist": True}
-        elif isinstance(network, list):
-            sandbox["network"] = {"allowedDomains": list(network), "strictAllowlist": True}
-        if isolation.get("unix_sockets"):
-            sandbox.setdefault("network", {"allowedDomains": [], "strictAllowlist": True})
-            sandbox["network"]["allowUnixSockets"] = True
-        settings["sandbox"] = sandbox
-    return settings
-
-
 def binary_provenance(resolve_version: bool) -> dict[str, str | None]:
     """Which `claude` will actually run, and (on real runs) its version.
 
@@ -206,17 +132,7 @@ def binary_provenance(resolve_version: bool) -> dict[str, str | None]:
     return prov
 
 
-def permission_mode(isolation: dict[str, Any]) -> str:
-    """acceptEdits when a wall is requested (legacy isolation intent); otherwise
-    bypassPermissions. one-punch v4 requests no walls (plan §9, operator
-    2026-09-24): workers run unattended in their own worktree and the
-    integrate gate, not containment, guards what lands."""
-    if isolation.get("sandbox") or isolation.get("deny_read"):
-        return "acceptEdits"
-    return "bypassPermissions"
-
-
-def build_argv(worker: dict[str, Any], settings_path: str, instructions_path: str, mode: str = "acceptEdits") -> list[str]:
+def build_argv(worker: dict[str, Any], instructions_path: str) -> list[str]:
     with open(instructions_path, encoding="utf-8") as fh:
         prompt = fh.read()
     argv = [
@@ -225,16 +141,10 @@ def build_argv(worker: dict[str, Any], settings_path: str, instructions_path: st
         prompt,
         "--model",
         worker["model"],
-        "--settings",
-        settings_path,
-        # From permission_mode(): bypassPermissions when the bundle requests
-        # no walls (one-punch v4 always: plan §9; spike 02 P1/P2 on 2.1.281
-        # ran unattended edits, tests, pipes, env-prefixed commands and
-        # commits with it). acceptEdits only for a legacy walled intent,
-        # where bypassPermissions was falsified by smoke run 2 (it dropped
-        # the read wall).
+        # Unattended in its own worktree, no walls (spike 02 P1/P2 on 2.1.281
+        # ran edits, tests, pipes, env-prefixed commands and commits with it).
         "--permission-mode",
-        mode,
+        "bypassPermissions",
         # Structured output so the session's own token/cost usage is captured
         # in result.json instead of being lost (D14/R4: the harness must
         # measure its own spend). stdout becomes one JSON object; the human
@@ -246,9 +156,8 @@ def build_argv(worker: dict[str, Any], settings_path: str, instructions_path: st
         # semantics are vendor-build — smoke run 5 is the arbiter): a worker
         # must be reproducible, not shaped by whoever's machine it runs on.
         # User/project/local settings (hooks! could act on every tool call)
-        # are excluded — our generated --settings file is a separate source
-        # and still applies; managed policy always applies. NOT --bare: that
-        # kills OAuth/keychain auth, which the subscription path needs.
+        # are excluded; managed policy always applies. NOT --bare: that kills
+        # OAuth/keychain auth, which the subscription path needs.
         "--setting-sources", "",
         "--strict-mcp-config",        # no --mcp-config given -> zero MCP servers
         "--disable-slash-commands",   # workers follow instructions.md, not skills
@@ -329,14 +238,7 @@ def main(argv: list[str] | None = None) -> int:
     if reason:
         return refuse(bundle, reason)
 
-    settings = build_settings(params.get("isolation", {}))
-    settings_path = os.path.join(bundle, "generated-settings.json")
-    with open(settings_path, "w", encoding="utf-8") as fh:
-        json.dump(settings, fh, indent=2, sort_keys=True)
-        fh.write("\n")
-
-    argv_out = build_argv(params["worker"], settings_path, instructions,
-                          permission_mode(params.get("isolation", {})))
+    argv_out = build_argv(params["worker"], instructions)
     # Auto-memory would leak the operator's accumulated context into a worker
     # that is supposed to see only its bundle. Env-var name is community-
     # reported, unverified on this build — harmless if ignored, and smoke
@@ -352,7 +254,6 @@ def main(argv: list[str] | None = None) -> int:
                     "binary": binary_provenance(resolve_version=False),
                     "cwd": params["cwd"],
                     "env_extra": env_extra,
-                    "generated_settings": settings,
                     "timeout_s": params["timeout_s"],
                 },
                 indent=2,

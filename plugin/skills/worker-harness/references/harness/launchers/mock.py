@@ -3,7 +3,8 @@
 
 Honors the same contract as every real launcher (CONTRACT.md): reads the
 bundle, "runs the worker" by executing a scripted scenario in params.cwd,
-enforces timeout_s, writes result.json + transcript.txt.
+enforces timeout_s, forwards an operator stop (SIGTERM/SIGINT) to the
+scenario's process group, writes result.json + transcript.txt.
 
 The scenario script is named by the MOCK_SCRIPT environment variable (set by
 tests). A first line of `#MOCK_REFUSE <reason>` simulates a fail-closed
@@ -18,19 +19,37 @@ import signal
 import subprocess
 import sys
 import time
+from typing import Any
 
 
-def utcnow():
+def utcnow() -> str:
     return datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def write_result(bundle, payload):
+def write_result(bundle: str, payload: dict[str, Any]) -> None:
     with open(os.path.join(bundle, "result.json"), "w", encoding="utf-8") as fh:
         json.dump(payload, fh, indent=2, sort_keys=True)
         fh.write("\n")
 
 
-def main(argv=None):
+class Interrupted(Exception):
+    def __init__(self, signum: int) -> None:
+        super().__init__(signum)
+        self.signum = signum
+
+
+def _raise_interrupted(signum: int, frame: object) -> None:
+    raise Interrupted(signum)
+
+
+def _kill_group(pid: int, sig: int) -> None:
+    try:
+        os.killpg(pid, sig)
+    except (ProcessLookupError, PermissionError):
+        pass
+
+
+def main(argv: list[str] | None = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
     if "--dry-run" in args:
         args.remove("--dry-run")
@@ -113,21 +132,33 @@ def main(argv=None):
         start_new_session=True,
     )
     timed_out = False
+    interrupted: int | None = None
+    # Same stop semantics as the real launchers: the scenario runs in its own
+    # session, so forward SIGTERM/SIGINT to its group and report, never orphan it.
+    for sig in (signal.SIGTERM, signal.SIGINT):
+        signal.signal(sig, _raise_interrupted)
     try:
         output, _ = proc.communicate(timeout=params.get("timeout_s", 600))
     except subprocess.TimeoutExpired:
         timed_out = True
-        try:
-            os.killpg(proc.pid, signal.SIGKILL)
-        except (ProcessLookupError, PermissionError):
-            pass
+        _kill_group(proc.pid, signal.SIGKILL)
         output, _ = proc.communicate()
+    except Interrupted as exc:
+        interrupted = exc.signum
+        for sig in (signal.SIGTERM, signal.SIGINT):
+            signal.signal(sig, signal.SIG_IGN)
+        _kill_group(proc.pid, signal.SIGTERM)
+        try:
+            output, _ = proc.communicate(timeout=10)
+        except subprocess.TimeoutExpired:
+            _kill_group(proc.pid, signal.SIGKILL)
+            output, _ = proc.communicate()
 
     with open(os.path.join(bundle, "transcript.txt"), "w", encoding="utf-8") as fh:
         fh.write(output or "")
 
-    ok = (not timed_out) and proc.returncode == 0
-    payload = {
+    ok = (not timed_out) and interrupted is None and proc.returncode == 0
+    payload: dict[str, Any] = {
         "contract": 1,
         "ok": ok,
         "exit": None if timed_out else proc.returncode,
@@ -135,11 +166,16 @@ def main(argv=None):
         "finished_at": utcnow(),
         "duration_s": round(time.monotonic() - t0, 3),
         "timed_out": timed_out,
+        "interrupted": interrupted is not None,
     }
     if not ok:
         # Contract parity with real launchers: failure carries the worker's
         # own words for caller-side classification.
-        payload["error_summary"] = (output or "").strip()[-300:]
+        payload["error_summary"] = (
+            f"interrupted by signal {interrupted}; worker process group terminated"
+            if interrupted is not None
+            else (output or "").strip()[-300:]
+        )
     write_result(bundle, payload)
     return 0 if ok else 1
 
