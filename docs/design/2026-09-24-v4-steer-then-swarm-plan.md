@@ -55,8 +55,7 @@ damage a wrong change could do if it shipped unnoticed.
    Evidence itself is always gathered, but lightly and in parallel: A1 runs a
    prior-art lane (proven reference implementations) and a lake-backed,
    retrieval-grade evidence lane scoped to open forks and risks (§2 A1). The
-   heavier options are and proposed only when the effort shows
-   proposed only when the effort shows the need (v3 §9 "model-proposable,
+   heavier options are proposed only when the effort shows the need (v3 §9 "model-proposable,
    never model-enterable" stands). (E§1.1; operator direction 2026-09-24)
 7. **Code standards are enforced, not just stated.** A short, repo-specific
    style section says only what a linter cannot decide; linters and import
