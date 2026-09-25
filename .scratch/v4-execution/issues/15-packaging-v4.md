@@ -32,3 +32,8 @@ Record this in the packaging README / dogfood notes.
 (indented command lines under `Acceptance:`, or fenced blocks in an Acceptance
 section). Update `steer`'s ticket-header reference so v4 tickets are cut in
 that form. `steer`'s A2 install must ensure `.worktrees/` is git-ignored.
+2026-09-25 — from ticket 10: `steer`'s ticket-header reference must require
+B3 tickets' `Touches` to include their test paths (the independent test
+author may write only test files inside Touches; otherwise the ticket parks
+as `stage`). Also document `[run] lens` + `lens_smoke` in harness.toml setup
+at A2 (lens model used only while its smoke passes).

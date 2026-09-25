@@ -4,9 +4,9 @@ Type: task
 Status: ready-for-agent
 Blocked by: 08, 09, 10
 Tag: contract
-Blast: B1
+Blast: B2 — harness core split + launcher changes
 Size: medium
-Touches: plugin/skills/worker-harness/SKILL.md, plugin/skills/worker-harness/references/*.md, plugin/skills/worker-harness/references/harness/launchers/**
+Touches: plugin/skills/worker-harness/SKILL.md, plugin/skills/worker-harness/references/*.md, plugin/skills/worker-harness/references/harness/launchers/**, plugin/skills/worker-harness/references/harness/core.py, plugin/skills/worker-harness/references/harness/test_core.py, plugin/skills/worker-harness/references/harness/core_*.py, plugin/skills/worker-harness/references/harness/CONTRACT.md
 Authority: docs/design/2026-09-24-v4-steer-then-swarm-plan.md
 
 ## What
@@ -25,3 +25,9 @@ Acceptance: `rg -q 'parallel' plugin/skills/worker-harness/SKILL.md` · handoff 
   `closure` / `resume`, stop via `kill -INT <pid>` or the stop file (not
   terminal ^C), the reversibility grammar for `Decisions needed`, and
   "commit the handoff last, on the branch".
+2026-09-25 — from ticket 10: also document the dispatch roles (test_author,
+spec_verdict, lens, merge), their models, the file-scope rule, B3 salvage,
+`[run] lens` / `lens_smoke`, and park states (`stage`, `conflict`,
+`blast-b3`). Remove the unused `RouteDecision` import in test_core.py.
+Touches widened by planner: this ticket now also owns `core.py` and
+`test_core.py` (the split) — Blast raised to B2 (harness core).
