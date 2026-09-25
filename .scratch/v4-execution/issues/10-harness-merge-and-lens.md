@@ -6,7 +6,7 @@ Blocked by: 09
 Tag: contract
 Blast: B2
 Size: high
-Touches: plugin/skills/worker-harness/references/harness/review.py, plugin/skills/worker-harness/references/harness/test_review.py
+Touches: plugin/skills/worker-harness/references/harness/review.py, plugin/skills/worker-harness/references/harness/test_review.py, plugin/skills/worker-harness/references/harness/run.py, plugin/skills/worker-harness/references/harness/runcore.py, plugin/skills/worker-harness/references/harness/test_run.py, plugin/skills/worker-harness/references/harness/integrate.py
 Authority: docs/design/2026-09-24-v4-steer-then-swarm-plan.md
 
 ## What
