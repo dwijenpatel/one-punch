@@ -14,9 +14,10 @@ practice, slipstream, idea-gen D26; cited as `E§n`),
 provenance is §14. v2 (2026-07-27) and v1 provenance are §§15–17.
 
 This document states policy and names instruments. Mechanism lives in the
-skills it names, and every contract has exactly one home, named where this
-document uses it: the ticket header (`steer`), the scrutiny ladder and
-checklists (`blast-radius`), stop conditions, exit codes, routing floors,
+skills it names, and every mechanism contract has exactly one home, named
+where this document uses it: the ticket header (`steer`), the full scrutiny
+ladder and the domain checklists (`blast-radius`; §3 states the levels and
+the B3 row as policy), stop conditions, exit codes, routing floors,
 configuration and the handoff schema (`worker-harness`). Rationale and
 detail live in the plan. Three copies of a contract drift; one plus
 pointers does not.
@@ -328,7 +329,7 @@ ceiling below 4, the default N drops to it; the design is unchanged.
 | Role | Who | Model | Never |
 |---|---|---|---|
 | **Planner** | the operator's interactive session | session model (Opus) | implements; routes itself headless |
-| **Worker** | fresh headless session per ticket, in its own worktree, via a v3 launcher (`claude_p` default) | floor = max(tag × size floor, blast floor) (§8) | plans across tickets; talks to other workers; decides a ledger question |
+| **Worker** | fresh headless session per ticket, in its own worktree, via a launcher (`claude_p` default) | floor = max(tag × size floor, blast floor) (§8) | plans across tickets; talks to other workers; decides a ledger question |
 | **Merge agent** | fresh agent, only on conflict | Sonnet; Opus if either ticket is B3 | favors either side; changes behavior beyond the two tickets |
 | **Lens reviewer** | fresh agent, B3 tickets and milestones | a model different from the implementer's | edits code; sees the implementer's transcript |
 
