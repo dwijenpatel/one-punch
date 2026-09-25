@@ -59,6 +59,9 @@ Write `milestones/<m>/a1/shape-findings.md`:
 ```
 Variant: skeleton | prototype | survey
 Demo: <command that runs it, or path to the module map>
+Demo links: <each URL or entry point it serves — label, the command that
+             exhibits the label, its result; a link whose check did not pass
+             is listed as unverified and is not offered to the operator>
 Answer to the question: <one paragraph> (greenfield)
 Architecture / module map: <section>
 Blast-map draft or proposal: <section, blast-radius format>

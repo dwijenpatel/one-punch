@@ -1,5 +1,5 @@
 Status: DONE_WITH_CONCERNS
-Commits: 3fc2fc7 (skills), plus the commit adding this handoff
+Commits: 3fc2fc7 (skills), fc5626c (handoff), plus the commit adding lane-shape demo links and this handoff update
 Done: Trial 1 amendments 1, 2, 3, 4, 5, 6, 9, 10 (steer part), 11 in steer, decision-memo, intent.
 
 Amendment → file:section
@@ -11,6 +11,7 @@ Amendment → file:section
 - #2 verified links
   - steer/SKILL.md "Entry and ceremony" bullet "Links handed to the operator are verified links" (one rule for H2 demo, H3, polish, ad-hoc); H2 step 1 and H3 step 5 point to it
   - steer/references/milestone-report.md Demo "Links to try" table (link, label, check, result)
+  - steer/references/lane-shape.md Output "Demo links:" (the skeleton's URLs ship with the checks that exhibit their labels, which is where the H2 links come from)
   - steer/references/ticket-header.md Variants bullet (the links list is generated from the walk's variant list and its passing results)
 - #3 polish stage
   - steer/SKILL.md stage table (Polish and Retro rows; retro removed from H3's Invokes); new "## Polish — operator-reported fixes after H3" (≤1 file and about 30 lines, in no B2/B3 zone → planner-direct; else a worker ticket through integrate; failing regression case before the fix via `tdd`; full suite + full walk over every variant at both widths; ledger row + polish-log row; where fixes land; new scope is not polish); "## Retro and the next milestone"; `resume` table (polish due / Polish / retro due / milestone closed rows); intro line 12 (the polish exception to "never implements"); A2 step 7 (`main` changes on the H3 merge decision, again when polish closes)
@@ -52,6 +53,7 @@ Decisions needed (for each: the local option I took, and whether it can be undon
 
 Findings / concerns:
 - steer refers to "`worker-harness`'s example configuration" by role, not by path. That example `harness.toml` does not exist on this branch yet (amendment #10's worker-harness part, another ticket). If that ticket names it differently, the wording still holds; if it never lands, A2 step 6 points at nothing.
+- steer says "`retro` reads the log" and lists the polish log among retro's inputs. retro is out of my Touches and its inputs list does not name a polish log yet. It needs a polish-log input line, and amendment #8's retro ticket is the natural home.
 - pipeline.md's stage table (amendments #1, #3, #10) is out of my Touches and not updated. steer now has Polish and Retro stages that pipeline.md does not.
 - steer/SKILL.md is now 405 lines, up from 312. The limit is 500, so headroom is shrinking.
 - The ticket-graph summary is billed as "one screen". With the installs list and the conditional defaults block it may run past one screen on larger milestones.
