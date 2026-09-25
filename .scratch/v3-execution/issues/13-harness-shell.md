@@ -1,7 +1,7 @@
 # 13 — Harness imperative shell (run / resume / plan-probe)
 
 Type: task
-Status: ready-for-agent
+Status: superseded (by v4-execution 09)
 Blocked by: 06, 07
 Tag: contract
 Size: high
