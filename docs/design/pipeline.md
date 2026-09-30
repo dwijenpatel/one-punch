@@ -546,6 +546,8 @@ pruning candidate at retro; a rule a linter can decide moves to Layer 2.
 Trial 2 alternates tickets with and without the Layer 1 section to measure
 what the prose buys.
 
+**2026-09-30 amendment** (`docs/evidence/2026-09-30-code-guidance-twelve-factor-terse.md`): the template gains a preamble (constraints not a checklist; tie-break by future cost in this codebase; structure first, behavior second), cohesion and deploy-varying config in rules 3 and 8, and a conditional service-rules block for efforts that deploy a long-running service. A secret scan is a Layer 2 hard fail with no ratchet. For service efforts, `steer` A2 records the twelve-factor architecture defaults as ledger rows.
+
 ## 10. Effort lifecycle
 
 Local-markdown tracker is the DEFAULT: the repo is fully self-contained (task

@@ -231,7 +231,11 @@ The planner turns ratified decisions into an explicit build. In order:
      ratified zones, per its install step;
    - the `Code style` section in `AGENTS.md`, per `code-style` Layer 1 —
      brownfield adapts it to existing idioms with lint ratcheted; the first
-     tickets wire Layer 2 into the project's verify commands;
+     tickets wire Layer 2 into the project's verify commands, the secret scan
+     included. When the effort deploys a long-running service, also install
+     the service-rules block and record the service defaults in
+     [references/service-defaults.md](references/service-defaults.md) as
+     ledger rows;
    - the field guide file from `field-guide`'s template (seeded or empty);
    - the harness configuration, started from `worker-harness`'s example
      configuration and filled with this project's verify commands; it names

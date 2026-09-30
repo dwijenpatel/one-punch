@@ -1,6 +1,6 @@
 ---
 name: code-style
-description: "Install and maintain a repo's three-layer code-standards system for agent-written code — a short, positive Layer-1 `Code style` section for AGENTS.md (the default 14-rule template with repo-specific slots), Layer-2 lint-pack mappings to hard-fail-vs-soft-cap enforcement plus the `allow(<rule>): D-NNN` exception convention, and the Layer-3 review rubric for what only a reviewer can decide. Use when compiling or updating a repo's AGENTS.md at plan-compile time, when wiring or auditing a project's lint/format verify commands, when a reviewer needs the Standards-axis rubric for a milestone or a spec verdict, or when deciding whether a stated rule should be promoted, pruned, or moved to Layer 2 under the rule lifecycle."
+description: "Install and maintain a repo's three-layer code-standards system for agent-written code — a short, positive Layer-1 `Code style` section for AGENTS.md (the default 14-rule template with repo-specific slots, plus a conditional service-rules block), Layer-2 lint-pack mappings to hard-fail-vs-soft-cap enforcement plus the `allow(<rule>): D-NNN` exception convention, and the Layer-3 review rubric for what only a reviewer can decide. Use when compiling or updating a repo's AGENTS.md at plan-compile time, when wiring or auditing a project's lint/format verify commands, when a reviewer needs the Standards-axis rubric for a milestone or a spec verdict, or when deciding whether a stated rule should be promoted, pruned, or moved to Layer 2 under the rule lifecycle."
 compatibility: No runtime dependency of its own. Layer 2 assumes the target repo's language has (or a wiring ticket adds) a lint/format toolchain; only the Python/ruff mappings in references/lint-pack-python.md are verified against vendor docs, the rest are recall-sourced and UNVERIFIED until checked against a real install.
 license: MIT
 ---
@@ -23,8 +23,10 @@ re-derive or restate their content here.
 At plan-compile time (A2), install [references/template.md](references/template.md)
 — the default `Code style` section — into the repo's `AGENTS.md`,
 filling the `<…>` slots (which directories are the pure core, which are the
-shell, a reference file that shows the pattern). Keep all 14 rules; the section
-runs to roughly 40 lines. Positive phrasing, one clause of *why* per rule, no
+shell, a reference file that shows the pattern). Keep the preamble (constraints
+not a checklist, the tie-break, structure first) and all 14 rules; the section
+runs to roughly 46 lines. When the effort deploys a long-running service, also
+install the template's conditional service-rules block (rules 15–17). Positive phrasing, one clause of *why* per rule, no
 MUST/CRITICAL. The section is operator-owned once installed — the planner may
 propose edits, but does not unilaterally rewrite it. A controlled trial run on
 real tickets and the rule lifecycle (below) are what decide later cuts, not a
@@ -43,6 +45,7 @@ decide. Split by consequence, not by rule number:
 | boolean flag parameters; > N parameters | inheritance depth > framework + 1 |
 | mutable global state without a `D-NNN` reference; mutable default arguments | — |
 | formatter drift | — |
+| committed secrets: credentials, keys or tokens in tracked files (a secret scanner such as gitleaks, tool invocation `UNVERIFIED` until spiked; the litmus test: the repo could be published at any moment without leaking anything) | — |
 
 Language lint packs map each row to concrete linter codes:
 [lint-pack-python.md](references/lint-pack-python.md) (ruff, verified against
@@ -56,6 +59,8 @@ toolchain — that probe transcript *is* the verification, not this skill.
 
 Brownfield ratchet: existing violations at the point a rule goes live are
 grandfathered; changed code must not add new ones.
+The secret scan is the exception: it has no ratchet. An existing committed
+secret is rotated and removed; it is never grandfathered.
 
 ### The `allow(<rule>): D-NNN` exception convention
 
@@ -100,6 +105,12 @@ diff:
   ordering (Hyrum's law).
 - **Knowledge duplicated** — a rule that must change in lockstep in two
   places; shared helpers that grew per-caller flags.
+- **Structure mixed with behavior:** a commit that both refactors and changes
+  behavior, where the refactor should have landed first with tests unchanged.
+- **Scattered change:** one feature's logic spread across unrelated modules,
+  so changing or deleting it means editing many files.
+- **Service rules** (service efforts only): deploy-varying values in code,
+  state kept in process memory across requests, or logs written to files.
 - **Scope beyond the ticket**, or PR size out of proportion to the ticket.
 
 Reviewers flag rule violations and correctness- or requirement-relevant gaps
