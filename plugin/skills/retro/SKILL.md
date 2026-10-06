@@ -73,6 +73,16 @@ the point of compiling.
 
 ## Output — the evidence memo
 
+**Where the full memo lives, and what gets filed.** The full memo — the
+interaction log, timings, and anything naming the effort's client, employer,
+vendor, codebase or people — stays in the effort's own repository. Before
+filing anything in the process-authority repo, check whether that repo is
+public or shared. If it is, file only an engineering-altitude memo there:
+the metrics, what they confirm or contradict, and the proposed amendments,
+with third parties described generically ("an external codebase", "the vendor
+SDK"). Never copy the full memo into a public repo, and never commit or push
+it there on your own; publishing is the operator's decision.
+
 Fill [references/evidence-memo-template.md](references/evidence-memo-template.md)
 and file it in the process-authority repo's `docs/evidence/` (dated,
 effort-named) — one memo per retro. It opens with the **headline metric**

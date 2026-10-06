@@ -27,3 +27,8 @@
   This is the strongest evidence yet for the v4 front half.
 - Operator time dominated wall clock (58%). H1 ran 35 min against the 15-min
   target, but the retro judges each answer load-bearing, so no amendment is made.
+- **Filing incident (2026-10-06).** The trial session filed its full retro
+  into this public repository automatically, naming the external codebase's
+  owner. It was removed from the unpushed history before any push. Amendment:
+  `retro` now keeps the full memo in the effort repo and files only an
+  engineering-altitude memo here when this repo is public or shared.
