@@ -22,9 +22,8 @@ you name it.
 ## A project, start to finish
 
 Say you want an online store for a small coffee roaster: product pages, a
-cart, checkout, order emails. I haven't built this store. The example shows
-the sequence, and the measured results from real projects are under
-[How it got here](#how-it-got-here).
+cart, checkout, order emails. The example shows the sequence. The measured
+results from real projects are under [How it got here](#how-it-got-here).
 
 ```mermaid
 flowchart LR
