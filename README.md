@@ -206,8 +206,7 @@ less than ten minutes after I answered the last opening question. I
 answered in three sittings before the build. Two parallel workers then built 5
 tickets in 14 minutes with no merge conflicts and no input from me. From the
 first prompt to a merged, checked build, the agents worked for about 35
-minutes in total. That stretch took an hour and a half on the clock, because
-I was switching away to other things between its questions.
+minutes in total.
 
 That trial also failed in a specific way. Four visible defects reached me
 while every automated check was green. I could see each one in a single
