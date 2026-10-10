@@ -2,22 +2,22 @@
 
 **Build software with AI agents while making only the decisions that need you.**
 
-The third version of this tool spent eight days asking me questions, one per
-session, and wrote no code. The fourth had a clickable skeleton of the
-project running 44 minutes after I typed the first prompt. Most of the
-difference comes from one rule:
-
-> Only stop for the human when, looking back, they'd be glad they were asked.
-
-The agent workflows I'd tried before failed in one of two ways. Some asked me
-about everything, and I became a full-time reviewer of questions I didn't
-need to see. Others asked me nothing, ran overnight, and handed back
-confident work built on a wrong guess.
+The agent workflows I'd tried failed in one of two ways. Some asked me about
+everything, and I became a full-time reviewer of questions I didn't need to
+see. Others asked me nothing, ran overnight, and handed back confident work
+built on a wrong guess.
 
 one-punch is a set of skills for coding agents (Claude Code today) that tries
 to avoid both. You make the few decisions that change the outcome. The agents
 do the rest in parallel, and a script, not an agent's own report, decides
 which of their changes merge.
+
+I've rebuilt it four times, and it has converged on one rule:
+
+> Only stop for the human when, looking back, they'd be glad they were asked.
+
+The agent decides everything else, writes it down, and reopens any of it when
+you name it.
 
 ## A project, start to finish
 
@@ -173,8 +173,8 @@ can object, not a gate you have to open.
 
 ## How it got here
 
-I've rebuilt one-punch four times. Each time, a real project showed me where
-the previous version wasted effort or attention. The records are in
+Each rebuild followed a real project that showed me where the previous
+version wasted effort or attention. The records are in
 [docs/evidence/](docs/evidence/) and the commit history.
 
 **Version 1: write a complete spec, then let cheap agents build it
@@ -192,19 +192,23 @@ two facts about the framework that four rounds of review had missed. This
 version is still the back half of the current one.
 
 **Version 3: add intent-gathering, a graded evidence pass, model routing, and
-a retro after each effort.** The front half stalled a real project. Over
-eight days it produced 16 decision tickets, each resolved in its own session
-with me, and no code. It asked too often, it did setup before producing
-anything I could see, and it asked about things it should have decided. I
-replaced the front half.
+a retro after each effort.** The front half stalled a real project. It
+charted 16 decisions to settle with me, one per session. I settled four,
+then switched to other work and didn't come back. It had written no code. It
+asked too often, it did setup before producing anything I could see, and it
+asked about things it should have decided. I replaced the front half.
 
 **Version 4: agents work in parallel before asking anything, one decision
 sitting, scrutiny by risk, a script that decides merges.** The build half
 borrows from Cursor's published work on
 [agent swarms](https://cursor.com/blog/agent-swarm-model-economics). In the
-first trial, on an existing web codebase, the skeleton ran after 44 minutes.
-I sat down three times before the build started. Two parallel workers then
-built 5 tickets in 14 minutes with no merge conflicts and no input from me.
+first trial, on an existing web codebase, the agents had a skeleton running
+less than ten minutes after I answered the last opening question. I
+answered in three sittings before the build. Two parallel workers then built 5
+tickets in 14 minutes with no merge conflicts and no input from me. From the
+first prompt to a merged, checked build, the agents worked for about 35
+minutes in total. That stretch took an hour and a half on the clock, because
+I was switching away to other things between its questions.
 
 That trial also failed in a specific way. Four visible defects reached me
 while every automated check was green. I could see each one in a single
