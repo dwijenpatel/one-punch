@@ -17,7 +17,7 @@ import tempfile
 import time
 import unittest
 from collections.abc import Iterator
-from contextlib import contextmanager, redirect_stdout
+from contextlib import contextmanager, redirect_stderr, redirect_stdout
 from io import StringIO
 from pathlib import Path
 from typing import Any
@@ -186,6 +186,20 @@ class RunEndToEnd(unittest.TestCase):
             self.assertEqual(code, 1, out)
             self.assertIn("01: FAIL test -f src/01/x.py", out)
             self.assertIn("closure RED", out)
+
+    def test_run_refuses_a_blocker_that_names_no_ticket(self) -> None:
+        # A blocker id with no ticket file would never be done, so its dependent
+        # would never reach the frontier and the run would stop FRONTIER-EMPTY
+        # with work silently undone. Refuse before launching anything.
+        with effort() as fx:
+            fx.ticket("01")
+            fx.ticket("02", blocked="09")
+            err = StringIO()
+            with redirect_stderr(err):
+                code, out = fx.main("run")
+            self.assertEqual(code, run.EXIT_REFUSED, out + err.getvalue())
+            self.assertIn("TICKET-GRAPH-INVALID 02: blocked by unknown ticket '09'", err.getvalue())
+            self.assertEqual(launches(fx.events(), "01") if (fx.repo.root / EVENTS).exists() else [], [])
 
     def test_overlapping_touches_are_serialized(self) -> None:
         slow = 'stamp start; sleep 0.8; work "src/shared/$T.py" "x = 1"; handoff DONE; stamp end\n'

@@ -430,7 +430,7 @@ class TicketHeaderError(ValueError):
 
 def _list_value(value: str) -> list[str]:
     stripped = _ANNOTATION.sub("", value).strip()
-    if stripped in _NONE_VALUES:
+    if stripped.lower() in _NONE_VALUES:  # "None (can start immediately)": mattpocock-skills 1.3.x to-tickets
         return []
     return [item.strip() for item in stripped.split(",")]
 

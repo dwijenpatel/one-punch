@@ -22,7 +22,7 @@ Reference: <owner>/<repo>@<full SHA>:<path> (<dependency | fork | port | pattern
 | Key | Required | Meaning |
 |---|---|---|
 | `Status` | yes | `ready-for-agent` when cut; the harness and planner move it on |
-| `Blocked by` | yes | ticket numbers that must merge first, or `—` |
+| `Blocked by` | yes | ticket numbers that must merge first, or `—` exactly when nothing blocks it. The harness also reads `to-tickets`' own `None (…)` wording as no blocker, and refuses to run when a blocker names no ticket |
 | `Tag` | yes | determinacy only: `code-complete` (the ticket fully specifies the code) or `contract` (the worker designs within a stated contract). Risk never goes here |
 | `Blast` | yes | level plus the reason, naming the factor that set it — declared per the `blast-radius` skill; never below the highest blast-map zone the `Touches` globs overlap |
 | `Size` | yes | the planner's estimate; retro audits it against actuals |

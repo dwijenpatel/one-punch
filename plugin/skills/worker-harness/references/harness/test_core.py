@@ -407,6 +407,16 @@ def test_parse_refuses_malformed_headers() -> None:
         raise AssertionError("accepted a duplicate header")
 
 
+def test_parse_reads_every_spelling_of_no_blocker() -> None:
+    # mattpocock-skills 1.3.x to-tickets writes "None (can start immediately)";
+    # 1.2.3 wrote "None — can start immediately". Every case of "none", with or
+    # without a parenthesized note, means no blocker, never a ticket named "None".
+    base = "Status: ready\nTag: contract\nBlast: B1\nSize: low\nTouches: a\n"
+    for spelling in ("None (can start immediately)", "None", "NONE", "none", "—", "– (none)", ""):
+        ticket = parse_ticket_header(base + f"Blocked by: {spelling}\n", "43")
+        assert ticket.blocked_by == (), (spelling, ticket.blocked_by)
+
+
 def test_parse_accepts_a_configured_ref_pattern() -> None:
     text = "Status: ready\nTag: contract\nBlast: B1\nSize: low\nTouches: a\nDepends-on: ADR-0007\n"
     assert parse_ticket_header(text, "42", ref_pattern=r"^ADR-\d{4}$").depends_on == ("ADR-0007",)

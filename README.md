@@ -293,6 +293,10 @@ one-punch builds on two other projects: the
 You don't need to install them first. The first step of every run checks for
 each one and prints the exact command for anything missing or out of date.
 
+mattpocock-skills 1.3 and later ship their own `retro` skill, so a bare
+`/retro` is ambiguous. Type `/one-punch:retro` for one-punch's. Steer always
+uses one-punch's.
+
 For other agent tools, the skills follow the
 [Agent Skills open standard](https://agentskills.io) and install with
 `npx skills@latest add dwijenpatel/one-punch`.

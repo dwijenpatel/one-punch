@@ -24,7 +24,8 @@ equivalents, and print the exact command rather than describing it.
 **Plugin-marketplace harnesses** (for example, Claude Code):
 
 ```
-claude plugin install mattpocock-skills@mattpocock
+claude plugin install mattpocock-skills@claude-plugins-official   # upstream's public listing
+claude plugin install mattpocock-skills@mattpocock                # a marketplace added from a local clone or the repo
 claude plugin marketplace update <marketplace>
 claude plugin update <plugin>@<marketplace>
 ```

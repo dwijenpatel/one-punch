@@ -315,8 +315,14 @@ def preflight(e: Effort) -> None:
         parse_ledger(git.show(head, cfg.ledger_file), cfg.ref_pattern)
     except (BlastMapError, LedgerError) as exc:
         raise RunRefused(str(exc)) from None
+    view = derive(e)
+    known = {t.id for t in view.tickets} | set(view.invalid)
+    for t in view.tickets:
+        for blocker in t.blocked_by:
+            if blocker not in known:  # never done, so its dependents never reach the frontier
+                raise RunRefused(f"TICKET-GRAPH-INVALID {t.id}: blocked by unknown ticket {blocker!r}")
     try:
-        core.critical_path(derive(e).tickets)
+        core.critical_path(view.tickets)
     except ValueError as exc:
         raise RunRefused(f"TICKET-GRAPH-INVALID {exc}") from None
     guide = git.show(head, e.rc.field_guide)
