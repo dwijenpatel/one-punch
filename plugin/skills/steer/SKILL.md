@@ -51,6 +51,22 @@ here or in a brief; name it and invoke it.
   call in the effort log. Never substitute a paraphrase of its steps.
 - Name the model on every agent dispatch — lanes, reviewers, workers. A
   dispatch that silently inherits the session's model is a defect.
+- **Every question to the operator passes the owner test and reads like
+  one.** Ask only what the operator, in hindsight, is glad they were asked
+  (`decision-memo`'s owner test: their money, quota or time; their accounts,
+  repos or data; a rule they wrote; a product boundary; their taste). Every
+  ask follows `decision-memo`'s question format: the plain question first,
+  "if you don't mind either way, I'll do X", about 120 words at most, no
+  internal IDs (fork, decision, section, lane or ticket numbers mean nothing
+  on a phone), choices that describe outcomes, and a "your call" choice. A
+  status report and a question never share a message.
+- **Stage transitions that spend nothing the operator owns are not
+  questions.** Continuing A2, committing the A2 artifacts and cutting the
+  integration branch, starting the next compile step: say what you are doing
+  and do it. The transitions that remain one-line asks are the ones that
+  spend the operator's quota or start unattended work they haven't
+  sanctioned (launching A1 lanes, starting a build run), and those are asked
+  once per milestone, not per step.
 - **Links handed to the operator are verified links.** Any list of links or
   URLs to try — the H2 demo, the H3 sitting, polish, or an ad-hoc request —
   is generated from an executed check that each link exhibits what its label
@@ -106,6 +122,11 @@ harness: [references/prerequisites.md](references/prerequisites.md).
 3. **Tracker configured:** the mattpocock skills expect a configured issue
    tracker. If the repo has none, run `setup-matt-pocock-skills`; the
    local-markdown tracker is the default, so the repo stays self-contained.
+   Answer its setup prompts yourself when a recorded operator preference, a
+   repo convention, or the upstream default already settles them (default
+   triage labels; `AGENTS.md` as the agent file — this pipeline's installs
+   need it); record each answer in the effort log. Ask only what none of
+   those settles.
 4. **Freshness, not just presence.** Where the harness exposes installed
    plugin or skill versions and the source or marketplace is reachable,
    compare them for this plugin and every composed dependency. Anything stale
@@ -214,8 +235,12 @@ The planner turns ratified decisions into an explicit build. In order:
 4. **Isolate the blast.** Declare every ticket's level and cut B3 cores into
    their own small tickets behind narrow seams, per `blast-radius`'s
    declaring steps; B3 core and its B1 surroundings are always separate
-   tickets. Each B3 ticket is a diff the operator will read — keep them few
-   and small.
+   tickets. Each B3 ticket in an `operator_review` zone is a diff the
+   operator will read; every B3 ticket costs a test author and a lens. Keep
+   them few and small. **Check the B3 share** before showing the graph: above
+   ~20% of the milestone's tickets, recut the seams, narrow over-broad
+   content patterns (`blast-radius`'s pattern hygiene), or propose moving
+   zones to checked-without-a-read — and say which you did.
 5. **Milestones.** A destination larger than one build batch (rule of thumb:
    more than 15 tickets or more than a day of worker time) splits into
    milestones; cut tickets for the current milestone only.
@@ -257,13 +282,10 @@ The planner turns ratified decisions into an explicit build. In order:
    the operator's next reply unless it raises an objection; when the
    operator has said they are stepping away, immediately — operator stop
    stays available throughout.
-   **All-≤B1 milestone: one turn.** When every ticket in the milestone is B0
-   or B1 and `decision-memo` held the recorded-defaults batch back for this
-   window, show that batch with the ticket graph in the same turn: one reply
-   both ratifies the defaults and releases the build. A reply that reopens a
-   default by ID holds the build until that default is resettled. If any
-   ticket came out B2 or higher, present the held batch as its own turn
-   first, then the graph.
+   **Defaults ride with the graph, unvoted.** When `decision-memo` held the
+   recorded-defaults list for this window, post it with the graph: it is
+   announced, reopenable by ID, never a ratification question. A reply that
+   reopens a default holds the build only until that default is resettled.
 
 ## Build — hand off to the harness
 

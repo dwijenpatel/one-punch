@@ -154,13 +154,22 @@ A declared B3 ticket runs in this order:
 2. The implementer makes them pass without weakening them.
 3. The spec verdict runs, then the decorrelated lens, which answers every
    domain checklist the diff's zones require.
-4. Integrate re-checks all of it. On green it does not merge: it pins the
-   judged commit, writes a review packet to `<packets_dir>/<ticket>/`
-   (README, `diff.patch`, handoff, verdicts, checklist answers,
-   `packet.json`), and reports AWAITING-OPERATOR.
+4. Integrate re-checks all of it. On green, when any B3 hit is in a blast-map
+   zone that keeps `operator_review` (the default), or the B3 is the
+   ticket's declaration alone, it does not merge: it pins the judged commit,
+   writes a review packet to `<packets_dir>/<ticket>/` (README, `diff.patch`,
+   handoff, verdicts, checklist answers, `packet.json`), and reports
+   AWAITING-OPERATOR. When every B3 hit is in a zone marked
+   `operator_review = false`, it lands like a B0–B2 ticket after steps 1–3,
+   and the event records `operator_review: false` so the milestone report
+   lists it with its checks.
 5. The operator reads the packet and approves the ticket between runs with
    `integrate.py --approve <ticket>`. To reject, `relaunch <ticket> --note
-   "<what to change>"` instead.
+   "<what to change>"` instead. The planner asks for each approval in its
+   own message: what the diff does in plain words, what the reviews found,
+   and the one thing worth the operator's eyes. It never bundles other
+   actions into the approval ("approve and cut fixer tickets") and never
+   stretches an approval to a re-judged packet whose diff changed.
 
 **Salvage.** A lower-level ticket whose diff reaches a B3 zone escalates
 (BLAST-ESCALATION to B3) and parks as `blast-b3`: its work predates any
@@ -271,7 +280,8 @@ with `--approve` for a B3 packet. The sequence:
    ratchet), then the verify commands.
 4. Run the checks: ref, Touches, blast, scrutiny evidence, attribution, style
    lint, megafile.
-5. Fast-forward at B0–B2, or produce the AWAITING-OPERATOR packet at B3.
+5. Fast-forward at B0–B2 (and at B3 when no hit keeps `operator_review`),
+   or produce the AWAITING-OPERATOR packet at B3.
 
 `--approve` fast-forwards the pinned commit by the same compare-and-swap. If
 the head has moved since, the ticket is re-judged and a fresh packet is

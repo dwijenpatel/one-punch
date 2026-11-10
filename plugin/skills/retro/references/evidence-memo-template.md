@@ -38,9 +38,9 @@ designed oversight (a scheduled sitting or review the process asks for) ·
 catch) · **S** operator-initiated scope or request · **C** correction of an
 agent framing error.
 
-| Turn | Time | Stage | Gist | Class | What prompted it | Avoidable? |
-|---|---|---|---|---|---|---|
-| | | | | | | |
+| Turn | Time | Stage | Gist | Class | What prompted it | Matched rec? / reply s | Avoidable? |
+|---|---|---|---|---|---|---|---|
+| | | | | | | | |
 
 ## Timing
 
@@ -66,6 +66,10 @@ last action to the next operator message (reading, testing, or away).
 | Escaped defects (found after merge), by blast level | | recorded; any escaped B3 defect triggers a retro of the B3 scrutiny ladder itself | operator report |
 | BLAST-ESCALATIONs (planner under-classified the blast level) | | recorded; a recurring pattern means extend the blast map / pattern pack | integrate log |
 | Share of tickets at B3, and operator minutes per B3 review | | recorded; B3 share > 20% means the isolate-the-blast rule at ticket-cutting time is failing | ledger event (blast field) + operator report (review minutes) |
+| B3 tickets merged without an operator read (`operator_review: false`), and escaped defects among them | | any escaped defect in such a zone triggers a review of that zone's flag | integrate log (`operator_review` field) + operator report |
+| Asks answered, per stage | | recorded; compare across efforts | session transcript |
+| Recommendation agreement (matched / asked) and "your call" uses | | recorded | session transcript |
+| Quick-agree asks (matched the recommendation within 60 s of an ask over 200 words), per sitting | | > 25% of a sitting's asks means the owner test is being bypassed — name the asks and the rule that produced them | session transcript |
 | Static-analysis warnings and complexity per merged KLOC; clone-level duplication % | | recorded per milestone; a rising trend across milestones triggers a review of the enforced (linter) rule set | integrate log (soft-cap warnings) |
 | Layer 3 rubric findings per milestone, by rule | | recorded; feeds the rule lifecycle below | git (milestone review findings committed to the branch) |
 | Verify-fail rate and rework: tickets with a `Reference:` field vs. without | | recorded; tests whether a proven reference implementation pays for itself | ledger event + git (ticket header field) |

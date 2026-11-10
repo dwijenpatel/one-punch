@@ -60,6 +60,23 @@ metrics below:
   interaction log `not recorded`, same as any other missing source; do not
   reconstruct either from memory.
 
+Also compile **ask efficiency** from the session transcript (else `not
+recorded`), because the process's own asks are the cost it most easily
+hides:
+- asks answered per stage (a structured question with several parts counts
+  each part);
+- how often the answer matched the recommendation, and how often "your
+  call" was used;
+- **quick-agree asks** — the answer matched the recommendation within 60
+  seconds of an ask longer than 200 words. Each is evidence the ask failed
+  the owner test. More than a quarter of a sitting's asks being quick-agree
+  is a required finding: name the asks and the rule that generated them.
+  Report quick-agree beside the headline ratio, never in its denominator
+  (it is designed oversight that misfired, not an unplanned intervention);
+- B3 tickets merged without an operator read (integrate events with
+  `operator_review: false`), and any escaped defect in such a zone — which
+  triggers a review of that zone's flag.
+
 Also compile: gate outcomes and every waiver, named always (git: decision
 ledger rows; handoffs); size audits, estimated vs. actual per ticket (git:
 ticket header; ledger event: actual wall-clock/attempts); evidence-corpus

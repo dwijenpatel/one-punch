@@ -11,8 +11,10 @@ dependency order (blockers first).
 ```
 # Ticket graph — <effort> · <milestone m> · <date>
 
-<N> tickets · B3: <k> — each B3 ticket is a diff you will read before it merges.
-B2: <j> — listed individually at the milestone review.
+<N> tickets · B3: <k> (<k/N>%) — <h> wait for your read before they merge
+(zones you marked for your review); the other <k−h> are checked by
+independent tests-first and a second-model review, and listed at the
+milestone. B2: <j> — listed individually at the milestone review.
 Build: <parallel N> workers from integrate/<effort>; starts <on your next
 reply unless you object | now — you said you are stepping away>.
 
@@ -32,11 +34,10 @@ any content, e.g. a blast-map level):
 - worktree directory git-ignored: <yes>
 - build mode: <harness run | light mode — ledger row D-NNN>
 
-Recorded defaults — only when every ticket above is B0/B1 and the H2
-sitting held the batch for this window; otherwise omit this block:
+Recorded defaults — only when the H2 sitting held the list for this
+window; otherwise omit this block. Announced, not voted:
 - D-NNN — <decision> — <one-line rationale>
-Your reply ratifies these and releases the build; reopen any by ID (that
-holds the build until it is resettled).
+Reopen any by ID (that holds the build until it is resettled).
 
 Not in this milestone: <what the next milestone will take, one line>
 ```
@@ -46,10 +47,11 @@ Checks before showing it:
 - Every ticket's `Blast` is at least the highest blast-map zone its
   `Touches` overlaps.
 - No B3 ticket also carries B1 surroundings — isolate-the-blast held.
-- B3 count is small relative to the milestone; a high share means the
-  seams need recutting before the operator sees it.
+- B3 share ≤ ~20% of the milestone's tickets; above it, recut the seams,
+  anchor over-broad content patterns, or reclassify zones before the
+  operator sees the graph — and name what you did in one line.
 - No ledger ID appears in two `Decides` lines.
-- A recorded-defaults block appears only when every ticket is B0 or B1.
+- A recorded-defaults block is a list, never a question.
 - Every ticket touching rendered UI has a browser walk among its acceptance
   commands; every ticket following a design or prior-art reference carries
   the do-not-copy list.

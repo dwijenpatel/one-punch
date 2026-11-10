@@ -14,7 +14,7 @@ decisions per question asked than any other instrument in the pipeline.
 **The fan-out rule** (governs all questioning in this pipeline): a question's
 value is its fan-out — the number of downstream decisions its answer changes.
 Ask in descending fan-out order. Intent questions have fan-out 10+; craft
-questions have fan-out ≈ 1 and are batch-ratified elsewhere, never asked here.
+questions have fan-out ≈ 1 and are decided and recorded elsewhere, never asked here.
 
 ## When
 

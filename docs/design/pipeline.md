@@ -10,6 +10,9 @@ cold-start stall, Cursor's swarm posts, superpowers and mattpocock-skills
 practice, slipstream, idea-gen D26; cited as `E§n`),
 [code-style canon](../evidence/2026-09-24-code-style-research-canon.md) and
 [code-style critiques + agent evidence](../evidence/2026-09-24-code-style-research-critiques-and-agents.md).
+**v0.5 amendment (2026-11-10):** the owner test governs every ask, B3
+included; B3 raises checking, not asking; operator diff reads only in
+`operator_review` zones — [resonance asks retro](../evidence/2026-11-10-resonance-m1-operator-asks.md).
 **Supersedes:** v3 (2026-08-08), preserved in git at `f08a27a`; v3's own
 provenance is §14. v2 (2026-07-27) and v1 provenance are §§15–17.
 
@@ -51,8 +54,8 @@ confirms, or leaves as gaps.
 **What replaced what.** Serialized decisions (v3 principle 2) and wayfinder
 as one human session per ticket → a parallel agent fan-out (A1) and one
 decision memo sitting (H2); wayfinder is now the planner's private tool. v3's
-many small touchpoints (v3 §4) → three sittings per milestone plus B3 diff
-reads (§4). Intent, evidence pass and learning gates as default openers → one
+many small touchpoints (v3 §4) → three sittings per milestone plus diff
+reads in operator-owned B3 zones (§4). Intent, evidence pass and learning gates as default openers → one
 ≤15-minute intent sitting, evidence as parallel lanes, and the overlay,
 per-effort corpus and learning gates made opt-in. The four-value `Tag` → a
 determinacy `Tag` plus a `Blast` level (§7.2). The sequential frontier
@@ -139,9 +142,9 @@ agent stages. The planner is the operator's interactive session.
 |---|---|---|---|---|
 | **H1 — intent + destination** (once per effort, one sitting, ≤15 min target) | operator + planner | `intent`, invoked by `steer` | `INTENT.md` (≤1 page) including **Catastrophes** (seed of the blast map) and a **risk register** (`R-n`, each with a kill/pivot criterion) | answers one fan-out-ordered round, conversationally |
 | **A1 — parallel fan-out** (≤4 concurrent agents, timeboxed) | background agents; planner drafts the decision map privately (mattpocock `wayfinder` as its own tool) | `steer` lane briefs: **risk** lane — `spike` per top `R-n`; **shape** lane — mattpocock `prototype` / walking skeleton, or a brownfield code survey with a blast-map proposal (`blast-radius`); **safety net** (brownfield) — characterization tests; **prior art** — reference dossiers; **evidence** — evidence-kit retrieval-grade pass (§5) | findings on disk; blast-map proposal; brownfield field-guide seed | none, unless a lane hits a kill criterion: that stops the fan-out and is an H2-now event |
-| **H2 — decision memo + demo** (one sitting; follow-up rounds in the same sitting) | operator + planner | `decision-memo`; mattpocock `grilling` rounds for newly unlocked forks; `blast-radius` for the map | ratified forks (reuse fork included), updated risk register, ratified blast map, batch-ratified defaults `D-NNN` | decides forks only; reopens any default by ID |
-| **A2 — compile** | planner | decision ledger `docs/decisions.md`; mattpocock `to-spec` only when handoff-sized (otherwise the ledger + INTENT.md are the contract); mattpocock `to-tickets` plus the v4 fields (§7.1); `code-style` installs Layer 1; `field-guide` index; `Blast:` per ticket (`blast-radius`) | ledger, tickets cut to isolate the blast, integration branch `integrate/<effort>` cut from `main`, one-screen ticket-graph summary with the B3 count. Installs (blast map, `code-style` Layer 1, field guide, `harness.toml` from worker-harness's example, `.worktrees/` ignored) are one automatic step, never optional: skipping them removes `integrate`'s checks | veto window, not a gate: building starts unless the operator objects. When every ticket is ≤B1, the defaults batch rides in the same turn: one reply ratifies and releases |
-| **Build** | headless workers, ≤4 at once | `worker-harness`: `harness run --parallel N` and `integrate` (§6); workers use mattpocock `tdd` at the ticket's seams; conflicts go to a merge agent with mattpocock `resolving-merge-conflicts` discipline | merged tickets on an always-green integration branch; handoffs; JSONL event ledger. **Light mode** (small or timeboxed efforts, recorded as a ledger row): in-session workers instead of `harness run`, but every ticket still lands through `integrate` run by hand, so the script still decides what lands | reads B3 diffs before they merge; steers between runs when the run stops |
+| **H2 — decision memo + demo** (one sitting; follow-up rounds in the same sitting) | operator + planner | `decision-memo`; mattpocock `grilling` rounds for newly unlocked forks; `blast-radius` for the map | forks that pass the owner test, a decided-for-you list (checked B3 and reuse decisions, each vetoable), updated risk register, the blast map's answer on which zones wait for the operator's read, defaults `D-NNN` announced (never voted) | decides forks only; vetoes or reopens anything else by ID |
+| **A2 — compile** | planner | decision ledger `docs/decisions.md`; mattpocock `to-spec` only when handoff-sized (otherwise the ledger + INTENT.md are the contract); mattpocock `to-tickets` plus the v4 fields (§7.1); `code-style` installs Layer 1; `field-guide` index; `Blast:` per ticket (`blast-radius`) | ledger, tickets cut to isolate the blast, integration branch `integrate/<effort>` cut from `main`, one-screen ticket-graph summary with the B3 count. Installs (blast map, `code-style` Layer 1, field guide, `harness.toml` from worker-harness's example, `.worktrees/` ignored) are one automatic step, never optional: skipping them removes `integrate`'s checks | veto window, not a gate: building starts unless the operator objects. Held defaults ride with the graph as a list, never a vote |
+| **Build** | headless workers, ≤4 at once | `worker-harness`: `harness run --parallel N` and `integrate` (§6); workers use mattpocock `tdd` at the ticket's seams; conflicts go to a merge agent with mattpocock `resolving-merge-conflicts` discipline | merged tickets on an always-green integration branch; handoffs; JSONL event ledger. **Light mode** (small or timeboxed efforts, recorded as a ledger row): in-session workers instead of `harness run`, but every ticket still lands through `integrate` run by hand, so the script still decides what lands | reads diffs in `operator_review` B3 zones before they merge; steers between runs when the run stops |
 | **H3 — milestone demo + merge** (recurs) | operator + planner | mattpocock `code-review` over the milestone diff; `decision-memo` mini-memo for forks unlocked by building; evidence-kit decay recheck; `retro` at milestones | milestone report (every B2/B3 change with its evidence, every blast escalation); for UI efforts a browser walk at desktop and ~375px plus desktop screenshots of each variant, inspected by the planner | sees it running, accepts or redirects, decides the merge to `main` |
 | **Polish** (after H3, before retro) | planner; workers for anything larger than one file / ~30 lines | `steer` | each operator-reported fix: a ledger row, a failing regression case for the symptom added *before* the fix, full suite + neighbouring variants re-checked | reports what they see; nothing else |
 
@@ -239,13 +242,21 @@ the domain checklists. Load-bearing points:
   damage lives.
 - **B2** design decisions are flagged defaults; review adds a spec verdict;
   every B2 diff is listed at H3; a proven reference is preferred.
-- **B3** design decisions are always operator forks; every security or
-  consistency semantic relied on is spiked; the implementer is Opus;
-  acceptance tests are written first by an independent agent from the ticket
-  and the domain checklist; a decorrelated lens reviews; decision logic is
-  pure and property-tested with a shell thin enough to read line by line; the
-  default is a vetted library or reference, and hand-rolling is an operator
-  fork; **the operator reads the diff before it merges.**
+- **B3** design decisions are decided by the planner and **independently
+  checked** (spike, second-model review, adversarial evidence for outside
+  claims), then listed for the operator to veto; they are forks only when
+  the owner test passes (§4). Every security or consistency semantic relied
+  on is spiked; the implementer is Opus; acceptance tests are written first
+  by an independent agent from the ticket and the domain checklist; a
+  decorrelated lens reviews; decision logic is pure and property-tested with
+  a shell thin enough to read line by line; the default is a vetted library
+  or reference. **The operator reads the diff before it merges in zones the
+  blast map marks `operator_review`** — the default, and always for
+  protected zones — which are set where the operator owns the consequence:
+  credentials, money, personal data, production, irreversible destruction of
+  their data, their own rules. Elsewhere the B3 checks carry it, and the
+  change is listed at the milestone. ([resonance asks retro](../evidence/2026-11-10-resonance-m1-operator-asks.md): at 19 of 21 tickets B3
+  the read did not happen.) A2 keeps B3 under ~20% of a milestone's tickets.
 
 A2 **isolates the blast**: B3 code sits behind narrow seams and is touched by
 as few, as small tickets as possible, with B3 core and its B1 surroundings in
@@ -261,18 +272,24 @@ the few diffs where damage lives.
 The operator appears at:
 
 1. **H1**, once per effort: one sitting, ≤15 minutes target.
-2. **H2**, per milestone: one sitting; forks only; follow-up rounds happen in
-   the same sitting, never as new sessions. Up to 3 forks share a turn when
-   every one is ≤B1 and none is a one-way door; B2+ and one-way doors are
-   asked one at a time. An A1 lane that hits a kill criterion brings H2
+2. **H2**, per milestone: one sitting; forks only, each passing the owner
+   test (below); follow-up rounds happen in the same sitting, never as new
+   sessions. The memo is checked before the sitting (citations, real
+   options, dependencies ordered). Each ask is one plain question: "if you
+   don't mind either way, I'll do X", ~120 words, no internal IDs, choices
+   that describe outcomes plus "your call". Up to 3 forks share a message
+   when none is a one-way door and none depends on another. An A1 lane that hits a kill criterion brings H2
    forward. Any link or URL handed to the operator ("try these") has been
    verified by an executed check to show what its label claims. (Trial 1, `docs/evidence/2026-09-25-trial1-jit-storefront.md`)
 3. **A2 ticket-graph summary**: a veto window, not a gate.
-4. **B3 diffs**: read before merge. `integrate` holds the ticket
-   `AWAITING-OPERATOR` with a review packet; the run continues with other
-   tickets. This deliberately reinstates one per-ticket touchpoint, and only
-   here: LLM judges caught 5% of real bugs in D26 exp-01, and at B3 the
-   failure is silent and irreversible.
+4. **B3 diffs in `operator_review` zones**: read before merge. `integrate`
+   holds the ticket `AWAITING-OPERATOR` with a review packet; the run
+   continues with other tickets. This deliberately reinstates one per-ticket
+   touchpoint, and only here: LLM judges caught 5% of real bugs in D26
+   exp-01, and at B3 the failure is silent and irreversible. It works only
+   while it stays scarce: asked on most tickets it becomes a click, and a
+   designed check that does not run is worse than none ([resonance asks retro](../evidence/2026-11-10-resonance-m1-operator-asks.md)). Each
+   approval is its own message; no other action rides on it.
 5. **Between runs**, when `harness run` stops (§6.2): the planner session
    surfaces parked decisions and the operator steers. There is no mid-run
    steering.
@@ -280,12 +297,20 @@ The operator appears at:
 7. **Polish**, after H3: the operator reports what they see; the planner
    turns each report into a regression case first, then a fix. (Trial 1, `docs/evidence/2026-09-25-trial1-jit-storefront.md`)
 
-Reserved to the operator: every fork (one-way doors, product boundaries,
-conflicts with intent, every B3 design decision, the reuse fork, the blast
-map); lowering a blast level; confirming absence claims; promoting a model
-tier (via retro); owning `AGENTS.md`. Everything else is agent-decided,
-recorded, and reopenable by ID. **Bar:** ≤3 operator sittings from H1 to the
-first build dispatch (§11).
+**The owner test** decides every ask: the operator is asked only what they
+are glad, in hindsight, to have been asked — decisions that spend their
+money, quota or time; touch their accounts, repos or data; conflict with a
+rule they wrote or with recorded intent; draw a product boundary; or turn on
+their stated taste. Blast level raises the checking, never the asking.
+Stage transitions that spend nothing the operator owns are announced, not
+asked.
+
+Reserved to the operator: every fork that passes the owner test; which B3
+zones wait for their read; lowering a blast level; vetoing any
+decided-for-you line; promoting a model tier (via retro); owning `AGENTS.md`.
+Everything else is agent-decided, recorded (B3 with how it was checked), and
+reopenable by ID. **Bars:** ≤3 operator sittings from H1 to the first build
+dispatch (§11); quick-agree asks (§11) under a quarter of any sitting.
 
 ## 5. Evidence in the front half
 
@@ -369,7 +394,8 @@ project's verify commands; then runs the hygiene checks — **ref**, **Touches**
 **blast** (§3), **scrutiny evidence** (the artifacts the effective level
 requires), **attribution** (§5), **style lint** (§9), **megafile** (a changed
 file crossing the threshold, default 800 lines, in this change). All green:
-B0–B2 fast-forward the integration branch; B3 parks `AWAITING-OPERATOR`
+B0–B2 fast-forward the integration branch, and so does B3 when no B3 hit
+is in an `operator_review` zone; otherwise B3 parks `AWAITING-OPERATOR`
 (§4). It fast-forwards only the exact tree its checks ran on and re-enters at
 rebase if the head moved; one writer per repository holds a `flock`. Any red
 is a failed attempt under the salvage and escalation rules (§8); outcomes,
@@ -416,7 +442,7 @@ Per ticket, the §3 ladder: nothing extra at B0; a spec verdict (Missing /
 Extra / Misunderstood vs. the ticket) for `contract` at B1 and for every B2;
 spec verdict, a decorrelated lens (a different model family via `codex_p`
 when available, else a fresh Opus reviewer that sees codebase + ticket + diff
-only) and the operator's diff read at B3. **Milestone closure:** before H3,
+only) and, in `operator_review` zones, the operator's diff read at B3. **Milestone closure:** before H3,
 re-run every merged ticket's acceptance checks against the integration head;
 then mattpocock `code-review` over the milestone diff, with every B2/B3 diff
 reviewed individually and the `code-style` rubric on the Standards axis.
@@ -573,7 +599,12 @@ proxies on a fixed subscription.
 
 When the harness exposes session transcripts, retro compiles per-stage wall
 clock, agent-active vs operator time, and an operator interaction log from
-them by default. It does not estimate.
+them by default. It does not estimate. It also compiles **ask efficiency**:
+asks per stage, how often the answer matched the recommendation, and
+**quick-agree asks** (the recommendation chosen within 60 s of an ask over
+200 words) — reported beside the headline ratio, not in it; above a quarter
+of a sitting is a required finding. (resonance m1: 11 quick-agree of 41
+asks before the first build dispatch, `docs/evidence/2026-11-10-resonance-m1-operator-asks.md`.)
 
 v4 earns its seat in two trials: **Trial 1** greenfield (the next fresh
 effort), **Trial 2** brownfield (one real change in an existing repo).
@@ -600,7 +631,9 @@ default opener. When enabled, learning goals are typed and implementation
 progress gates on measured, verified learning: assessment tickets (`L-NN`)
 block implementation tickets like any other edge and resolve only via
 committed artifacts. Bypass exists only as a loud recorded waiver; the agent
-never fakes a pass. Mechanism (goal types, assessments, bars, budget,
+never fakes a pass. Tradeoff-mastery drills are written predictions in the
+learning log, never position-first choice prompts and never blocking a fork
+([resonance asks retro](../evidence/2026-11-10-resonance-m1-operator-asks.md)). Mechanism (goal types, assessments, bars, budget,
 anti-death-spiral): `learning-gates`.
 
 ## 13. Harness agnosticism
@@ -659,7 +692,7 @@ domain-modeling, prototype, research, to-spec, to-tickets, tdd, code-review — 
 only two small deltas of its own. We compose rather than paraphrase: paraphrases drift.
 
 *v4 note:* premise 1 is refined, not reversed. The operator stays in the loop
-as the ratifier of forks and the reader of B3 diffs; what runs unattended is
+as the ratifier of the forks it owns and the reader of B3 diffs in the zones it owns; what runs unattended is
 execution of explicit tickets, gated by a script and by blast radius, not
 headless design.
 

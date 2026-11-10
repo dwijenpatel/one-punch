@@ -77,8 +77,8 @@ are asymmetric.
 3. Write `Blast: Bn — <reason>` naming the factor that set the level.
 4. **Isolate the blast.** When a feature has a B3 core (a token check, a
    migration, a balance update), cut that core into its own small ticket so
-   the operator reads a short diff and the rest of the feature takes the
-   cheap path. Never let a B1 ticket drift into a B3 zone; that is a
+   the B3 review (and any operator read) covers a short diff and the rest of
+   the feature takes the cheap path. Never let a B1 ticket drift into a B3 zone; that is a
    separate B3 ticket.
 
 ## The blast map (propose → ratify → install)
@@ -87,8 +87,27 @@ are asymmetric.
   from the intent document's catastrophes and the skeleton's architecture.
   Brownfield: the code survey proposes zones from existing code; B3 zones
   usually already exist and have names.
-- **Ratify** at the operator's decision sitting: zones and levels are a
-  ratification item; every B3 zone is an explicit yes.
+- **Ratify** at the operator's decision sitting, as one question about the
+  operator's time: which B3 zones **wait for the operator's diff read**
+  (`operator_review = true`) and which are **checked without a read**
+  (`operator_review = false`), plus the projected share of B3 tickets. Every
+  project B3 zone states `operator_review` with a reason. Set it `true` where
+  the operator owns the consequence or holds knowledge the agents lack —
+  their credentials, money, personal data, production, irreversible
+  destruction of their data, their own rules (protected zones are always
+  `true`); set it `false` where the B3 checks (spike, independent tests-first
+  author, decorrelated lens) carry the risk and a read adds nothing. Absent
+  means `true`.
+- **Calibrate** before ratifying and again when tickets are cut:
+  - **B3 share.** Above ~20% of tickets at B3, the map or the ticket cut is
+    too coarse: narrow zones, isolate the B3 core into fewer smaller tickets,
+    or move zones to `operator_review = false` with a reason. Report the share
+    and the fix; don't dispatch a 90%-B3 milestone silently.
+  - **Pattern hygiene.** A content pattern that matches a bare common word of
+    the project's own vocabulary (a domain noun, a field name used
+    everywhere) drags unrelated tickets to its level. Anchor it to the
+    construct that carries the risk (a call, an assignment, a decorator, a
+    path) and add a `nomatch` example showing the ordinary use it must skip.
 - **Install** when tickets are cut: create `docs/blast-map.md` with a short
   prose header (what the map is, who owns it, the ratification date) and one
   ```` ```toml blast-map ```` block containing the whole of
@@ -117,12 +136,12 @@ Each level includes everything in the levels below it.
 
 | Dial | B0 | B1 | B2 | B3 |
 |---|---|---|---|---|
-| Design decisions | craft default | craft default | default, flagged to the operator | **always an operator fork** |
+| Design decisions | craft default | craft default | default, flagged to the operator | **decided and independently checked** (spike, second-model review, adversarial evidence when an outside claim is relied on), listed for the operator to veto; a fork only when the operator owns the consequence (decision-memo's owner test) |
 | Spikes | — | external-behavior claims | same | **mandatory** for every security or consistency semantic relied on (the isolation level the database actually provides, a token library's validation defaults, the framework's CSRF behavior) |
 | Implementer tier floor | per task shape and size (cheapest tier allowed) | mid tier | mid tier (top tier for contract-shaped tickets) | **top tier** |
 | Tests | verify passes | test-first red→green at the ticket's seams | + edge and error paths at the public seam; coverage on touched files not reduced | + **acceptance tests written first by an independent agent** from the ticket and the domain checklist; + adversarial and negative tests (authorization denial on every path, replay, injection; rollback, concurrent writers, crash mid-transaction, idempotent retry; migration up→down→up on production-shaped data); property tests where an invariant exists |
 | Automated review | — | spec verdict if contract-shaped | spec verdict | spec verdict + **decorrelated lens** against the domain checklist |
-| Operator review | milestone sample | milestone | milestone; each B2 diff listed | **reads the diff before it merges**; the change waits while other work continues |
+| Operator review | milestone sample | milestone | milestone; each B2 diff listed | in a zone with `operator_review` true: **reads the diff before it merges** (the change waits while other work continues); otherwise listed with its checks at the milestone, like B2 |
 | Scheduling | any batch | any | any | never co-scheduled with a ticket sharing a blast-map zone; licensed breakage *into* a B3 zone is forbidden (it becomes its own B3 ticket) |
 | Merge conflicts | merge agent | merge agent | merge agent | merge agent on the top tier; the merged result re-enters B3 review |
 | Build vs reuse | any | any | prefer a proven reference implementation | **default is a vetted library or reference implementation; hand-rolling auth, crypto, transactions or migrations is an operator fork** |
@@ -130,8 +149,13 @@ Each level includes everything in the levels below it.
 
 Execution-based verification stays primary at every level. Model review
 alone is not an adequate last line at B3: judged review catches few real
-bugs, and B3 failures are silent and irreversible — hence the operator's
-diff read, and only there.
+bugs, and B3 failures are silent and irreversible. That is why every B3
+change gets independent tests-first and a decorrelated lens — and why the
+operator's diff read is reserved for operator-owned zones, where it can
+actually happen. A read the operator is asked for on most tickets stops
+being a read (measured: three B3 packets approved in one click when 19 of
+21 tickets were B3); a designed check that does not run is worse than none,
+because the ledger says it ran.
 
 Mandatory spikes run through the `spike` skill; test-first work through a TDD
 skill (e.g. mattpocock `tdd`); milestone review through a code-review skill
@@ -177,7 +201,9 @@ has a line and none says `fail` (exact grammar in the format reference).
 - **Decorrelated lens (B3)** — a different model family when the harness can
   launch one, else a fresh top-tier reviewer that sees code, ticket and diff
   but never the implementer's transcript; answers every checklist item.
-- **Operator** — ratifies the map, owns every lowering, reads every B3 diff.
+- **Operator** — answers the map question (which zones wait for their
+  read), owns every lowering, reads every diff that holds in an
+  `operator_review` zone.
 - **Harness** — computes zones for scheduling and the effective level of each
   diff exactly as the format reference specifies; fails closed on a missing
   or invalid map.

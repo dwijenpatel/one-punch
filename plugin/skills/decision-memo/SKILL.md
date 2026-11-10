@@ -1,174 +1,212 @@
 ---
 name: decision-memo
-description: "Compile and run the H2/H3 decision sitting: demo, risk-register update, forks (each with options, a recommendation, an evidence link and its evidence-kit tier, and what it forecloses), the reuse fork, blast-map ratification, and recorded defaults (D-NNN, B2 flagged). Applies the altitude rule — the operator is asked only about one-way doors, product boundaries, and conflicts with recorded intent; everything else is decided and recorded as a reopenable default. Presents as a concise, threaded conversation, never a pasted wall, with follow-up rounds in the same sitting. Use at H2, once parallel research (spikes, prototypes, code survey, prior-art dossiers, evidence lane) has landed and the operator needs to ratify what it changed; use the H3 mini-memo variant when building unlocks new forks at a milestone."
+description: "Compile and run the H2/H3 decision sitting: demo, risk-register update, the few forks the operator owns (each asked as one plain question with a recommendation, an evidence tier, and what it forecloses), a decided-for-you list of high-blast decisions that were independently checked instead of asked, the blast map as one question about what will wait for the operator's read, and recorded defaults announced by ID (never voted). Applies the owner test — ask only what the operator, in hindsight, is glad they were asked — including at B3. Checks the memo before the sitting. Use at H2, once parallel research (spikes, prototypes, code survey, prior-art dossiers, evidence lane) has landed and the operator needs to ratify what it changed; use the H3 mini-memo variant when building unlocks new forks at a milestone."
 compatibility: Works in any agent harness that can hold a multi-turn conversation. Composes the mattpocock `grilling` skill for follow-up rounds over the decision frontier and evidence-kit for evidence grading and tier citation — degrades to a plain-text threaded Q&A and self-stated tiers if either isn't available.
 license: MIT
 ---
 
-# decision-memo — the altitude-gated decision sitting
+# decision-memo — the owner-gated decision sitting
 
 Upstream agents (spikes, a prototype or skeleton, a code survey, prior-art
 dossiers, a retrieval-grade evidence pass) have already produced findings.
 This skill turns those findings into the one sitting where the operator
 spends attention: it separates what genuinely needs a human from what an
-agent can decide and record, presents the former as a short conversation, and
-files both into the decision ledger. It is invoked at **H2** (after the
-parallel fan-out) and, in a smaller form, at **H3** (per milestone, when
-building surfaces new forks).
+agent can decide, check and record, presents the former as a short
+conversation, and files both into the decision ledger. It is invoked at
+**H2** (after the parallel fan-out) and, in a smaller form, at **H3** (per
+milestone, when building surfaces new forks).
 
-## The altitude rule — the heart of this skill
+## The owner test — the heart of this skill
 
 **The governing test:** ask only what the operator, in hindsight, is glad
-they were asked. The categories below are where that test usually lands; when
-a category and the test disagree, the test wins.
+they were asked. Nothing overrides it — not a blast level, not a category
+below.
 
-Every design decision the upstream work surfaced gets classified before it
-reaches the operator:
+The measured failure this rule exists for: on one effort with a
+high-blast-heavy map, a sitting asked 22 questions in an hour; the operator
+picked the recommendation on 15 of 16, answering ~400-word asks in under a
+minute. The questions were technical-correctness calls (statistics,
+isolation mechanics, cache keys) where the operator held no information the
+planner lacked. They were rubber-stamped, which is worse than not asked: the
+ledger records an oversight that did not happen.
 
-**Ask (a fork) only when the decision is at least one of:**
-- a **one-way door** — expensive or impossible to reverse once shipped (a
-  wire format, a public interface, a data layout, an adopted dependency,
-  anything the reuse fork touches);
-- a **product boundary** — what the thing is or does, who it's for, what it
+**Ask (a fork) only when the operator owns the consequence or the
+knowledge:**
+- **their resources** — money, subscription quota, their own time (review
+  load, manual steps they must do);
+- **their accounts, repos and data** — credentials, another repository they
+  own, its history, personal data, production;
+- **a rule they wrote** — a conflict with recorded intent (INTENT.md's
+  goals, audiences, non-goals, must-not-foreclose) or with a rule or
+  runbook the operator authored;
+- **a product boundary** — what the thing is or does, who it's for, what it
   refuses to do;
-- a **conflict with recorded intent** — INTENT.md's goals, audiences,
-  non-goals, or must-not-foreclose list point one way and the evidence
-  points another.
+- **taste or a stated preference the evidence can't settle** — and the
+  operator has signalled they care about it.
 
-**Everything else is a default:** decide it, write one line of rationale, log
-it as `D-NNN` in the ledger, and move on. A default is never silent — it's
-recorded and reopenable by ID — but it is not asked. This is the rule the
-whole memo enforces; if you catch yourself drafting a fork whose answer is
-"the obviously better option and nobody would pick otherwise," it's a
-default, not a fork. The failure mode this rule targets is a pasted wall of
-craft questions that burns the operator's attention on things an agent
-should just decide; the failure mode it does not excuse is asking too little
-and letting a real one-way door slide through as a default.
+**Everything else is decided for them,** at every blast level:
+- **B0–B2:** a recorded default (`D-NNN`, one line of rationale), B2
+  flagged. Reopenable by ID; never voted on (see Recorded defaults).
+- **B3:** decided by the planner, **independently checked before the
+  sitting** (a spike for any external-behavior claim, a second model's
+  review of the decision, or both — the evidence-kit adversarial grade when
+  it rests on an outside claim), and listed in the sitting's
+  **decided-for-you** block. B3 raises the *checking*, not the *asking*.
+  A B3 decision that also passes the owner test is a fork like any other.
 
-**Blast radius overrides the classifier, never softens it:** per the
-`blast-radius` skill's scrutiny ladder — **B3 is always a fork**, no matter
-how settled the decision looks, no exceptions; **B2 may be recorded as a
-default but is flagged** in the batch so the operator can spot-check it;
-**B0/B1 are craft defaults**, no flag. What falls into which level is the
-`blast-radius` skill's own pattern pack and level definitions — consult it
-and the ratified blast map rather than re-deriving a decision's severity
-here.
+If you catch yourself drafting a fork whose honest answer is "the
+recommended option; the operator has nothing to add," it is not a fork. The
+failure mode this rule does not excuse is the opposite: a decision that
+spends the operator's money, quota, time or accounts slipping through as a
+default.
 
 Fan-out ordering carries over from the intent sitting: the `intent` skill
 asks by descending fan-out, and this skill asks its forks in the same order
-— highest fan-out first.
+— highest fan-out first — subject to dependencies (below).
+
+## Before the sitting — check the memo
+
+A memo presented with a wrong citation or a false choice makes the operator
+rule on something that then changes under them. Before the first fork is
+asked:
+
+1. **Citations.** Every fork's evidence link and every claim about the spec,
+   intent or a prior ruling is checked against its source — by a fresh
+   reviewer (a different model when the harness can launch one) that sees
+   the memo and the sources, not the drafting transcript.
+2. **Options.** Each fork's options are real alternatives (not one test
+   described two ways), and the recommendation states what it forecloses.
+3. **Dependencies.** For every pair of forks, ask: does ruling one change
+   the other's options? Order dependents after their inputs. A fork whose
+   options depend on an unruled fork is never asked before it.
+4. **Owner test, again.** Re-run the owner test on every fork after the
+   checks. Forks that fail it move to decided-for-you.
+
+Record the check (who ran it, what it changed) in the memo header.
+
+## How a question reads
+
+Each fork is one message the operator can answer from a phone without
+scrolling back:
+
+- **First line: the question in plain words** — what is being decided and
+  why it is theirs ("This spends your subscription overnight: …").
+- **Second line: "If you don't mind either way, I'll do X."** Always present.
+- **≤ ~120 words in the body.** Options, the recommendation, what it
+  forecloses, the evidence tier. Detail lives behind a link to the memo.
+- **No internal IDs in the ask** (fork numbers, decision IDs, section
+  references, lane names). They belong in the memo and the ledger, not in
+  the question.
+- **Answer choices describe outcomes**, not option letters: "Runner may
+  start graders", not "A: amend runbook". Always include a **"your call"**
+  choice that delegates to the recommendation; its use is recorded and is
+  itself evidence the fork failed the owner test.
+- If the harness offers clickable choices, use them with the labels above;
+  otherwise list the choices in plain text.
+- One fork per message. Never ask a choice in the same message as a status
+  report; the status goes first, alone, or into the memo.
 
 ## H2 — the decision memo (one sitting)
 
 Compile and walk the operator through, in order:
 
 1. **Demo.** The skeleton or prototype running, or — brownfield — the
-   survey's module map. Show it before asking anything; forks read
-   differently once the operator has seen what exists.
+   survey's module map. Show it before asking anything.
 2. **Risk register update.** Each `R-n` from INTENT.md's risk register →
-   confirmed / killed / pivoted, each with a link to the transcript (spike,
-   prototype session, survey finding) that settled it.
-3. **Forks** — the only questions in the sitting, fan-out ordered. Each
-   carries: the question, the options, a recommendation, an **evidence link
+   confirmed / killed / pivoted, each with a link to what settled it. A
+   statement, not a question.
+3. **Forks** — the only questions in the sitting, ordered as above. Each
+   carries the question, the options, a recommendation, an **evidence link
    and its evidence-kit tier** (a fork resting on Tier B or C evidence says
-   so out loud — the operator is ratifying under that uncertainty, not
-   blind to it), and **what it forecloses** if decided this way.
-   - **Reuse fork** — asked for every problem area where a prior-art
-     dossier exists: adopt the reference as `dependency` / `fork` / `port` /
-     `pattern`, or build fresh, with the dossier as the evidence. A one-way
-     door by definition — it always gets a fork, never a default.
-   - **Adversarial-evidence trigger** — a one-way-door fork resting on an
-     *external* claim (a vendor's stated behavior, a library's documented
-     guarantee, another codebase's claimed properties) is not ratified on
-     retrieval-grade evidence alone. Run an evidence-kit **adversarial-grade**
-     pass on that claim first; this is the one place evidence weight escalates
-     automatically, without the operator asking for it.
-   - **Absence claims** — "nobody has built this," "no library does X," and
-     similar negative claims are never asserted from the corpus by
-     themselves; a corpus that didn't find something is not proof nothing
-     exists. Put the claim to the operator here and let them confirm or
-     contradict it from what they know.
-4. **Blast map — for ratification.** The blast map itself is a fork, always
-   asked, because it encodes the operator's risk tolerance: which paths and
-   patterns count as B0/B1/B2/B3 (per the `blast-radius` skill's levels and
-   default pattern pack). As part of ratifying it, list every design
-   decision that falls inside a **B3** zone as its own fork per the rule
-   above — never bundle a B3 decision into the defaults batch.
-5. **Recorded defaults.** Every remaining craft decision, one line each:
-   `D-NNN — decision — one-line rationale`. Present the whole batch for
-   ratification at once (the operator reopens any single one by ID rather
-   than approving them one at a time); defaults that touch a **B2** zone are
-   flagged inline so they don't scroll past unnoticed.
-   **Hold the batch for the build veto window** when the milestone will
-   likely be all B0/B1 — no default is B2-flagged and no fork this sitting
-   was B2 or higher — and the orchestrating pipeline ends compilation with a
-   ticket-graph veto window: the batch is then shown with the ticket graph
-   in one turn, and one reply both ratifies it and releases the build. If
-   any ticket comes out B2 or higher, the held batch is presented as its own
-   turn first. Tell the operator at the end of the sitting that the
-   defaults will arrive with the ticket graph.
+   so), and **what it forecloses**.
+   - **Reuse decisions** — for every problem area with a prior-art dossier,
+     choose the reuse mode (`dependency` / `fork` / `port` / `pattern` /
+     build fresh). A fork only when the owner test passes: a license the
+     operator must accept, a paid or account-bound service, or code the
+     operator owns elsewhere whose maintenance they'd carry. Otherwise
+     decided-for-you, with the dossier linked.
+   - **Adversarial-evidence trigger** — a one-way-door decision (fork or
+     decided-for-you) resting on an *external* claim gets an evidence-kit
+     **adversarial-grade** pass first.
+   - **Absence claims** — "nobody has built this" is never asserted from the
+     corpus alone. State it as one line in decided-for-you ("Searched N
+     sources, found none; tell me if you know one"), not as a question that
+     blocks the sitting.
+4. **Decided for you.** One line per checked B3 decision and per non-fork
+   reuse decision: `decision — why — how it was checked — what would
+   reopen it`. The operator vetoes by replying with the line; silence is
+   not a vote, it is the default holding. Keep it to one screen; link the
+   rest.
+5. **Blast map — one question.** The map encodes risk tolerance, and its
+   cost lands on the operator's time, so it is theirs — but as one question,
+   not a zone-by-zone ratification:
+   - which zones will **wait for the operator's diff read** (B3 zones with
+     `operator_review` true, per the `blast-radius` skill), with the
+     estimated share of tickets that will hold;
+   - which B3 zones are **checked without a read**, and how;
+   - the projected **B3 share of tickets** (warn above ~20%).
+
+   Ask: "These N areas will wait for your read; these are checked without
+   you. Change any?" A zone the operator moves is recorded as a ledger row.
+6. **Recorded defaults — announced, never voted.** Every remaining craft
+   decision, one line each: `D-NNN — decision — one-line rationale`, B2
+   flagged inline. Post the list (or link it) and say how to reopen one:
+   by ID, at any time. There is no "ratify the batch" question — a 22-line
+   vote answered in seconds is not oversight. When the milestone will be
+   all B0/B1 and the pipeline ends compilation with a ticket-graph veto
+   window, the list rides with the ticket graph instead.
 
 Close with a **not-yet-specified list**: items that are genuinely undecidable
-now. Name the milestone that will make each one decidable. Fog stays fog —
-don't force a premature answer just to close out the sitting.
+now, each with the milestone that will make it decidable. A statement, not a
+question.
 
 ### Follow-up rounds, same sitting
 
-An answer often unlocks a fork nobody could have posed before it (a chosen
-reuse mode implies a new integration question; a killed risk removes an
-option from another fork's list). Run these as a short additional round in
-the **same sitting**, never a new session: compose the mattpocock `grilling`
-skill for this — invoke it by name when the frontier moves.
+An answer often unlocks a fork nobody could have posed before it. Run these
+as a short additional round in the **same sitting**: compose the mattpocock
+`grilling` skill for this — invoke it by name when the frontier moves. Each
+new fork passes the owner test and the pre-sitting check first.
 
 ## H3 — the milestone mini-memo
 
-Same instrument, smaller: per milestone, once building has surfaced new
-forks, run the same conversational format restricted to **forks and
-recorded defaults only** (skip demo and the risk-register update — those
-belong to the milestone report, not the mini-memo; re-ratify the blast map
-only if the milestone's work proposes a change to it). The altitude rule and
-the B3-is-always-a-fork rule apply identically. This is also where a
-decision an earlier sitting classified as a default gets reopened, if
-building proved it was actually a one-way door — reopen by ID, add the new
-fork, and note the reclassification as its own ledger row rather than
-silently editing the old one.
+Same instrument, smaller: forks, decided-for-you and recorded defaults only
+(skip demo and the risk-register update — those belong to the milestone
+report; re-ask the blast-map question only if the milestone's work proposes
+a change to it). The owner test and the pre-sitting check apply
+identically. A decision an earlier sitting classified as a default or
+decided-for-you gets reopened here if building proved it needed the
+operator — reopen by ID and note the reclassification as its own ledger row.
 
 ## Conversational surface, never a pasted wall
 
-Measured on first live use: a full question list dumped in one message reads
-as a form, not a conversation, and the operator either disengages or answers
-shallowly. Run H2/H3 the way the `intent` skill runs its opening: one fork at
-a time, threaded from the answer before it, with enough framing that the
-operator knows why they're being asked. Batch only
-the parts that are inherently a batch — the recorded-defaults review and the
-not-yet-specified list are meant to be skimmed as a list, not asked
-question-by-question, since neither is a question. Never enumerate the full
-fork list up front; the operator sees fork *n+1* after answering fork *n*,
-and sees the whole defaults batch at once only when it's time to ratify it.
+Run H2/H3 the way the `intent` skill runs its opening: one fork at a time,
+threaded from the answer before it. Never enumerate the full fork list up
+front. Lists that are not questions (decided-for-you, defaults,
+not-yet-specified) are posted once, skimmable, and never turned into a vote.
 
-**Low-blast forks may share a turn.** Up to three forks go in one turn when
-every fork in that batch is B0 or B1 and none is a one-way door — so a reuse
-fork never qualifies. Take them consecutively in fan-out order, and never
-batch a fork whose options depend on another answer in the same batch. B2
-and B3 forks and every one-way door stay one per turn. The governing test
-still applies to each fork in a batch: every one must be a question the
-operator is glad they were asked.
+**Low-blast forks may share a message** (up to three) when each passes the
+owner test, none is a one-way door, and none depends on another's answer.
+
+## Measuring the sitting
+
+Record per fork, for the retro: whether the answer matched the
+recommendation, whether "your call" was used, the ask's length, and the
+reply time. A fork answered with the recommendation within about a minute
+of a long ask is a **quick-agree** — evidence that it failed the owner test.
+The `retro` skill compiles these.
 
 ## Filing
 
-Every fork's outcome and every recorded default becomes a row in
-`docs/decisions.md` (or wherever this effort records decisions): `ID ·
-decision · one-line rationale · owner · status
-(active / superseded by D-x) · ADR link (if any)`. A decision that meets the
-mattpocock `domain-modeling` skill's ADR criteria (hard to reverse,
-surprising, a real trade-off) also gets an ADR; the ledger row links it.
-Superseding a decision leaves every `D-NNN` reference to it a visible grep
-target — don't delete a superseded row, mark it.
+Every fork's outcome, every decided-for-you line and every recorded default
+becomes a row in `docs/decisions.md` (or wherever this effort records
+decisions): `ID · decision · one-line rationale · owner · status
+(active / superseded by D-x) · ADR link (if any)`. Owner is `operator` for
+forks and `planner` for decided-for-you and defaults; decided-for-you rows
+also name how they were checked. A decision that meets the mattpocock
+`domain-modeling` skill's ADR criteria also gets an ADR. Superseding a
+decision leaves every `D-NNN` reference a visible grep target — mark the
+row, never delete it.
 
 Use [references/decision-memo-template.md](references/decision-memo-template.md)
-as the working document while compiling the memo (draft it there section by
-section as findings land, then walk the operator through it live); its
-output — the forks' ratified answers and the defaults batch — is what gets
-transcribed into `docs/decisions.md` afterward. The template's shape mirrors
-the H2 format above exactly, section for section, so nothing said here needs
-restating there.
+as the working document while compiling the memo; its shape mirrors the H2
+format above section for section.

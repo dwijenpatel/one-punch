@@ -62,9 +62,17 @@ project-native, ungameable.
   game days, operator runbooks verified by literal execution, operator tickets
   on the tagged domain's critical path (circumvention then cannot produce a
   finished implementation at all).
-- **Socratic inversion** in decision sessions for tradeoff-mastery domains:
-  ask the operator's position before showing the recommendation — a drill
-  disguised as work. (This deliberately un-compresses those domains.)
+- **Written predictions, not position-first buttons**, for tradeoff-mastery
+  domains: before a decision in the tagged domain is made, or before a run
+  whose result tests one, the operator writes their position and reasoning
+  in LEARNING.md's drill log, in their own words, then sees the agent's
+  recommendation and the outcome; the gap is what the next drill targets.
+  This never blocks a fork, a ticket or the build, and is never asked as a
+  multiple-choice question first: measured, a position-first choice prompt
+  drew answers in 6–14 seconds that flipped to the recommendation within
+  seconds of seeing it — guessing, not reasoning, at twice the asks. The
+  agent may invite a prediction in one line; skipping it is recorded, not
+  chased.
 
 ## The honest limit — waivers, never fakes
 
