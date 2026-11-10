@@ -358,13 +358,13 @@ def megafile_check(
 
 def decide(results: Sequence[CheckResult], evaluation: BlastEvaluation) -> str:
     """Escalation re-routes (work salvaged) whatever else failed; any other
-    red is a failed attempt; green B3 waits for the operator; green B0-B2
-    lands."""
+    red is a failed attempt; green B3 waits for the operator when the
+    evaluation says the operator reviews it; every other green lands."""
     if evaluation.escalation:
         return "BLAST-ESCALATION"
     if any(not r.ok for r in results):
         return "FAILED"
-    if evaluation.effective is Blast.B3:
+    if evaluation.effective is Blast.B3 and evaluation.operator_review:
         return "AWAITING-OPERATOR"
     return "MERGED"
 

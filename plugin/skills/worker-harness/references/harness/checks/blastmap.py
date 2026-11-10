@@ -33,7 +33,7 @@ CHECKLIST_IDS = frozenset(
 )
 _ZONE_NAME = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 _TOP_KEYS = frozenset({"schema", "pack", "pattern_skip", "zone", "lowering"})
-_ZONE_KEYS = frozenset({"name", "level", "why", "paths", "pattern", "checklist", "protected"})
+_ZONE_KEYS = frozenset({"name", "level", "why", "paths", "pattern", "checklist", "protected", "operator_review"})
 _PATTERN_KEYS = frozenset({"regex", "files", "match", "nomatch"})
 _LOWERING_KEYS = frozenset({"zone", "paths", "level", "decision"})
 
@@ -76,6 +76,7 @@ class MapZone:
     patterns: tuple[Pattern, ...]
     checklist: str | None
     protected: bool
+    operator_review: bool  # B3 only: a green diff hitting this zone waits for the operator
 
 
 @dataclass(frozen=True)
@@ -109,6 +110,7 @@ class BlastEvaluation:
     effective: Blast
     checklists: frozenset[str]
     inactive_lowerings: tuple[str, ...]
+    operator_review: bool = True  # meaningful at effective B3 only
 
     @property
     def escalation(self) -> bool:
@@ -194,14 +196,23 @@ def _zone(raw: object, index: int) -> MapZone:
     protected = table.get("protected", False)
     if not isinstance(protected, bool):
         raise _invalid(f"{where}.protected must be a boolean")
+    level = _level(table.get("level"), f"{where}.level")
+    operator_review = table.get("operator_review", True)
+    if not isinstance(operator_review, bool):
+        raise _invalid(f"{where}.operator_review must be a boolean")
+    if "operator_review" in table and level is not Blast.B3:
+        raise _invalid(f"{where}.operator_review applies only to B3 zones")
+    if protected and not operator_review:
+        raise _invalid(f"{where} is protected; operator_review cannot be false")
     zone = MapZone(
         name=name,
-        level=_level(table.get("level"), f"{where}.level"),
+        level=level,
         why=why,
         paths=_globs(table.get("paths", []), f"{where}.paths"),
         patterns=tuple(_pattern(p, f"{where}.pattern[{i}]") for i, p in enumerate(raw_patterns)),
         checklist=str(checklist) if checklist is not None else None,
         protected=protected,
+        operator_review=operator_review,
     )
     if not zone.paths and not zone.patterns:
         raise _invalid(f"{where} has neither paths nor patterns")
@@ -279,7 +290,9 @@ def evaluate(
 ) -> BlastEvaluation:
     """Format §5: hits over both sides of renames and over added and removed
     lines; lowerings apply only with an active decision (max of the
-    applicable ones); effective = max(declared, map level)."""
+    applicable ones); effective = max(declared, map level). At effective B3,
+    the operator reviews when any B3 hit's zone keeps `operator_review`, or
+    when the B3 comes from the declaration alone (no B3 hit)."""
     raw_hits: set[tuple[str, str, str]] = set()
     for zone in bmap.zones:
         for entry in entries:
@@ -313,6 +326,9 @@ def evaluate(
     checklists = frozenset(
         cid for h in hits if h.level.value >= Blast.B2.value and (cid := checklist_of[h.zone]) is not None
     )
+    review_of = {z.name: z.operator_review for z in bmap.zones}
+    b3_zones = {h.zone for h in hits if h.level is Blast.B3}
+    operator_review = any(review_of[z] for z in b3_zones) if b3_zones else True
     return BlastEvaluation(
         declared=declared,
         hits=tuple(hits),
@@ -320,4 +336,5 @@ def evaluate(
         effective=effective,
         checklists=checklists,
         inactive_lowerings=tuple(f"LOWERING-INACTIVE {d}" for d in sorted(inactive)),
+        operator_review=operator_review,
     )

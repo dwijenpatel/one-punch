@@ -68,6 +68,7 @@ TOML types are exact; an unknown key at any level makes the map invalid
 | `pattern` | array of tables | no, default `[]` | Content patterns, below. Used by the **detector only** — no diff exists at scheduling time. |
 | `checklist` | string | no | Domain checklist id (§7). |
 | `protected` | boolean | no, default `false` | `true` ⇒ no `[[lowering]]` may name this zone. |
+| `operator_review` | boolean | no, default `true`; **B3 zones only** | Whether a green change hitting this zone at B3 waits for the operator's diff read (`AWAITING-OPERATOR`). `false` ⇒ the change still gets every B3 step (spike, independent tests-first author, spec verdict, decorrelated lens) and lands when green. Set `true` where the operator owns the consequence (their credentials, money, personal data, production, irreversible destruction of their data, their own rules); `false` where the B3 checks carry the risk and an operator read adds no knowledge. Absent ⇒ `true` (fail closed). Never `false` on a `protected` zone. |
 
 A zone must have at least one path or one pattern.
 
@@ -108,6 +109,8 @@ zone, so an agent's edit to it never merges without the operator.
 6. Every lowering names an existing non-protected zone, has a level
    strictly below that zone's level, and a decision ID matching the ledger
    ref pattern (default `^D-\d{3,}$`).
+7. `operator_review`, when present, is a boolean on a `B3` zone, and is not
+   `false` on a `protected` zone.
 
 Whether a lowering's decision is *active* is checked at evaluation time
 (§5), not here: a superseded decision disables its lowering without
@@ -220,6 +223,14 @@ Input: the change's file entries and the ledger.
   (a declared B3, or hits only in zones without a checklist), the
   checklist requirement is vacuously satisfied; the other B3 evidence
   (independent acceptance tests, lens report) is still required.
+
+- **Operator review** — at effective `B3` only: `true` when any hit whose
+  hit level is `B3` is in a zone with `operator_review = true` (or the key
+  absent), or when there is no `B3` hit at all (the `B3` comes from the
+  declaration alone); `false` otherwise. A green change at effective `B3`
+  with operator review `true` waits for the operator; with `false` it lands
+  like a green `B0`–`B2` change. A lowering that takes a hit below `B3`
+  takes it out of this computation.
 
 Report every hit as (zone, path, source `path`|`pattern`, hit level) so an
 escalation message can name what fired.

@@ -27,7 +27,10 @@ Sequence for TICKET (plan §3.5, with the 2026-09-24 amendments):
  5. Green at effective B0-B2: fast-forward the integration branch to J with
     a compare-and-swap (`git update-ref <branch> J H`) — only the judged tree
     lands. If the head moved meanwhile, re-enter at step 2 (at most
-    `max_reentries` times, then `HEAD-MOVED`). Green at B3: pin J at
+    `max_reentries` times, then `HEAD-MOVED`). Green at B3 where no B3 hit
+    keeps its zone's `operator_review` (and the B3 is not declaration-only)
+    lands the same way, after the full B3 review the stages already ran.
+    Green at B3 otherwise: pin J at
     `refs/one-punch/awaiting/<ticket>`, write the review packet to
     `<packets_dir>/<ticket>/`, emit `AWAITING-OPERATOR`; `--approve TICKET`
     fast-forwards it by the same compare-and-swap (a moved head re-runs the
@@ -52,7 +55,8 @@ Event (one JSON object per line, every key always present):
   which writes nothing: the ledger is the lock's to guard), ticket, model,
   attempt, tokens (the launcher's result.json `usage`), worker_wall_clock_s,
   wall_clock_s (this run), tag, size, declared_blast, effective_blast,
-  verify (pass|fail|not-run), verify_failures [{command, exit, tail}],
+  operator_review (at effective B3: whether it waited for the operator; else
+  null), verify (pass|fail|not-run), verify_failures [{command, exit, tail}],
   reentries, head_moved [bases that moved under a judgement], ticket_head,
   base, judged, files (both sides of renames), hits [{zone, path, source,
   level}], checklists, checks [{name, ok, failures, warnings, exceptions}],
@@ -104,7 +108,7 @@ from checks.hygiene import (
 from checks.config import ConfigError, IntegrateConfig, parse_config
 from checks.ledger import LedgerError, active_decisions, parse_ledger
 from checks.lint import LintRun, lint_check
-from core import Ticket, TicketHeaderError, parse_ticket_header
+from core import Blast, Ticket, TicketHeaderError, parse_ticket_header
 from review import packet_readme
 
 LOCK_NAME = "one-punch-writer.lock"
@@ -511,6 +515,7 @@ def _new_event(ticket: str, worker: WorkerInfo) -> dict[str, Any]:
         "size": None,
         "declared_blast": None,
         "effective_blast": None,
+        "operator_review": None,
         "verify": "not-run",
         "verify_failures": [],
         "reentries": 0,
@@ -559,6 +564,7 @@ def _record(event: dict[str, Any], j: _Judgement, handoff: CheckResult) -> None:
     )
     if ev is not None:
         event["effective_blast"] = ev.effective.name
+        event["operator_review"] = ev.operator_review if ev.effective is Blast.B3 else None
         event["hits"] = [{"zone": h.zone, "path": h.path, "source": h.source, "level": h.level.name} for h in ev.hits]
         event["checklists"] = sorted(ev.checklists)
 

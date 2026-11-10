@@ -272,6 +272,10 @@ paths = ["**/pii/**", "**/gdpr/**", "**/privacy/**"]
 [[zone]]
 name = "transactions"
 level = "B3"
+# Checked, not read: the mandatory spike, the independent negative tests
+# (concurrent writers, rollback, crash mid-transaction) and the lens's
+# checklist answers carry this zone; an operator diff read adds no knowledge.
+operator_review = false
 checklist = "transactions-concurrency"
 why = "Transaction boundaries and isolation: wrong choices corrupt data under concurrency and pass every single-threaded test."
 paths = []
@@ -394,6 +398,9 @@ paths = [
 [[zone]]
 name = "unsafe-parsing"
 level = "B3"
+# Checked, not read: injection and code-execution cases are the independent
+# test author's negative tests and the lens's checklist answers.
+operator_review = false
 checklist = "untrusted-input"
 why = "Deserializing, evaluating or interpolating external input: injection and code execution pass every well-formed-input test."
 paths = []

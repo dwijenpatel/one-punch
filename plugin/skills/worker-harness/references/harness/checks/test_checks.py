@@ -203,6 +203,70 @@ def test_blast_map_missing_and_invalid_fail_closed() -> None:
     invalid("```toml blast-map\nschema = [\n```\n", "TOML syntax")
 
 
+REVIEW_MAP = """```toml blast-map
+schema = 1
+
+[[zone]]
+name = "owner-secrets"
+level = "B3"
+why = "The operator's credentials."
+paths = ["src/secrets/**"]
+
+[[zone]]
+name = "gate-math"
+level = "B3"
+operator_review = false
+why = "Statistics checked by tests-first and the lens, not by the operator."
+paths = ["src/gate/**"]
+
+[[zone]]
+name = "wide-core"
+level = "B2"
+why = "Shared core."
+paths = ["src/core/**"]
+
+[[lowering]]
+zone = "owner-secrets"
+paths = ["src/secrets/fixtures/**"]
+level = "B1"
+decision = "D-001"
+```
+"""
+
+
+def test_operator_review_holds_only_for_operator_zones() -> None:
+    bmap = load_blast_map(REVIEW_MAP)
+    green = [CheckResult("ref")]
+
+    def judged(*paths: str, declared: Blast = Blast.B3) -> tuple[bool, str]:
+        result = evaluate(bmap, tuple(_added(p, "x") for p in paths), declared, active={"D-001"})
+        return result.operator_review, decide(green, result)
+
+    assert judged("src/secrets/key.py") == (True, "AWAITING-OPERATOR")  # flag absent: fail closed
+    assert judged("src/gate/stats.py") == (False, "MERGED")  # flag false: full B3 review, no hold
+    assert judged("src/gate/stats.py", "src/secrets/key.py") == (True, "AWAITING-OPERATOR")  # any held zone holds
+    assert judged("src/core/a.py") == (True, "AWAITING-OPERATOR")  # declared B3, no B3 hit: hold
+    assert judged("src/secrets/fixtures/f.py", declared=Blast.B1) == (True, "MERGED")  # lowered below B3
+    assert judged("src/gate/stats.py", declared=Blast.B1)[1] == "BLAST-ESCALATION"
+
+
+def test_operator_review_rejections() -> None:
+    body = REVIEW_MAP.split("```toml blast-map\n")[1].split("```")[0]
+    bad = {
+        'level = "B2"\nwhy = "Shared core."': 'level = "B2"\noperator_review = true\nwhy = "Shared core."',
+        "operator_review = false": 'operator_review = "no"',
+        'name = "owner-secrets"\nlevel = "B3"': 'name = "owner-secrets"\nlevel = "B3"\nprotected = true\noperator_review = false',
+    }
+    for old, new in bad.items():
+        assert old in body, old
+        try:
+            load_blast_map(f"```toml blast-map\n{body.replace(old, new, 1)}```\n")
+        except BlastMapError as exc:
+            assert "BLAST-MAP-INVALID" in str(exc)
+        else:
+            raise AssertionError(f"accepted: {new!r}")
+
+
 def test_default_pattern_pack_validates_when_available() -> None:
     pack = pathlib.Path(__file__).resolve().parents[4] / "blast-radius/references/default-pattern-pack.toml"
     if not pack.exists():
