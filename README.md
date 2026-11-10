@@ -95,9 +95,13 @@ that pass the rule at the top of this page.
 | Take payment on the site in version one, or only collect orders? | It changes the product itself. |
 | A hosted checkout page, or card fields embedded in your site? | It's hard to reverse, and it sets how much card-handling risk you own. |
 | Start from an open-source store starter, or build fresh? | Adopting a dependency is expensive to undo. |
-| Is this the right list of high-risk areas: payments, customer data, order records? | It decides which code you'll review yourself. |
+| Which high-risk areas should wait for you to read the code: payments and customer data, but not the order-number generator? | It decides how much of your time review takes. |
 
 The agent settles the rest without asking, and writes each decision down.
+High-risk decisions that aren't yours, such as how the payment webhook
+checks signatures, get a second model's review or a test run before you see
+them, and arrive as a list you can veto line by line. Recorded defaults
+arrive as a list too, never as a vote.
 
 | You're not asked | The agent does this instead |
 |---|---|
@@ -106,8 +110,10 @@ The agent settles the rest without asking, and writes each decision down.
 | Linter rules, how config loads | It installs tested defaults. |
 
 Every recorded decision gets an ID. If you disagree with one later, name it
-and the agent reopens it. Each question you do get comes with a
-recommendation, the evidence behind it, and the options it rules out.
+and the agent reopens it. Each question you do get opens with the question in
+plain words and what the agent will do if you don't mind either way. It fits
+on a phone screen, carries no internal ID numbers, and offers a "your call"
+answer.
 
 ### 4. The build runs without you
 
@@ -132,11 +138,13 @@ Most tickets merge on their own: the product grid, the cart, the styling.
 The checkout, the payment webhook, and any code that touches customer records
 go through more. A separate agent writes the acceptance tests before the code
 exists. A reviewer from a different model family checks the result against a
-list of the ways that kind of code fails quietly. Then the change waits for
-you to read it.
+list of the ways that kind of code fails quietly. Then, in the areas you chose
+to read, the change waits for you. In the other high-risk areas it merges
+once those checks pass, and the milestone report lists it.
 
-That's the one place the workflow spends your attention on purpose. It's why
-the agent asked about catastrophes on day one.
+That read is the one place the workflow spends your attention on purpose,
+so it stays rare enough that you actually read. It's why the agent asked
+about catastrophes on day one.
 
 ### 6. You see it running and report problems
 
@@ -162,13 +170,14 @@ The same rule sorts every possible interruption into one of two columns.
 | Decisions that are expensive to reverse | Questions the evidence already answered |
 | The product's scope | Questions it can settle by running code |
 | Conflicts between your stated intent and the evidence | Permission to proceed, when you've already seen the plan |
-| High-risk diffs, before they merge | Routine diffs |
+| High-risk diffs in the areas you chose to read | Routine diffs, and high-risk diffs its checks can cover |
 | A decision a worker couldn't safely make alone | Progress updates |
 | The running result, at each milestone | |
 
-Two details keep the left column short. The agent batches small, low-risk
-questions into one turn. And "go ahead and build" is a window in which you
-can object, not a gate you have to open.
+Three details keep the left column short. A high risk level makes the agents
+check more, not ask more. The agent puts small, low-risk questions into one
+message. And "go ahead and build" is a window in which you can object, not a
+gate you have to open.
 
 ## How it got here
 
@@ -226,6 +235,20 @@ nothing more. That result drove the most recent changes.
 - **A lighter mode is official** for small or time-boxed work, on one
   condition: every change still lands through the checking script.
 
+**An amendment to version 4 (0.5.0, November 2026): ask only what's mine.**
+The next real effort asked me 44 questions before and during its first
+build. I picked the agent's recommendation on 15 of 16 decisions, mostly
+replying within a minute to messages of about 400 words, and approved a
+22-line list of defaults in five seconds. 19 of its 21 tickets sat in
+high-risk areas, so the workflow expected me to read 19 diffs; I approved
+three of them in one click. Those approvals recorded oversight that didn't
+happen. Now a high risk level raises how much the agents check, not how
+often I'm asked. I'm asked about my money, my time, my accounts and repos,
+rules I wrote, what the product is, and taste. I read diffs only in the
+areas I pick. The retro counts every question I answered with the
+recommendation in under a minute, as a sign the question shouldn't have
+been asked.
+
 I also dropped things. An earlier version put headless workers behind sandbox
 walls and probed for escapes. Establishing those walls took nine live test
 runs and they weren't worth it. Workers now run freely inside their own copy
@@ -259,14 +282,14 @@ is.
 
 ## Where it stands
 
-As of October 2026, version 0.4.3:
+As of November 2026, version 0.5.0:
 
 - It works in Claude Code. It uses OpenAI's Codex as the second-opinion
   reviewer for high-risk changes. I claim support for another agent tool only
   when its row in the [smoke checklist](docs/vendor-smoke.md) passes.
 - The front half has run on one real codebase, with the results above.
 - The unattended parallel build loop is tested, but new. It passes its own
-  suite of 126 tests and strict type checks, and it has run live with four
+  suite of 130 tests and strict type checks, and it has run live with four
   concurrent workers. The first trial used the lighter mode, so the full loop
   hasn't yet built a whole real project. That's the next trial.
 - I built it for the way I work. Take the parts that help.
