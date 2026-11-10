@@ -41,7 +41,7 @@ after their inputs. Asked one at a time.
 ### Reuse fork (only when it passes the owner test)
 
 - **Dossier:** <link> — what it solves, evidence it works, license
-- **Why it's theirs:** <license to accept / paid service / code they own>
+- **Why it's theirs:** <license to accept / paid service / changes or couples to a repo they own>
 - **The ask, as sent:** <…>
 - **Operator answer:** <…>
 

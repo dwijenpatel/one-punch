@@ -204,7 +204,8 @@ filing around it:
    verified per the links rule above), spike
    transcripts (risk register), dossiers (reuse forks), holdings (evidence
    tiers), the blast-map draft (ratification).
-2. Run the sitting as `decision-memo` directs (its altitude rule, its
+2. Run the sitting as `decision-memo` directs (its owner test, its
+   pre-sitting check, its question format, its
    adversarial-evidence trigger, its follow-up rounds through `grilling`).
 3. After the sitting: the ledger is filed per `decision-memo`; update each
    `R-n`'s Status in INTENT.md's risk register with a link to its evidence;
@@ -311,8 +312,8 @@ still land only through `integrate`.
 
 1. Read the handoffs as files. Worker transcripts never enter the planner's
    context.
-2. `Decisions needed:` — decide at the `decision-memo` altitude: a craft
-   question becomes a ledger row and the parked ticket is unparked; a fork
+2. `Decisions needed:` — apply `decision-memo`'s owner test: a question the
+   operator doesn't own becomes a ledger row and the parked ticket is unparked; a fork
    waits for the operator (now if it blocks the frontier, else the H3
    mini-memo).
 3. Licensed breakage (`BREAKING(D-NNN)`) — accept (ledger row goes active,

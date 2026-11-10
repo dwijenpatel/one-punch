@@ -68,7 +68,7 @@ The rows are grouped by phase; the per-turn rows are in the export.
 | 3 | 21:37–11-10 02:50 | H2 | learning-gates opt-in, goal type, target bar | D | learning-gates | no |
 | 2 | 02:56–03:45 | A2 | "Continue A2"; "Commit and cut" | D | stage gates | **yes**: neither is a decision the operator owns |
 | 1 structured | 03:01 | A2 | how the target project's tickets get built | D | planner | yes |
-| 6 structured | 03:46–03:48 | A2 | 3 eval questions, each asked twice: operator position first, then hold or switch | D | learning-gates Socratic inversion | **yes**: 6–14 s each; 2 of 3 flipped to the recommendation |
+| 5 structured | 03:46–03:48 | A2 | 3 eval questions, operator position first; 2 then asked again to hold or switch (the third matched the recommendation) | D | learning-gates Socratic inversion | **yes**: 6–14 s each; 2 of 3 flipped to the recommendation |
 | 1 structured | 03:49 | A2 | merge an existing branch in the operator's other repo | D | planner | no: it's the operator's repo history |
 | 3 | 05:35–07:12 | build | approve B3 packets (02; 03 + 08 + 22; 09) | D | rule: the operator reads every B3 diff | see Findings |
 | 2 | 06:29–06:30 | build | "why Python 3.9?"; "add mypy strict" | S | operator read a status message | no: operator-initiated and substantive |
@@ -87,7 +87,7 @@ the first packet approval) are excluded from medians.
 | Preflight + H1 | 11-09 07:46–08:03 | 17 min | not recorded | 9 asks | substantive answers |
 | A1 | 08:03–08:33 | 30 min | ≈30 min | 0 asks | then away ~12 h |
 | H2 sitting | 20:36–21:40 | 64 min | short turns | 22 asks | median reply ≈45 s on ≈420-word asks |
-| A2 | 21:40–11-10 03:45 | with a ~5 h away gap | not recorded | 10 asks | 6 of the 10 were Socratic doubles |
+| A2 | 21:40–11-10 03:45 | with a ~5 h away gap | not recorded | 9 asks | 5 of the 9 were position-first prompts |
 | Build (in progress) | 03:45–07:31 | ongoing | — | 3 approvals + 2 requests | 19 of 21 tickets B3 |
 
 ## Metrics

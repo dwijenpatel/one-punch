@@ -73,8 +73,10 @@ walls; `integrate` guards what lands (§6.9). Per-ticket review for everyone
   can inform. The operator ratifies forks; they do not drive discovery.
 - **v4.2 Question altitude.** Governing test (operator, 2026-09-24): ask only
   what the operator, in hindsight, is glad to have been asked. In practice
-  that means one-way doors, product boundaries, and conflicts with recorded
-  intent. Upstream "operator-invoked only" gates on composed skills are
+  (the owner test, §4; amended 2026-11-10) that means decisions that spend
+  the operator's money, quota or time, touch their accounts, repos or data,
+  conflict with a rule they wrote or recorded intent, draw a product
+  boundary, or turn on their taste — at every blast level. Upstream "operator-invoked only" gates on composed skills are
   advisory, judged by their purpose: where v4 already serves it or the ask
   would fail the test, the planner follows the skill itself (composing by
   loading its instructions, never paraphrasing). Everything else is
@@ -161,7 +163,7 @@ one-punch's own skills (roster per plan §5):
   (git history keeps it).
 - **`intent`** — H1: one sitting, catastrophes, risk register; overlay
   offered, not default.
-- **`decision-memo`** — the altitude rule and the memo format, at H2 and as
+- **`decision-memo`** — the owner test, the question format and the memo format, at H2 and as
   the H3 mini-memo.
 - **`blast-radius`** — levels, blast-map format, default pattern pack,
   scrutiny ladder, domain checklists. Used by `steer`, the harness, the

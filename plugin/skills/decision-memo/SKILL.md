@@ -122,9 +122,11 @@ Compile and walk the operator through, in order:
    - **Reuse decisions** — for every problem area with a prior-art dossier,
      choose the reuse mode (`dependency` / `fork` / `port` / `pattern` /
      build fresh). A fork only when the owner test passes: a license the
-     operator must accept, a paid or account-bound service, or code the
-     operator owns elsewhere whose maintenance they'd carry. Otherwise
-     decided-for-you, with the dossier linked.
+     operator must accept, a paid or account-bound service, or reuse that
+     changes or couples to another repository the operator owns (a `fork`
+     that diverges from it, a `dependency` on it). A `port` or `pattern`
+     copies and touches nothing of theirs: decided-for-you, with the dossier
+     linked.
    - **Adversarial-evidence trigger** — a one-way-door decision (fork or
      decided-for-you) resting on an *external* claim gets an evidence-kit
      **adversarial-grade** pass first.
