@@ -60,7 +60,7 @@ The rows are grouped by phase; the per-turn rows are in the export.
 | 2 structured | 07:47 | preflight | tracker triage labels; AGENTS.md vs CLAUDE.md | D | upstream setup skill | **yes**: a convention or recorded preference already answered both |
 | 6 | 07:50–08:00 | H1 | goal, audience, constraints, catastrophes, prior art, risk register | D | intent sitting | no: substantive free-text answers |
 | 1 | 08:03 | A1 | "Launch A1" | D | stage gate (spends quota) | no |
-| 13 | 20:36–21:29 | H2 | the main forks, one per turn | D | altitude rule: "B3 is always a fork" | **8 of 13 yes** (see Findings) |
+| 13 | 20:36–21:29 | H2 | the main forks, one per turn | D | altitude rule: "B3 is always a fork" | **7 of 13 yes**: only funding, spend, the operator's own runbook and rule, host containment and network egress passed the owner test |
 | 3 | 21:30–21:35 | H2 | reuse forks (port a launcher, a stats dependency, pattern-only reuse) | D | reuse fork | **yes**: every answer matched the recommendation; none touched anything the operator owns |
 | 1 | 21:35 | H2 | absence claim | D | rule: operator confirms absence claims | partly: the operator had no new information |
 | 1 | 21:36 | H2 | blast map, 12 B3 zones, one button | D | rule: every B3 zone is an explicit yes | the read was not possible in 22 s |
