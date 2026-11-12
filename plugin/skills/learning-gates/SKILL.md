@@ -1,6 +1,6 @@
 ---
 name: learning-gates
-description: Gate implementation progress on the operator's measured, verified learning. Types each learning goal (conceptual understanding, tradeoff mastery, skill acquisition, gap-closing), attaches the right assessment mechanism, and enforces gates as tracker-native blocker tickets that resolve only via committed assessment artifacts. Opt-in — propose it only when INTENT.md names a learning goal, and enter it only on the operator's yes; never a default opener. Once enabled, use when cutting tickets in a learning-tagged domain, or when running any assessment, drill, or waiver.
+description: Gate implementation progress on the operator's measured, verified learning. Types each learning goal (conceptual understanding, tradeoff mastery, skill acquisition, gap-closing), attaches the right assessment mechanism, hands the operator each gate as a self-contained lesson (why it matters, the content taught with worked examples, the full setup, the task, how it's judged), and enforces gates as tracker-native blocker tickets that resolve only via committed assessment artifacts. Opt-in — propose it only when INTENT.md names a learning goal, and enter it only on the operator's yes; never a default opener. Once enabled, use when cutting tickets in a learning-tagged domain, or when running any assessment, drill, or waiver.
 compatibility: Works in any agent harness. Blind grading requires the ability to start a fresh session or context without the coaching history; where unavailable, note the limitation on the assessment artifact. Voice mocks degrade to text.
 license: MIT
 ---
@@ -49,7 +49,9 @@ project-native, ungameable.
   edge. The frontier does not move past an unresolved gate.
 - An L-ticket resolves ONLY via a **committed assessment artifact**: the
   pre-registered rubric and bar ([references/rubric-template.md](references/rubric-template.md)),
-  the transcript or work product, and a grade at/above bar.
+  the transcript or work product, and a grade at/above bar. The operator
+  works from the gate's lesson (see "Every gate is a lesson" below), never
+  from the rubric alone.
 - **Bars**: the TARGET is set at intent time and is binding; the RUBRIC is
   written per milestone, always before the assessment. **Budget**: N
   operator-implements tickets per effort, tracker-visible.
@@ -73,6 +75,45 @@ project-native, ungameable.
   seconds of seeing it — guessing, not reasoning, at twice the asks. The
   agent may invite a prediction in one line; skipping it is recorded, not
   chased.
+
+## Every gate is a lesson
+
+A gate is the operator's learning, so what they are handed is built the way
+a skilled teacher or tutor builds a lesson and its assignment: it carries the
+content to be learned and the context of the work. All of the operator's
+effort goes to the topic itself, none to decoding shorthand, hunting through
+files or rebuilding the project in their head. The rubric is the grader's
+document; the operator gets a lesson
+([references/lesson-template.md](references/lesson-template.md)), written
+when the rubric is pre-registered and handed over with it.
+
+One self-contained document, in plain language, in this order:
+
+1. **Why it matters**: the real project decision the topic feeds, and what
+   goes wrong when that decision is made by guesswork.
+2. **What to learn**: the concepts taught from scratch, each building on the
+   last, with worked examples in small numbers and a quick self-check. The
+   examples use a different problem from the task, so the gate stays a
+   transfer test.
+3. **The setup**: everything the task depends on, written out (what the
+   system does, how the measurement runs, the real numbers and budgets),
+   never a pointer to another file.
+4. **The task**: exact steps, a fill-in template, a time estimate. The agent
+   handles mechanics (file paths, commits, timestamps) unless the mechanics
+   are the skill being learned.
+5. **How it's judged**: the rubric in plain words, what is not scored, and a
+   weak and a strong answer sketched on a different problem.
+6. **Further reading**: optional, never needed to finish.
+
+Every term, abbreviation and ID is spelled out where it first appears, or
+not used; project shorthand (ticket, risk and decision IDs, internal stage
+names) never stands alone. The acceptance check before handing it over:
+could a smart outsider who has never seen this repo do the task from this
+one document alone? If not, it is not done.
+
+The same standard applies to drills and to a retest task after a fail. It
+changes what the operator receives, never the bar, the rubric, grader
+separation or the transfer rule.
 
 ## The honest limit — waivers, never fakes
 

@@ -10,8 +10,8 @@ INTENT.md; this file is the working ledger.
 
 ## Gates
 
-| L-ticket | Blocks | Rubric | Attempts | Result |
-|---|---|---|---|---|
+| L-ticket | Blocks | Lesson | Rubric | Attempts | Result |
+|---|---|---|---|---|---|
 
 ## Drills / reps log
 

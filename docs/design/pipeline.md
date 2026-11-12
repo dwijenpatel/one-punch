@@ -635,8 +635,14 @@ block implementation tickets like any other edge and resolve only via
 committed artifacts. Bypass exists only as a loud recorded waiver; the agent
 never fakes a pass. Tradeoff-mastery drills are written predictions in the
 learning log, never position-first choice prompts and never blocking a fork
-([resonance asks retro](../evidence/2026-11-10-resonance-m1-operator-asks.md)). Mechanism (goal types, assessments, bars, budget,
-anti-death-spiral): `learning-gates`.
+([resonance asks retro](../evidence/2026-11-10-resonance-m1-operator-asks.md)).
+What the operator receives for a gate is a self-contained lesson, built as a
+skilled tutor would: why it matters, the content taught with worked examples,
+the full setup inline, the task with a template, and how it is judged, with no
+undefined shorthand. The rubric stays the grader's document (operator, 2026-11-11:
+a rubric-only gate full of project shorthand was "painful to parse"). Mechanism
+(goal types, assessments, bars, budget, lessons, anti-death-spiral):
+`learning-gates`.
 
 ## 13. Harness agnosticism
 

@@ -5,6 +5,10 @@ Type: <conceptual / tradeoff-mastery / skill-acquisition / gap-closing>
 Bar (from intent-time target, binding): <pass condition, concrete>
 Grader: fresh session, blind to coaching history. Transfer task, never drilled
 material.
+Lesson: <path to this gate's lesson (lesson-template.md)>. This rubric is the
+grader's document; the operator works from the lesson, which restates it in
+plain words. The grader receives the rubric, the task and the work product,
+never the lesson's teaching sections.
 
 | Dimension | 0 (absent) | 1 (partial) | 2 (solid) | Weight |
 |---|---|---|---|---|
