@@ -91,4 +91,8 @@ Refusal tokens: `HANDOFF-MISSING`, `HANDOFF-STATUS`, `TICKET-MISSING`,
 | `MEGAFILE` | megafile | A changed file ends over the threshold and grew in this change |
 
 Waivers: `allow(<rule>): D-NNN` in the file, citing an active ledger row, waives
-that lint rule or `megafile` for the file.
+that lint rule or `megafile` for the file. In a checklist answer, a `fail` line
+whose evidence carries `allow(checklist): D-NNN` citing an active row is an
+operator-accepted residual: it does not raise `CHECKLIST-UNANSWERED`, stays a
+`fail` on the record, and is logged as an exception. Superseding the row makes
+the line fail again.

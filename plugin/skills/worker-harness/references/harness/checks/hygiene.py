@@ -259,12 +259,19 @@ def scrutiny_check(
     checklist_sources: Mapping[str, str | None],
     test_globs: Sequence[str],
     evidence_globs: Sequence[str],
+    *,
+    ledger: Mapping[str, str],
+    ref_pattern: str,
 ) -> CheckResult:
     """Plan §2b ladder, "Automated review" and "Tests" rows, at the
     effective level: spec verdict at B2+ and at B1 for `contract`; at B3
     also tests-first commit order, a lens report, and every checklist of
-    the evaluation answered (vacuous when the set is empty, format §5)."""
+    the evaluation answered (vacuous when the set is empty, format §5).
+    A `fail` whose evidence carries `allow(checklist): D-NNN` citing an
+    active row is an operator-accepted residual: it stays a `fail` on the
+    record and is listed as an exception instead of failing the check."""
     failures: list[str] = []
+    exceptions: list[str] = []
     if effective.value >= Blast.B2.value or (effective is Blast.B1 and tag is Tag.CONTRACT):
         failures += _verdict("spec-verdict.md", artifacts)
     if effective is not Blast.B3:
@@ -284,10 +291,25 @@ def scrutiny_check(
         if answer is None:
             failures.append(f"CHECKLIST-UNANSWERED {cid} (no checklist-{cid}.md)")
             continue
-        problems = checklist_problems(answer, checklist_items(source))
+        waivers = _checklist_waivers(answer, ledger, ref_pattern)
+        exceptions += [f"allow(checklist): {ref} {cid} {item}" for item, ref in waivers.items()]
+        problems = [p for p in checklist_problems(answer, checklist_items(source)) if p.removesuffix(" fail") not in waivers]
         if problems:
             failures.append(f"CHECKLIST-UNANSWERED {cid}: {'; '.join(problems)}")
-    return CheckResult("scrutiny", failures=tuple(failures))
+    return CheckResult("scrutiny", failures=tuple(failures), exceptions=tuple(exceptions))
+
+
+def _checklist_waivers(answer: str, ledger: Mapping[str, str], ref_pattern: str) -> dict[str, str]:
+    """{item id: active decision} for each `fail` line waived by `allow(checklist): D-NNN`."""
+    waivers: dict[str, str] = {}
+    for line in answer.splitlines():
+        match = _ANSWER.match(line)
+        if match is None or match.group("verdict") != "fail":
+            continue
+        ref = allowance(match.group("evidence"), "checklist", ledger, ref_pattern)
+        if ref is not None:
+            waivers[match.group("id")] = ref
+    return waivers
 
 
 def _revs_agree(a: str, b: str) -> bool:

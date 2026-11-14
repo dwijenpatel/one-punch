@@ -478,6 +478,8 @@ def _judge(git: Git, cfg: IntegrateConfig, ticket_id: str, ticket_sha: str, base
             checklist_sources(git, cfg, base, evaluation.checklists),
             cfg.test_globs,
             evidence,
+            ledger=ledger,
+            ref_pattern=cfg.ref_pattern,
         ),
         attribution_check(ticket.reference, git.show(judged, cfg.notices_file), cfg.allowed_licenses),
         lint_check(

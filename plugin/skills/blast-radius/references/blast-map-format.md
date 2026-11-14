@@ -271,7 +271,10 @@ each matching
 `^(?P<id>[A-Z]{2}-\d{2}) (?P<verdict>pass|fail|n/a): (?P<evidence>\S.*)$`
 — evidence is the test that proves `pass` (test id or path), the reason
 for `n/a`, or the finding for `fail`. A checklist is **answered** when
-every non-retired item id appears exactly once and no verdict is `fail`.
+every non-retired item id appears exactly once and no verdict is `fail`,
+except a `fail` whose evidence carries `allow(checklist): D-NNN` citing an
+active ledger row: an operator-accepted residual, kept as `fail` on the
+record and counted as an exception.
 Where the answer file lives is the harness's convention.
 
 ## 8. Worked example (exact values)
