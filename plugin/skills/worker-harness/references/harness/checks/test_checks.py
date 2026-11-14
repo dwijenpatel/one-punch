@@ -402,24 +402,44 @@ def _b3_commits() -> list[Commit]:
 
 
 def test_scrutiny_check_levels() -> None:
-    assert scrutiny_check(Blast.B1, Tag.CODE_COMPLETE, {}, [], (), {}, TESTS, EVIDENCE).ok
-    missing = scrutiny_check(Blast.B1, Tag.CONTRACT, {}, [], (), {}, TESTS, EVIDENCE)
+    assert scrutiny_check(Blast.B1, Tag.CODE_COMPLETE, {}, [], (), {}, TESTS, EVIDENCE, ledger={}, ref_pattern=DEFAULT_REF_PATTERN).ok
+    missing = scrutiny_check(Blast.B1, Tag.CONTRACT, {}, [], (), {}, TESTS, EVIDENCE, ledger={}, ref_pattern=DEFAULT_REF_PATTERN)
     assert missing.failures[0].startswith("SCRUTINY-MISSING spec-verdict.md")
     verdict = {"spec-verdict.md": "Missing: none\nVerdict: pass\n"}
-    assert scrutiny_check(Blast.B2, Tag.CODE_COMPLETE, verdict, [], (), {}, TESTS, EVIDENCE).ok
-    rejected = scrutiny_check(Blast.B2, Tag.CODE_COMPLETE, {"spec-verdict.md": "Verdict: fail"}, [], (), {}, TESTS, EVIDENCE)
+    assert scrutiny_check(Blast.B2, Tag.CODE_COMPLETE, verdict, [], (), {}, TESTS, EVIDENCE, ledger={}, ref_pattern=DEFAULT_REF_PATTERN).ok
+    rejected = scrutiny_check(Blast.B2, Tag.CODE_COMPLETE, {"spec-verdict.md": "Verdict: fail"}, [], (), {}, TESTS, EVIDENCE, ledger={}, ref_pattern=DEFAULT_REF_PATTERN)
     assert rejected.failures[0].startswith("SCRUTINY-FAILED spec-verdict.md")
 
 
 def test_scrutiny_check_b3() -> None:
     answers = "MN-01 pass: tests/test_pay.py::test_sum\nMN-03 n/a: no retries in this path\n"
     artifacts = {"spec-verdict.md": "Verdict: concerns", "lens.md": "Verdict: pass", "checklist-money.md": answers}
-    green = scrutiny_check(Blast.B3, Tag.CONTRACT, artifacts, _b3_commits(), {"money"}, {"money": CHECKLIST}, TESTS, EVIDENCE)
+    green = scrutiny_check(Blast.B3, Tag.CONTRACT, artifacts, _b3_commits(), {"money"}, {"money": CHECKLIST}, TESTS, EVIDENCE, ledger={}, ref_pattern=DEFAULT_REF_PATTERN)
     assert green.ok, green.failures
     impl_first = [_b3_commits()[1], _b3_commits()[0]]
-    red = scrutiny_check(Blast.B3, Tag.CONTRACT, {}, impl_first, {"money"}, {"money": CHECKLIST}, TESTS, EVIDENCE)
+    red = scrutiny_check(Blast.B3, Tag.CONTRACT, {}, impl_first, {"money"}, {"money": CHECKLIST}, TESTS, EVIDENCE, ledger={}, ref_pattern=DEFAULT_REF_PATTERN)
     tokens = [f.split(" ")[0] for f in red.failures]
     assert tokens == ["SCRUTINY-MISSING", "SCRUTINY-MISSING", "TESTS-NOT-FIRST", "CHECKLIST-UNANSWERED"], red.failures
+
+
+def test_scrutiny_check_honours_a_checklist_waiver_on_an_active_row() -> None:
+    def run(answers: str, ledger: dict[str, str]) -> CheckResult:
+        artifacts = {"spec-verdict.md": "Verdict: pass", "lens.md": "Verdict: pass", "checklist-money.md": answers}
+        return scrutiny_check(
+            Blast.B3, Tag.CONTRACT, artifacts, _b3_commits(), {"money"}, {"money": CHECKLIST}, TESTS, EVIDENCE,
+            ledger=ledger, ref_pattern=DEFAULT_REF_PATTERN,
+        )
+
+    waived = "MN-01 fail: rounding drift remains; allow(checklist): D-007\nMN-03 pass: t\n"
+    honoured = run(waived, {"D-007": "active"})
+    assert honoured.ok, honoured.failures
+    assert honoured.exceptions == ("allow(checklist): D-007 money MN-01",)
+    for ledger in ({"D-007": "superseded"}, {}):
+        assert run(waived, ledger).failures == ("CHECKLIST-UNANSWERED money: MN-01 fail",)
+    other_rule = "MN-01 fail: drift; allow(megafile): D-007\nMN-03 pass: t\n"
+    assert not run(other_rule, {"D-007": "active"}).ok
+    waived_pass = "MN-01 pass: t; allow(checklist): D-007\nMN-03 pass: t\n"
+    assert run(waived_pass, {"D-007": "active"}).exceptions == ()
 
 
 def test_checklist_grammar() -> None:
