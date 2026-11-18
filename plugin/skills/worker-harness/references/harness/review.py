@@ -39,10 +39,14 @@ from checks.hygiene import Commit, checklist_items, checklist_problems, compile_
 from core import Blast, Candidate, Routed, Tag, Ticket, Tier
 
 AUTHOR, TEST_AUTHOR, SPEC, LENS, MERGE = "author", "test_author", "spec_verdict", "lens", "merge"
-STAGES = (TEST_AUTHOR, SPEC, LENS, MERGE)
+# REVIEW: B3's single reviewer when no decorrelated lens is available. It writes
+# both the spec verdict and the lens report: two same-family reviewers of one
+# diff in fresh contexts are split by problem type, not by independence.
+REVIEW = "review"
+STAGES = (TEST_AUTHOR, SPEC, LENS, REVIEW, MERGE)
 # The phase a ticket returns to when a dispatch of that role is torn down or
 # rejected, so the same step runs again (runcore.fold_ledger).
-RESTING = {AUTHOR: "idle", TEST_AUTHOR: "idle", SPEC: "exited", LENS: "exited", MERGE: "conflict"}
+RESTING = {AUTHOR: "idle", TEST_AUTHOR: "idle", SPEC: "exited", LENS: "exited", REVIEW: "exited", MERGE: "conflict"}
 MAX_STAGE_FAILURES = 2  # rejected dispatches of one role before the ticket parks (`stage`)
 MAX_CONFLICTS = 3  # CONFLICT outcomes per implementer attempt before it parks (`conflict`)
 SPEC_FILE, LENS_FILE = "spec-verdict.md", "lens.md"
@@ -52,30 +56,39 @@ _VERDICT = re.compile(r"^Verdict:\s*(?P<verdict>pass|concerns|fail)\b", re.MULTI
 _ANSWER_ID = re.compile(r"^(?P<id>[A-Z]{2}-\d{2}) (?P<verdict>pass|fail|n/a): ")
 
 
-def required_reviews(ticket: Ticket) -> tuple[str, ...]:
+def required_reviews(ticket: Ticket, lens: Candidate | None) -> tuple[str, ...]:
     """The ladder's "Automated review" row at the declared level; integrate
-    requires the same at the effective level (checks.hygiene.scrutiny_check)."""
+    requires the same at the effective level (checks.hygiene.scrutiny_check).
+    B3 gets the spec verdict and the decorrelated `lens` when one passed its
+    smoke this run, else one REVIEW dispatch that writes both files."""
     if ticket.blast is Blast.B3:
-        return (SPEC, LENS)
+        return (SPEC, LENS) if lens is not None else (REVIEW,)
     if ticket.blast is Blast.B2 or (ticket.blast is Blast.B1 and ticket.tag is Tag.CONTRACT):
         return (SPEC,)
     return ()
 
 
-def next_role(ticket: Ticket, phase: str, tests: bool, reviewed: Mapping[str, str]) -> str | None:
+def next_role(ticket: Ticket, phase: str, tests: bool, reviewed: Mapping[str, str], lens: Candidate | None) -> str | None:
     """The next dispatch for a ticket in `phase`, or None: for `exited`,
     None means integrate now; other phases have no dispatch. `tests` is
     whether the tests-first commit exists; `reviewed` maps each review done
     since the last implementer (or B3 merge) to its verdict. A failed spec
-    verdict skips the lens: integrate fails the attempt either way."""
+    verdict skips the lens: integrate fails the attempt either way. A REVIEW
+    covers the spec verdict and the lens, and the pair covers a REVIEW, so a
+    lens smoke that changes between runs never repeats a finished review."""
     if phase == "conflict":
         return MERGE
     if phase == "idle":
         return TEST_AUTHOR if ticket.blast is Blast.B3 and not tests else AUTHOR
     if phase != "exited":
         return None
-    for role in required_reviews(ticket):
-        if role in reviewed:
+    done = set(reviewed)
+    if REVIEW in done:
+        done |= {SPEC, LENS}
+    if {SPEC, LENS} <= done:
+        done.add(REVIEW)
+    for role in required_reviews(ticket, lens):
+        if role in done:
             continue
         if role == LENS and reviewed.get(SPEC) == "fail":
             return None
@@ -85,16 +98,17 @@ def next_role(ticket: Ticket, phase: str, tests: bool, reviewed: Mapping[str, st
 
 def rereview_after_merge(ticket: Ticket) -> tuple[str, ...]:
     """Reviews a merged result must repeat: all of B3's (plan §2b), none below."""
-    return (SPEC, LENS) if ticket.blast is Blast.B3 else ()
+    return (SPEC, LENS, REVIEW) if ticket.blast is Blast.B3 else ()
 
 
 def stage_tier(role: str, ticket: Ticket, partners: Sequence[Ticket]) -> Tier:
     """Tier of a non-author dispatch. Merge: Sonnet (T2), Opus (T0) when
     either side is B3 (plan §3.1). Test author and lens fallback: Opus (the
-    B3 floor). Spec verdict: the ticket's own routing floor."""
+    B3 floor), as is the single B3 REVIEW. Spec verdict: the ticket's own
+    routing floor."""
     if role == MERGE:
         return Tier.T0 if Blast.B3 in (ticket.blast, *(p.blast for p in partners)) else Tier.T2
-    if role in (TEST_AUTHOR, LENS):
+    if role in (TEST_AUTHOR, LENS, REVIEW):
         return Tier.T0
     return core.tier_floor(ticket.tag, ticket.size, ticket.blast)
 
@@ -143,6 +157,8 @@ def outputs(role: str, review_root: str, checklists: Collection[str]) -> tuple[s
         return (f"{review_root}/{SPEC_FILE}",)
     if role == LENS:
         return (f"{review_root}/{LENS_FILE}", *(f"{review_root}/checklist-{c}.md" for c in sorted(checklists)))
+    if role == REVIEW:
+        return (*outputs(SPEC, review_root, checklists), *outputs(LENS, review_root, checklists))
     return ()
 
 
@@ -164,7 +180,7 @@ def keep(
     modified path outside that is a violation (the dispatch is rejected and
     its worktree discarded); untracked files outside it (caches, scratch)
     are left behind with the worktree."""
-    if role in (SPEC, LENS):
+    if role in (SPEC, LENS, REVIEW):
         allowed = set(outputs(role, review_root, checklists))
 
         def ok(path: str) -> bool:
@@ -187,6 +203,8 @@ def stage_problems(role: str, files: Mapping[str, str], review_root: str, checkl
     finding, not a problem: integrate fails the implementer's attempt on it."""
     if role == TEST_AUTHOR:
         return [] if files else ["test_author wrote no test file matching test_globs"]
+    if role == REVIEW:
+        return [*stage_problems(SPEC, files, review_root, checklists), *stage_problems(LENS, files, review_root, checklists)]
     problems: list[str] = []
     if role == SPEC and read_verdict(files.get(f"{review_root}/{SPEC_FILE}")) is None:
         problems.append(f"{SPEC_FILE} missing or without a 'Verdict: pass|concerns|fail' line")
@@ -269,6 +287,36 @@ def _diff_lines(base: str, files: Sequence[str]) -> list[str]:
     ]
 
 
+def _spec_writing(review_root: str) -> list[str]:
+    return [
+        f"Write `{review_root}/{SPEC_FILE}`. {VERDICT_RULE} Then three sections, each a list of findings with file:line "
+        "(or `none`):",
+        "",
+        "- **Missing** — what the ticket requires that the change does not do (including its acceptance checks and constraints).",
+        "- **Extra** — what the change does that the ticket did not ask for (scope creep, drive-by edits, new dependencies).",
+        "- **Misunderstood** — where the change does something the ticket asked for, but not the way the ticket means it.",
+        "",
+        "`fail`: a Missing or Misunderstood finding the ticket's acceptance depends on. `concerns`: findings the operator "
+        "should see that do not break acceptance. `pass`: none. Run the project's tests if that settles a question.",
+        "",
+    ]
+
+
+def _lens_writing(review_root: str, checklists: Mapping[str, str | None]) -> list[str]:
+    out = [
+        f"1. `{review_root}/{LENS_FILE}`. {VERDICT_RULE} Then each finding as "
+        "`- [high|medium|low] file:line — problem — failure scenario`. `fail`: any high finding.",
+    ]
+    for cid in sorted(checklists):
+        out.append(
+            f"2. `{review_root}/checklist-{cid}.md`: one line per item id of the `{cid}` checklist below, exactly "
+            "`<ID> pass: <the test that proves it>`, `<ID> n/a: <why it does not apply>` or `<ID> fail: <the finding>`. "
+            "Every item exactly once; no other lines. `pass` needs a test in this change or the codebase that proves "
+            "it; if there is none, the item is `fail`."
+        )
+    return out
+
+
 def build_spec_instructions(*, ticket: Ticket, ticket_text: str, base: str, files: Sequence[str], handoff_path: str, review_root: str) -> str:
     """Spec verdict (plan §3.9): Missing / Extra / Misunderstood vs. the ticket."""
     out = [
@@ -281,16 +329,7 @@ def build_spec_instructions(*, ticket: Ticket, ticket_text: str, base: str, file
         "",
         "## What to write",
         "",
-        f"Write `{review_root}/{SPEC_FILE}`. {VERDICT_RULE} Then three sections, each a list of findings with file:line "
-        "(or `none`):",
-        "",
-        "- **Missing** — what the ticket requires that the change does not do (including its acceptance checks and constraints).",
-        "- **Extra** — what the change does that the ticket did not ask for (scope creep, drive-by edits, new dependencies).",
-        "- **Misunderstood** — where the change does something the ticket asked for, but not the way the ticket means it.",
-        "",
-        "`fail`: a Missing or Misunderstood finding the ticket's acceptance depends on. `concerns`: findings the operator "
-        "should see that do not break acceptance. `pass`: none. Run the project's tests if that settles a question.",
-        "",
+        *_spec_writing(review_root),
         "## Ticket",
         "",
         ticket_text.strip(),
@@ -310,18 +349,40 @@ def build_lens_instructions(*, ticket: Ticket, ticket_text: str, base: str, file
         *_diff_lines(base, files),
         "## What to write",
         "",
-        f"1. `{review_root}/{LENS_FILE}`. {VERDICT_RULE} Then each finding as "
-        "`- [high|medium|low] file:line — problem — failure scenario`. `fail`: any high finding.",
+        *_lens_writing(review_root, checklists),
     ]
-    for cid in sorted(checklists):
-        out.append(
-            f"2. `{review_root}/checklist-{cid}.md`: one line per item id of the `{cid}` checklist below, exactly "
-            "`<ID> pass: <the test that proves it>`, `<ID> n/a: <why it does not apply>` or `<ID> fail: <the finding>`. "
-            "Every item exactly once; no other lines. `pass` needs a test in this change or the codebase that proves "
-            "it; if there is none, the item is `fail`."
-        )
     out += ["", "## Domain checklists", "", *(_checklist_section(checklists) or ["None applies to this change.", ""])]
     out += ["## Ticket", "", ticket_text.strip(), ""]
+    return "\n".join(out)
+
+
+def build_review_instructions(*, ticket: Ticket, ticket_text: str, base: str, files: Sequence[str], review_root: str, checklists: Mapping[str, str | None]) -> str:
+    """B3's single reviewer when no decorrelated lens passed its smoke: the
+    spec verdict, then the adversarial lens, in one context. Like the lens it
+    never sees the implementer's handoff or transcript."""
+    out = [
+        f"# Review — ticket {ticket.id} (blast B3): spec verdict, then lens",
+        "",
+        "You are the independent reviewer of a change in a severe blast-radius zone: a wrong change here fails silently "
+        "and cannot be undone. Do two jobs in order. First judge whether the change does what the ticket asks: no more, "
+        "no less. Then review it adversarially: look for what passes the happy-path tests and is still wrong. " + _READ_ONLY,
+        "",
+        *_diff_lines(base, files),
+        "## What to write: the spec verdict",
+        "",
+        *_spec_writing(review_root),
+        "## What to write: the lens",
+        "",
+        *_lens_writing(review_root, checklists),
+        "",
+        "## Domain checklists",
+        "",
+        *(_checklist_section(checklists) or ["None applies to this change.", ""]),
+        "## Ticket",
+        "",
+        ticket_text.strip(),
+        "",
+    ]
     return "\n".join(out)
 
 

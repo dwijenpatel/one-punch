@@ -33,7 +33,7 @@ import core
 import review
 from checks.config import ConfigError
 from core import Blast, Candidate, Routed, Ticket, Tier
-from review import AUTHOR, LENS, MERGE, RESTING, SPEC, TEST_AUTHOR
+from review import AUTHOR, LENS, MERGE, RESTING, REVIEW, SPEC, TEST_AUTHOR
 
 HERE = Path(__file__).resolve().parent
 DEFAULT_LAUNCHERS = {"claude": "claude_p.py", "codex": "codex_p.py", "grok": "grok_p.py", "mini": "mini_p.py", "mock": "mock.py"}
@@ -344,7 +344,7 @@ def fold_ledger(events: Sequence[Mapping[str, Any]]) -> Ledger:
                 stage_failed(s, role, str(ev.get("reason")))
             elif role == TEST_AUTHOR:
                 s.phase, s.tests = "idle", str(ev.get("commit"))
-            elif role in (SPEC, LENS):
+            elif role in (SPEC, LENS, REVIEW):
                 s.phase, s.reviewed[role] = "exited", str(ev.get("verdict"))
             elif role == MERGE:
                 s.phase = "exited"
@@ -471,7 +471,7 @@ def plan_round(
         s = live.get(t.id)
         if t.id in inflight or s is None or s.phase not in ("exited", "conflict"):
             continue
-        role = review.next_role(t, s.phase, bool(s.tests), s.reviewed)
+        role = review.next_role(t, s.phase, bool(s.tests), s.reviewed, lens)
         if role is not None and (routed := stage(t, role)) is not None and len(staged) < slots:
             staged.append((t, routed, role))
     running = [t for t in tickets if t.id in inflight or live.get(t.id, TicketState()).phase in STAGED]
@@ -480,7 +480,7 @@ def plan_round(
     for t in core.frontier(tickets):
         if t.id in inflight or live[t.id].phase in BUSY or not all(compatible(t, r, blast_map, tree) for r in running):
             continue
-        role = review.next_role(t, "idle", bool(live[t.id].tests), {})
+        role = review.next_role(t, "idle", bool(live[t.id].tests), {}, lens)
         if role == TEST_AUTHOR:
             if (routed := stage(t, role)) is not None:
                 routes[t.id], roles[t.id] = routed, role

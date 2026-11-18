@@ -346,6 +346,12 @@ still land only through `integrate`.
    spawn a ticket on their own. At most one batched follow-up per surface
    per milestone collects the lows worth fixing. It is cut at the blast
    level its own diff earns, not at its parent's level.
+   **A fix round goes back to the implementer that wrote the ticket**: its
+   context holds the reasoning behind the code, and a new agent would
+   rebuild it from files. Where the harness can resume that session, it
+   resumes; a new agent is used only after an escalation (a failed attempt
+   goes one tier up) or when the session is gone. Reviewers stay isolated:
+   none ever sees an implementer's transcript.
 7. **Patch-class check — before cutting any fix round or follow-up.**
    Count, from the review files and the ticket graph:
    - a ticket entering its third review round, where each round's findings

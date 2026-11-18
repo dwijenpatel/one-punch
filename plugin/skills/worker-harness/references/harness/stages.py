@@ -38,7 +38,7 @@ import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Mapping
 
 import core
 import review
@@ -47,7 +47,7 @@ from checks.diff import parse_diff
 from checks.ledger import LedgerError, active_decisions, parse_ledger
 from core import Blast, Candidate, Routed, Ticket
 from integrate import DIFF_ARGS, Git, append_event, checklist_sources, git_env, run_command
-from review import LENS, MERGE, SPEC, TEST_AUTHOR, Scope, Side
+from review import LENS, MERGE, REVIEW, SPEC, TEST_AUTHOR, Scope, Side
 from runcore import TicketState, depends_rows
 
 if TYPE_CHECKING:  # run imports this module; the types only
@@ -177,11 +177,11 @@ def launch_stage(e: Effort, view: View, ticket: Ticket, routed: Routed, role: st
     elif role == SPEC:
         instructions = review.build_spec_instructions(ticket=ticket, ticket_text=text, base=base, files=files,
                                                       handoff_path=cfg.handoff_path(tid), review_root=review_root)
-    elif role == LENS:
+    elif role in (LENS, REVIEW):
         ids = frozenset(zone_checklists(e, view, ticket)) | diff_checklists(e, view, ticket, base, cut)
         checklists = checklist_sources(git, cfg, view.head, ids)
-        instructions = review.build_lens_instructions(ticket=ticket, ticket_text=text, base=base, files=files,
-                                                      review_root=review_root, checklists=checklists)
+        build = review.build_lens_instructions if role == LENS else review.build_review_instructions
+        instructions = build(ticket=ticket, ticket_text=text, base=base, files=files, review_root=review_root, checklists=checklists)
     elif role == MERGE:
         partners = [p for p in state.conflict_with if p in view.texts]
         by_id = {t.id: t for t in view.tickets}
@@ -264,8 +264,18 @@ def accept_stage(e: Effort, view: View, tid: str, state: TicketState) -> None:
     moved = git.cas(ref, head, state.start) if state.start else git.run("update-ref", ref, head, "", check=False).returncode == 0
     if not moved:
         return done(False, f"{ref} moved during the {role} dispatch")
-    verdict = review.read_verdict(files.get(f"{review_root}/{review.SPEC_FILE if role == SPEC else review.LENS_FILE}"))
-    return done(True, commit=head, verdict=verdict if role in (SPEC, LENS) else None, files=list(kept))
+    return done(True, commit=head, verdict=stage_verdict(role, files, review_root), files=list(kept))
+
+
+_SEVERITY = ("pass", "concerns", "fail")
+
+
+def stage_verdict(role: str, files: Mapping[str, str], review_root: str) -> str | None:
+    """A reviewer's verdict; a REVIEW's is the worse of its two files'."""
+    names = {SPEC: (review.SPEC_FILE,), LENS: (review.LENS_FILE,), REVIEW: (review.SPEC_FILE, review.LENS_FILE)}.get(role, ())
+    verdicts = [review.read_verdict(files.get(f"{review_root}/{n}")) for n in names]
+    known = [v for v in verdicts if v is not None]
+    return max(known, key=_SEVERITY.index) if known else None
 
 
 def teardown_path(e: Effort, tid: str, role: str) -> Path:

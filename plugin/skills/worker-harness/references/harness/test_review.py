@@ -23,7 +23,7 @@ import runcore
 from checks.config import ConfigError
 from checks.hygiene import Commit
 from core import Blast, Candidate, Routed, Size, Tag, Ticket, Tier
-from review import LENS, MERGE, SPEC, TEST_AUTHOR, Scope, Side
+from review import LENS, MERGE, REVIEW, SPEC, TEST_AUTHOR, Scope, Side
 from test_integrate import CHECKLIST, EFFORT, INTEG
 from test_run import Effort, effort, launches
 
@@ -34,6 +34,7 @@ LENS_OK = f"""put {ROOT}/lens.md "Verdict: pass"
 printf 'AS-01 pass: src/auth/test_login.py::test_forged\\nAS-02 n/a: no sessions in this change\\n' > {ROOT}/checklist-auth-sessions.md
 """
 SPEC_OK = f'put {ROOT}/spec-verdict.md "Verdict: pass"\n'
+REVIEW_OK = SPEC_OK + LENS_OK
 TESTS_OK = 'put src/auth/test_login.py "def test_forged(): assert False"\n'
 AUTH_WORK = 'work src/auth/login.py "def login(): return True"; handoff DONE\n'
 
@@ -58,19 +59,33 @@ def usable(_: Candidate) -> bool:
 class Roles(unittest.TestCase):
     def test_next_role_follows_the_ladder(self) -> None:
         b3, b2, contract, b1, b0 = T(blast=Blast.B3), T(blast=Blast.B2), T(blast=Blast.B1, tag=Tag.CONTRACT), T(blast=Blast.B1), T()
-        self.assertEqual(review.next_role(b3, "idle", False, {}), TEST_AUTHOR, "B3: tests before the implementer")
-        self.assertEqual(review.next_role(b3, "idle", True, {}), "author")
-        self.assertEqual(review.next_role(b3, "exited", True, {}), SPEC)
-        self.assertEqual(review.next_role(b3, "exited", True, {SPEC: "pass"}), LENS)
-        self.assertIsNone(review.next_role(b3, "exited", True, {SPEC: "concerns", LENS: "pass"}), "integrate next")
-        self.assertIsNone(review.next_role(b3, "exited", True, {SPEC: "fail"}), "a failed spec verdict skips the lens")
-        self.assertEqual(review.next_role(b2, "exited", False, {}), SPEC)
-        self.assertEqual(review.next_role(contract, "exited", False, {}), SPEC)
-        self.assertIsNone(review.next_role(b1, "exited", False, {}))
-        self.assertEqual(review.next_role(b0, "idle", False, {}), "author")
-        self.assertEqual(review.next_role(b0, "conflict", False, {}), MERGE)
-        self.assertIsNone(review.next_role(b0, "parked", False, {}))
-        self.assertEqual(review.rereview_after_merge(b3), (SPEC, LENS))
+        L = CODEX  # a decorrelated lens passed its smoke
+        self.assertEqual(review.next_role(b3, "idle", False, {}, L), TEST_AUTHOR, "B3: tests before the implementer")
+        self.assertEqual(review.next_role(b3, "idle", True, {}, L), "author")
+        self.assertEqual(review.next_role(b3, "exited", True, {}, L), SPEC)
+        self.assertEqual(review.next_role(b3, "exited", True, {SPEC: "pass"}, L), LENS)
+        self.assertIsNone(review.next_role(b3, "exited", True, {SPEC: "concerns", LENS: "pass"}, L), "integrate next")
+        self.assertIsNone(review.next_role(b3, "exited", True, {SPEC: "fail"}, L), "a failed spec verdict skips the lens")
+        self.assertEqual(review.next_role(b2, "exited", False, {}, L), SPEC)
+        self.assertEqual(review.next_role(contract, "exited", False, {}, L), SPEC)
+        self.assertIsNone(review.next_role(b1, "exited", False, {}, L))
+        self.assertEqual(review.next_role(b0, "idle", False, {}, L), "author")
+        self.assertEqual(review.next_role(b0, "conflict", False, {}, L), MERGE)
+        self.assertIsNone(review.next_role(b0, "parked", False, {}, L))
+
+    def test_without_a_decorrelated_lens_b3_gets_one_reviewer(self) -> None:
+        b3, b2 = T(blast=Blast.B3), T(blast=Blast.B2)
+        self.assertEqual(review.next_role(b3, "exited", True, {}, None), REVIEW)
+        self.assertIsNone(review.next_role(b3, "exited", True, {REVIEW: "concerns"}, None), "integrate next")
+        self.assertEqual(review.next_role(b2, "exited", False, {}, None), SPEC, "below B3 nothing changes")
+        # a smoke that changes between runs never repeats a finished review
+        self.assertIsNone(review.next_role(b3, "exited", True, {REVIEW: "pass"}, CODEX))
+        self.assertIsNone(review.next_role(b3, "exited", True, {SPEC: "pass", LENS: "pass"}, None))
+        self.assertEqual(review.next_role(b3, "exited", True, {SPEC: "pass"}, None), REVIEW, "half a pair is redone as one review")
+        self.assertEqual(review.outputs(REVIEW, ROOT, ["auth-sessions"]),
+                         (f"{ROOT}/spec-verdict.md", f"{ROOT}/lens.md", f"{ROOT}/checklist-auth-sessions.md"))
+        self.assertEqual(review.stage_tier(REVIEW, b3, []), Tier.T0)
+        self.assertEqual(review.rereview_after_merge(b3), (SPEC, LENS, REVIEW))
         self.assertEqual(review.rereview_after_merge(b2), ())
 
     def test_every_dispatch_names_its_model(self) -> None:
@@ -280,7 +295,7 @@ class StagesEndToEnd(unittest.TestCase):
     def run_b3(self, extra: str) -> tuple[Effort, str]:
         fx = self.enter(extra)
         fx.ticket("01", touches="src/auth/**", blast="B3", scenario=AUTH_WORK)
-        for name, text in (("01-test_author", TESTS_OK), ("01-spec_verdict", SPEC_OK), ("01-lens", LENS_OK)):
+        for name, text in (("01-test_author", TESTS_OK), ("01-spec_verdict", SPEC_OK), ("01-lens", LENS_OK), ("01-review", REVIEW_OK)):
             fx.scenario(name, text)
         code, out = fx.main("run")
         self.assertEqual(code, 3, out)
@@ -315,13 +330,17 @@ class StagesEndToEnd(unittest.TestCase):
         self.assertIn("checklist-auth-sessions.md", (lens_bundle / "instructions.md").read_text())
         self.assertNotIn("Status: DONE", (lens_bundle / "instructions.md").read_text(), "the lens never sees the handoff")
 
-    def test_lens_falls_back_to_opus_when_the_codex_smoke_fails_or_is_absent(self) -> None:
+    def test_without_the_codex_smoke_one_opus_reviewer_writes_both_reviews(self) -> None:
         fx, _ = self.run_b3('lens = { tool = "mock", model = "codex-mock" }\nlens_smoke = "exit 3"\n')
-        self.assertEqual(roles(fx)[-1], (LENS, "mock-opus"))
+        self.assertEqual(roles(fx), [(TEST_AUTHOR, "mock-opus"), ("author", "mock-opus"), (REVIEW, "mock-opus")])
         self.assertEqual([e["ok"] for e in fx.events() if e["event"] == "lens-smoke"], [False])
         self.assert_b3_packet(fx)
+        text = Path(launches(fx.events(), "01")[2]["bundle"], "instructions.md").read_text()
+        for needle in ("spec-verdict.md", "**Missing**", "lens.md", "checklist-auth-sessions.md"):
+            self.assertIn(needle, text)
+        self.assertNotIn("Status: DONE", text, "like the lens, the single reviewer never sees the handoff")
         fx, _ = self.run_b3("")
-        self.assertEqual(roles(fx)[-1], (LENS, "mock-opus"))
+        self.assertEqual(roles(fx)[-1], (REVIEW, "mock-opus"))
         self.assertEqual([e for e in fx.events() if e["event"] == "lens-smoke"], [])
 
     def test_a_reviewer_that_edits_code_is_rejected_and_rerun(self) -> None:
@@ -347,13 +366,13 @@ class StagesEndToEnd(unittest.TestCase):
         old_tip = fx.repo.rev("t/01")
         self.assertIn("Blast: B3 — raised from B0", fx.repo.git("show", f"{INTEG}:.scratch/{EFFORT}/issues/01-t.md"))
         for name, text in (("01-test_author", TESTS_OK), ("01-a2", 'work src/auth/login.py "def login(): return False"; handoff DONE\n'),
-                           ("01-spec_verdict", SPEC_OK), ("01-lens", LENS_OK)):
+                           ("01-review", REVIEW_OK)):
             fx.scenario(name, text)
         self.assertEqual(fx.main("relaunch", "01")[0], 0)
         code, out = fx.main("run")
         self.assertEqual(code, 3, out)
         self.assertEqual(fx.repo.rev("refs/one-punch/salvage/01"), old_tip, "the pre-tests work is kept aside")
-        author = launches(fx.events(), "01")[-3]
+        author = launches(fx.events(), "01")[-2]
         self.assertEqual((author["role"], author["model"]), ("author", "mock-opus"))
         self.assertIn(f"kept at {old_tip[:12]}", Path(author["bundle"], "instructions.md").read_text())
         self.assert_b3_packet_after_salvage(fx)

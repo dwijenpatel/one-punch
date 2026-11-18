@@ -111,7 +111,7 @@ import stages
 from checks.blastmap import BlastMapError, extract_blast_map, load_blast_map
 from checks.config import ConfigError, IntegrateConfig, parse_config
 from checks.ledger import LedgerError, handoff_status, parse_ledger
-from core import Blast, Routed, Ticket, TicketHeaderError
+from core import Blast, Candidate, Routed, Ticket, TicketHeaderError
 from integrate import (
     Git,
     LockHeld,
@@ -398,7 +398,7 @@ def record_exit(e: Effort, tid: str, w: Worker) -> bool:
     return limit
 
 
-def settle(e: Effort, view: View, tid: str, state: TicketState) -> bool:
+def settle(e: Effort, view: View, tid: str, state: TicketState, lens: Candidate | None) -> bool:
     """Gate an exited ticket's handoff; integrate it once no review is due
     (review.next_role). True when it parked or integrated."""
     git, cfg = e.git, e.cfg
@@ -413,7 +413,7 @@ def settle(e: Effort, view: View, tid: str, state: TicketState) -> bool:
         _append(e.events, "park", ticket=tid, kind="decision", reason=" | ".join(one_way)[:2000])
         return True
     ticket = next((t for t in view.tickets if t.id == tid), None)
-    if ticket is not None and review.next_role(ticket, "exited", bool(state.tests), state.reviewed) is not None:
+    if ticket is not None and review.next_role(ticket, "exited", bool(state.tests), state.reviewed, lens) is not None:
         return False  # a review is due; plan_round dispatches it
     result = integrate_ticket(git.repo, cfg, tid, read_bundle(Path(state.author_bundle) if state.author_bundle else None))
     if result.outcome in ("MERGED", "AWAITING-OPERATOR"):
@@ -443,7 +443,7 @@ def derive_path(e: Effort, tid: str) -> str | None:
     return found[0] if len(found) == 1 else None
 
 
-def reconcile(e: Effort, view: View, inflight: Collection[str]) -> bool:
+def reconcile(e: Effort, view: View, inflight: Collection[str], lens: Candidate | None) -> bool:
     """Bring git in line with the ledger; True when anything changed."""
     changed = False
     by_id = {t.id: t for t in view.tickets}
@@ -462,7 +462,7 @@ def reconcile(e: Effort, view: View, inflight: Collection[str]) -> bool:
         elif s.phase == "exited":
             if e.git.checked_out().get(e.integ_ref) is not None:
                 continue  # integrate would refuse; wait until the operator switches away
-            if not settle(e, view, tid, s):
+            if not settle(e, view, tid, s, lens):
                 continue
         elif s.phase == "merged" and ticket is not None and ticket.status != "done":
             finish(e, tid, {"outcome": "MERGED", "judged": s.judged, "ticket_head": s.ticket_head})
@@ -529,7 +529,7 @@ def run(e: Effort, n: int) -> str:
                 draining = draining or "STOPPED"
             view = derive(e)
             for _ in range(50):  # each pass settles at least one ticket; bounded against a stuck edit
-                if not reconcile(e, view, inflight):
+                if not reconcile(e, view, inflight, lens):
                     break
                 view = derive(e)
             rnd = plan_round(view.tickets, view.ledger, inflight, max(1, n - limits), e.rc.park_k, e.rc.ladder, time.time(),

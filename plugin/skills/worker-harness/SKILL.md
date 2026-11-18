@@ -116,7 +116,8 @@ models. Tiers run from T0 (strongest) to T5.
 | `author` (implementer) | Every ticket | The ticket's routing floor, one tier up per failed attempt | Its Touches, plus licensed breakage and its handoff |
 | `test_author` | B3, before any implementer | T0 | Only `test_globs` files inside the ticket's Touches, as the first commit |
 | `spec_verdict` | After a clean exit, at B1 `contract`, B2 and B3 | The ticket's routing floor | Only `<review_dir>/<ticket>/spec-verdict.md` |
-| `lens` | B3, after the spec verdict (skipped when the verdict is `fail`) | `[run] lens` (another model family) while `lens_smoke` passes; else T0 in a fresh session | Only `lens.md` and `checklist-<id>.md` in the review dir |
+| `lens` | B3, after the spec verdict (skipped when the verdict is `fail`), while `lens_smoke` passes | `[run] lens` (another model family) | Only `lens.md` and `checklist-<id>.md` in the review dir |
+| `review` | B3 in place of the spec verdict and the lens when `lens_smoke` fails or no lens is configured | T0 | The spec verdict's and the lens's files |
 | `merge` | After a CONFLICT | T2; T0 when either ticket is B3 | Only a rebase of `t/<ticket>` onto the integration head, with no merge commits |
 
 The implementer and the merge agent commit their own work. For the test
@@ -153,7 +154,9 @@ A declared B3 ticket runs in this order:
 1. An independent test author writes the acceptance tests first.
 2. The implementer makes them pass without weakening them.
 3. The spec verdict runs, then the decorrelated lens, which answers every
-   domain checklist the diff's zones require.
+   domain checklist the diff's zones require. Without a decorrelated lens,
+   one T0 `review` dispatch does both jobs in one context: two same-family
+   reviewers in fresh contexts add a handoff, not independence.
 4. Integrate re-checks all of it. On green, when any B3 hit is in a blast-map
    zone that keeps `operator_review` (the default), or the B3 is the
    ticket's declaration alone, it does not merge: it pins the judged commit,

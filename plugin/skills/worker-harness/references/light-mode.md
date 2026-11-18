@@ -51,10 +51,19 @@ an in-session agent of the implementers' family is not the lens.
    <bundle>` in the background. Its `result.json` says whether it finished;
    the review files are in the worktree's review dir; commit exactly those.
 3. **A fallback is a ledger row.** If the smoke fails and cannot be fixed now,
-   B3 lens reviews run on the top ladder rung, and the planner records that
+   one top-tier reviewer writes both the spec verdict and the lens report
+   (the harness's `review` role), and the planner records that
    as a decision-ledger row naming the failing smoke output. Never a silent
    fallback: a retro must be able to tell a decorrelated lens from a second
    same-family reviewer.
+
+## Fix rounds in light mode
+
+A fix round for findings on a ticket goes back to the in-session agent that
+implemented it (resume it with the findings), not to a new agent. Use a new
+agent only after an escalation (one tier up after a failed attempt) or when
+that agent's session is gone. Re-reviews stay fresh, and no reviewer sees
+the implementer's transcript.
 
 ## What is lost
 
