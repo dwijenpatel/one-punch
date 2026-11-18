@@ -100,6 +100,16 @@ walls; `integrate` guards what lands (§6.9). Per-ticket review for everyone
 - **v4.8 The environment carries the memory.** Decisions, negative results
   and surprises are written where the next agent reads them first (decision
   ledger, field guide), not left in transcripts.
+- **v4.9 Remove the class, don't patch the instances.** When fixes keep
+  arriving for the same kind of hole, the design that produces the holes is
+  the defect. Stop patching, name the class and the surface that generates
+  it, and redesign so the surface — and every hole in it — no longer exists.
+  A redesign that shrinks the surface to something closable by construction
+  beats any number of rounds that each narrow it. Triggers are countable
+  (steer, between runs) so the step back happens on evidence, not mood.
+  (Operator, 2026-11-13 and 2026-11-17: an eval-integrity design and an
+  untrusted-output crossing each took several fix rounds before a structural
+  redesign made the whole category moot.)
 
 **Standing from v2/v3** (numbering kept so v3 citations resolve):
 

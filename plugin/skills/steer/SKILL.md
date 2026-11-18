@@ -323,9 +323,23 @@ still land only through `integrate`.
    operator reads the diff and approves or rejects; the harness merges on
    approval.
 5. Field-guide proposals — curate via `field-guide`.
-6. Recut, split or add tickets the handoffs call for (a megafile flag
+6. **Patch-class check — before cutting any fix round or follow-up.**
+   Count, from the review files and the ticket graph:
+   - a ticket entering its third review round, where each round's findings
+     hit the same surface (one input, boundary, file format or protocol);
+   - a finding class that comes back in a later round after being fixed;
+   - two or more follow-up tickets cut from one ticket's reviews against the
+     same surface.
+   Any one of these means stop patching. Write a short redesign memo: the
+   class, the surface that generates it, a design that removes the surface
+   (not one that narrows it), what that design deletes, what it leaves open,
+   and its cost against the remaining patch rounds. The redesign is a fork
+   for the operator when it touches B3 or a one-way door; otherwise the
+   planner decides and records it. Pending fix rounds on that surface wait
+   for the answer. Follow-ups the redesign makes moot are closed, not built.
+7. Recut, split or add tickets the handoffs call for (a megafile flag
    becomes a decompose ticket that blocks further work on that file).
-7. Rewrite `planner-scratchpad.md`, then relaunch.
+8. Rewrite `planner-scratchpad.md`, then relaunch.
 
 Operator actions here are interventions; the harness ledgers them so
 `retro` can compute the headline metric.
