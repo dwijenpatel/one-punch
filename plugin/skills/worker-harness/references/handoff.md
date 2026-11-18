@@ -18,6 +18,7 @@ Done: …
 Deviations: … (incl. any BREAKING)
 Decisions needed: …
 Findings / concerns: …
+Evidence: …
 Field-guide proposals: …
 ```
 
@@ -31,6 +32,17 @@ Field-guide proposals: …
 change site, with a proposed ledger row if none exists) and every departure
 from the ticket's `Reference`. `Field-guide proposals` are curated by the
 planner through the field-guide skill; workers never edit the field guide.
+`Evidence` cites proof, one line per acceptance check and per fixed review
+finding: `<claim> — test <id> (red on <base sha>, green on head)` or
+`<claim> — \`<command>\` → <trimmed output>`. For a fixed finding the claim
+is `fixed <review file> <file:line>`, e.g. `fixed lens.md src/a.py:40`. A
+claim without proof is a reviewer finding; retro counts the red-then-green
+`fixed` lines as confirmed findings (`retro/references/reviewer_yield.py`).
+
+Every reviewer finding line reads `- [high|medium|low] [scope:in|change]
+file:line — problem — failure scenario`, plus one `- [simplify] …` line or
+`simplify: none`. `scope:change` findings are the operator's (steer,
+between runs).
 
 ## `Decisions needed` — the reversibility grammar
 

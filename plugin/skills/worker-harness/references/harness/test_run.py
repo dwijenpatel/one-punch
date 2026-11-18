@@ -507,7 +507,8 @@ class Preamble(unittest.TestCase):
     def test_contract_surfaces(self) -> None:
         text = self.build(T("01", "src/a/**", blast=Blast.B1))
         for needle in ("`src/a/**`", "never `git add -A`", "Red → green", "`make test`", "AGENTS.md", "- trap: X",
-                       ".scratch/demo/handoffs/01.md", "Decisions needed:", "NOT reversible", "BREAKING(D-NNN)", "never edit your ticket file"):
+                       ".scratch/demo/handoffs/01.md", "Decisions needed:", "NOT reversible", "BREAKING(D-NNN)", "never edit your ticket file",
+                       "Evidence: …", "red on <base sha>, green on head"):
             self.assertIn(needle.lower(), text.lower(), needle)
         self.assertNotIn("Domain checklists", text)
 

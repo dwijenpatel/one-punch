@@ -340,12 +340,26 @@ still land only through `integrate`.
    operator reads the diff and approves or rejects; the harness merges on
    approval.
 5. Field-guide proposals — curate via `field-guide`.
-6. **Review findings: severity decides what moves.** High and medium
-   findings route a fix round, or block the merge. Low and info findings are
-   recorded on the ticket as **accepted residuals** by default; they never
-   spawn a ticket on their own. At most one batched follow-up per surface
-   per milestone collects the lows worth fixing. It is cut at the blast
-   level its own diff earns, not at its parent's level.
+6. **Review findings: severity and scope decide what moves.** Reviewers
+   tag every finding `scope:in` or `scope:change`.
+   - `scope:in`, high or medium: routes a fix round, or blocks the merge.
+     A high finding that gives no concrete failure scenario and no
+     reproducer is routed as medium.
+   - Low and info: **accepted residuals** on the ticket by default; never a
+     ticket on their own. At most one batched follow-up per surface per
+     milestone collects the lows worth fixing, at the blast level its own
+     diff earns.
+   - `scope:change` (the fix needs work outside the ticket's acceptance or
+     Touches, a new ticket, or the ticket departs from its Intent): **the
+     operator's call, never the planner's.** Batch them per run in
+     `milestones/<m>/scope-asks.md`, one line each: the finding, a
+     recommendation, and the default that applies unless the operator
+     objects (a ticket for a high finding; an accepted residual otherwise).
+     Show the list before cutting any of its tickets.
+   - `[simplify]` lines: an in-scope one rides the implementer's next round
+     only when a round happens anyway; an out-of-scope one goes on the
+     scope list. A simplification alone never triggers a round or blocks a
+     merge.
    **A fix round goes back to the implementer that wrote the ticket**: its
    context holds the reasoning behind the code, and a new agent would
    rebuild it from files. Where the harness can resume that session, it

@@ -73,10 +73,13 @@ site is the exception.
   exception by writing an `allow(...)` comment and inventing the `D-NNN` it
   points at — that is deciding a cross-ticket question silently, and no
   worker decides a question that belongs to another ticket or to the design
-  ledger. A worker that needs an exception the ledger doesn't yet have takes
-  the local, reversible option (leave the hard fail red, or take the
-  least-bad compliant shape) and flags the need in its handoff; the planner
-  cuts the ledger row and, if warranted, a follow-up ticket.
+  ledger. A worker fixes every hard fail in the code it writes. When no
+  compliant shape exists without an exception the ledger doesn't yet have,
+  it takes the least-bad compliant shape if there is one, or else stops and
+  reports the need under `Decisions needed` as not reversible, which parks
+  the ticket for the planner. It never leaves a hard fail red: verify would
+  fail the attempt anyway. The planner cuts the ledger row and, if
+  warranted, a follow-up ticket.
 - **The harness's ref check keeps pointers honest:** an `allow(...)` in the
   diff whose `D-NNN` has no active ledger row fails the same way a dangling
   `D-NNN` code comment does. Superseding a decision turns every site that
@@ -113,7 +116,9 @@ diff:
 
 Reviewers flag rule violations and correctness- or requirement-relevant gaps
 **only**. Do not request extra abstraction or hardening — review pressure is
-itself a documented path to over-engineered code.
+itself a documented path to over-engineered code. The counterweight runs the
+other way: every review names the largest deletion the change allows
+(`[simplify]`), because complexity is a defect too.
 
 ## Rule lifecycle
 

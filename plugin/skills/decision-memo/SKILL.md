@@ -42,7 +42,10 @@ knowledge:**
 - **a product boundary** — what the thing is or does, who it's for, what it
   refuses to do;
 - **taste or a stated preference the evidence can't settle** — and the
-  operator has signalled they care about it.
+  operator has signalled they care about it;
+- **scope** — any expansion beyond what was ratified: a new ticket from
+  review findings, a fix that needs work outside a ticket's acceptance or
+  Touches. Batched with a default, per steer's between-runs step 6.
 
 **Everything else is decided for them,** at every blast level:
 - **B0–B2:** a recorded default (`D-NNN`, one line of rationale), B2

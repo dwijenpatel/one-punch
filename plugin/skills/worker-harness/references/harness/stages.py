@@ -169,19 +169,22 @@ def launch_stage(e: Effort, view: View, ticket: Ticket, routed: Routed, role: st
     review_root = cfg.review_path(tid)
     text = view.texts[tid]
     agents_md = git.show(view.head, "AGENTS.md") is not None
+    decisions = depends_rows(git.show(view.head, cfg.ledger_file) or "", ticket.depends_on)
     checklists: dict[str, str | None] = {}
     if role == TEST_AUTHOR:
         checklists = zone_checklists(e, view, ticket)
         instructions = review.build_test_author_instructions(ticket=ticket, ticket_text=text, test_globs=cfg.test_globs,
-                                                             verify=cfg.verify, checklists=checklists, agents_md=agents_md)
+                                                             verify=cfg.verify, checklists=checklists, agents_md=agents_md,
+                                                             decisions=decisions)
     elif role == SPEC:
         instructions = review.build_spec_instructions(ticket=ticket, ticket_text=text, base=base, files=files,
-                                                      handoff_path=cfg.handoff_path(tid), review_root=review_root)
+                                                      handoff_path=cfg.handoff_path(tid), review_root=review_root, decisions=decisions)
     elif role in (LENS, REVIEW):
         ids = frozenset(zone_checklists(e, view, ticket)) | diff_checklists(e, view, ticket, base, cut)
         checklists = checklist_sources(git, cfg, view.head, ids)
         build = review.build_lens_instructions if role == LENS else review.build_review_instructions
-        instructions = build(ticket=ticket, ticket_text=text, base=base, files=files, review_root=review_root, checklists=checklists)
+        instructions = build(ticket=ticket, ticket_text=text, base=base, files=files, review_root=review_root, checklists=checklists,
+                             decisions=decisions)
     elif role == MERGE:
         partners = [p for p in state.conflict_with if p in view.texts]
         by_id = {t.id: t for t in view.tickets}

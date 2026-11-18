@@ -535,6 +535,7 @@ Done: …
 Deviations: … (incl. any BREAKING)
 Decisions needed: …
 Findings / concerns: …
+Evidence: …
 Field-guide proposals: …"""
 
 
@@ -579,6 +580,10 @@ def build_instructions(
         "- Before you finish, run the project's verify commands and make them pass: "
         + "; ".join(f"`{c}`" for c in verify)
         + ". The harness re-runs them; your word is never the evidence.",
+        "- In your handoff's `Evidence:` field, cite proof for each acceptance check of the ticket and each review "
+        "finding you fixed, one line each: `<claim> — test <id> (red on <base sha>, green on head)` or "
+        "`<claim> — `<command>` → <trimmed output>`. For a fixed finding the claim is `fixed <review file> <file:line>` "
+        "(e.g. `fixed lens.md src/a.py:40`). Cite; don't paste logs. A claim without proof is a review finding.",
         "",
         f"## Blast level {level.name}" + (f" — {ticket.blast_reason}" if ticket.blast_reason else ""),
         "",

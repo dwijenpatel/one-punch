@@ -234,6 +234,36 @@ _READ_ONLY = (
 VERDICT_RULE = "Begin the file with exactly one line `Verdict: pass`, `Verdict: concerns` or `Verdict: fail`."
 
 
+FINDING_LINE = "`- [high|medium|low] [scope:in|change] file:line — problem — failure scenario`"
+
+
+def _judging(simplify_file: str) -> list[str]:
+    """How every reviewer judges (v4.12): against intent and decisions, scope
+    changes left to the operator, claims held to proof, complexity named."""
+    return [
+        "## How to judge",
+        "",
+        "- **Intent.** Judge against the ticket's Intent, including the operator's own words where the ticket quotes "
+        "them, and against the decisions listed below, not only the letter of the ticket.",
+        "- **Scope.** Tag each finding `scope:change` when fixing it needs work outside this ticket's acceptance or "
+        "Touches, or a new ticket, or when the ticket or the change departs from its Intent or those decisions: the "
+        "operator decides those. Otherwise tag it `scope:in`.",
+        "- **Proof.** An acceptance check of the ticket that no test in this change or the codebase proves, and no "
+        "command shows, is a `[medium]` finding. Each of your high or medium findings states a concrete failure "
+        "scenario, and a reproducer (a test or a command) where one is cheap.",
+        f"- **Complexity is a defect.** Last, add one line to `{simplify_file}` naming the largest deletion this change "
+        "allows while its acceptance still holds (code, tests, a mechanism, a flag): "
+        "`- [simplify] [scope:in|change] file:line — what can go — why acceptance still holds`, or `simplify: none`. "
+        "It never changes the verdict. Do not ask for extra abstraction or hardening.",
+        "",
+    ]
+
+
+def _decisions_section(decisions: Sequence[str]) -> list[str]:
+    """The ticket's `Depends-on` ledger rows (table header included), or nothing."""
+    return ["## Decisions this change must honor", "", *decisions, ""] if decisions else []
+
+
 def _checklist_section(checklists: Mapping[str, str | None]) -> list[str]:
     out: list[str] = []
     for cid, text in sorted(checklists.items()):
@@ -243,7 +273,14 @@ def _checklist_section(checklists: Mapping[str, str | None]) -> list[str]:
 
 
 def build_test_author_instructions(
-    *, ticket: Ticket, ticket_text: str, test_globs: Sequence[str], verify: Sequence[str], checklists: Mapping[str, str | None], agents_md: bool
+    *,
+    ticket: Ticket,
+    ticket_text: str,
+    test_globs: Sequence[str],
+    verify: Sequence[str],
+    checklists: Mapping[str, str | None],
+    agents_md: bool,
+    decisions: Sequence[str],
 ) -> str:
     """The independent acceptance-test author (plan §2b B3 "Tests"; the
     oracle seat). It never sees an implementation: none exists yet."""
@@ -259,7 +296,9 @@ def build_test_author_instructions(
         f"- Write only test files: paths matching {', '.join(f'`{g}`' for g in test_globs)} that are also inside the "
         f"ticket's Touches ({', '.join(f'`{g}`' for g in ticket.touches)}). Never write implementation code or "
         "anything else. Do not commit: the harness commits your test files as the first commit.",
-        "- Test the behavior the ticket promises at its public seam, with exact values from the ticket where it gives them.",
+        "- Test the behavior the ticket promises at its public seam, with exact values from the ticket where it gives them. "
+        "Read the promise from the ticket's Intent, including the operator's own words where it quotes them, and from "
+        "the decisions listed below.",
         "- For every checklist item below that applies, add the adversarial or negative test that catches it (authz denial "
         "on every path, replay, injection; rollback, concurrent writers, crash mid-transaction, idempotent retry; migration "
         "up/down/up), and a property test where an invariant exists. Name the item id (e.g. `AS-01`) in the test name or a comment.",
@@ -267,6 +306,7 @@ def build_test_author_instructions(
         "they fail on the missing behavior, not on a syntax error in the test.",
         f"- The project's verify commands, for reference: {'; '.join(f'`{c}`' for c in verify)}.",
         "",
+        *_decisions_section(decisions),
         "## Domain checklists",
         "",
         *(_checklist_section(checklists) or ["No domain-checklist zone overlaps the ticket's Touches.", ""]),
@@ -289,8 +329,8 @@ def _diff_lines(base: str, files: Sequence[str]) -> list[str]:
 
 def _spec_writing(review_root: str) -> list[str]:
     return [
-        f"Write `{review_root}/{SPEC_FILE}`. {VERDICT_RULE} Then three sections, each a list of findings with file:line "
-        "(or `none`):",
+        f"Write `{review_root}/{SPEC_FILE}`. {VERDICT_RULE} Then three sections, each a list of findings written as "
+        f"{FINDING_LINE} (or `none`):",
         "",
         "- **Missing** — what the ticket requires that the change does not do (including its acceptance checks and constraints).",
         "- **Extra** — what the change does that the ticket did not ask for (scope creep, drive-by edits, new dependencies).",
@@ -305,7 +345,7 @@ def _spec_writing(review_root: str) -> list[str]:
 def _lens_writing(review_root: str, checklists: Mapping[str, str | None]) -> list[str]:
     out = [
         f"1. `{review_root}/{LENS_FILE}`. {VERDICT_RULE} Then each finding as "
-        "`- [high|medium|low] file:line — problem — failure scenario`. `fail`: any high finding.",
+        f"{FINDING_LINE}. `fail`: any high finding.",
     ]
     for cid in sorted(checklists):
         out.append(
@@ -317,7 +357,9 @@ def _lens_writing(review_root: str, checklists: Mapping[str, str | None]) -> lis
     return out
 
 
-def build_spec_instructions(*, ticket: Ticket, ticket_text: str, base: str, files: Sequence[str], handoff_path: str, review_root: str) -> str:
+def build_spec_instructions(
+    *, ticket: Ticket, ticket_text: str, base: str, files: Sequence[str], handoff_path: str, review_root: str, decisions: Sequence[str]
+) -> str:
     """Spec verdict (plan §3.9): Missing / Extra / Misunderstood vs. the ticket."""
     out = [
         f"# Spec-verdict review — ticket {ticket.id} (blast {ticket.blast.name}, {ticket.tag.value})",
@@ -325,11 +367,14 @@ def build_spec_instructions(*, ticket: Ticket, ticket_text: str, base: str, file
         "You judge whether the change does what the ticket asks: no more, no less. " + _READ_ONLY,
         "",
         *_diff_lines(base, files),
-        f"The implementer's own account is in `{handoff_path}`: a claim to check, never evidence.",
+        f"The implementer's own account is in `{handoff_path}`: a claim to check, never evidence. Its `Evidence:` lines "
+        "must cite proof for each acceptance check and each fixed finding; a claim there without proof is a `[medium]` finding.",
         "",
         "## What to write",
         "",
         *_spec_writing(review_root),
+        *_judging(f"{review_root}/{SPEC_FILE}"),
+        *_decisions_section(decisions),
         "## Ticket",
         "",
         ticket_text.strip(),
@@ -338,7 +383,9 @@ def build_spec_instructions(*, ticket: Ticket, ticket_text: str, base: str, file
     return "\n".join(out)
 
 
-def build_lens_instructions(*, ticket: Ticket, ticket_text: str, base: str, files: Sequence[str], review_root: str, checklists: Mapping[str, str | None]) -> str:
+def build_lens_instructions(
+    *, ticket: Ticket, ticket_text: str, base: str, files: Sequence[str], review_root: str, checklists: Mapping[str, str | None], decisions: Sequence[str]
+) -> str:
     """The decorrelated lens (plan §3.9): codebase + ticket + diff only."""
     out = [
         f"# Lens review — ticket {ticket.id} (blast B3)",
@@ -350,13 +397,18 @@ def build_lens_instructions(*, ticket: Ticket, ticket_text: str, base: str, file
         "## What to write",
         "",
         *_lens_writing(review_root, checklists),
+        "",
+        *_judging(f"{review_root}/{LENS_FILE}"),
+        *_decisions_section(decisions),
     ]
-    out += ["", "## Domain checklists", "", *(_checklist_section(checklists) or ["None applies to this change.", ""])]
+    out += ["## Domain checklists", "", *(_checklist_section(checklists) or ["None applies to this change.", ""])]
     out += ["## Ticket", "", ticket_text.strip(), ""]
     return "\n".join(out)
 
 
-def build_review_instructions(*, ticket: Ticket, ticket_text: str, base: str, files: Sequence[str], review_root: str, checklists: Mapping[str, str | None]) -> str:
+def build_review_instructions(
+    *, ticket: Ticket, ticket_text: str, base: str, files: Sequence[str], review_root: str, checklists: Mapping[str, str | None], decisions: Sequence[str]
+) -> str:
     """B3's single reviewer when no decorrelated lens passed its smoke: the
     spec verdict, then the adversarial lens, in one context. Like the lens it
     never sees the implementer's handoff or transcript."""
@@ -375,6 +427,8 @@ def build_review_instructions(*, ticket: Ticket, ticket_text: str, base: str, fi
         "",
         *_lens_writing(review_root, checklists),
         "",
+        *_judging(f"{review_root}/{LENS_FILE}"),
+        *_decisions_section(decisions),
         "## Domain checklists",
         "",
         *(_checklist_section(checklists) or ["None applies to this change.", ""]),

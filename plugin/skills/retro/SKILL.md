@@ -77,6 +77,14 @@ hides:
   `operator_review: false`), and any escaped defect in such a zone — which
   triggers a review of that zone's flag.
 
+Also compile **reviewer yield** (git, else `not recorded`): per review file
+(`spec-verdict.md`, `lens.md`), the high and medium findings raised across
+every round, and how many were confirmed — a handoff `Evidence:` line
+`fixed <review file> <file:line> — test <id> (red on …, green on head)`.
+Run `references/reviewer_yield.py --repo . --reviews <dir> --handoffs <dir>`.
+Yield per role is the evidence for keeping, folding or narrowing a reviewer;
+never drop one on cost alone, since a late-found defect costs more.
+
 Also compile: gate outcomes and every waiver, named always (git: decision
 ledger rows; handoffs); size audits, estimated vs. actual per ticket (git:
 ticket header; ledger event: actual wall-clock/attempts); evidence-corpus

@@ -39,6 +39,11 @@ one `Decides` line across the effort.
 After the header, in this order:
 
 1. **Intent** — a few sentences: what this ticket makes true, and why.
+   Then two lines reviewers judge against:
+   - `Operator:` the operator's own words that caused the ticket, verbatim,
+     with date and source (memo ID, sitting, message). Words from a private
+     overlay are never quoted; write their sanitized derivation instead.
+   - `Serves:` the INTENT.md goal or catastrophe the ticket serves.
 2. **Constraints**, not a step checklist — e.g. "no TODOs, no partial
    implementations, no new dependencies without a ledger entry", plus any
    ledger decisions that bind it.

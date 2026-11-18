@@ -138,23 +138,29 @@ class Readers(unittest.TestCase):
 class Instructions(unittest.TestCase):
     def test_lens_sees_codebase_ticket_and_diff_only(self) -> None:
         text = review.build_lens_instructions(ticket=T(blast=Blast.B3), ticket_text="# 01\n\nIntent: sessions.", base="b" * 40,
-                                              files=["src/auth/login.py"], review_root=ROOT, checklists={"auth-sessions": CHECKLIST})
+                                              files=["src/auth/login.py"], review_root=ROOT, checklists={"auth-sessions": CHECKLIST},
+                                              decisions=["| ID | Decision |", "|---|---|", "| D-004 | sessions expire |"])
         for needle in (f"git diff {'b' * 40}...HEAD", "`src/auth/login.py`", f"{ROOT}/lens.md", f"{ROOT}/checklist-auth-sessions.md",
-                       "**AS-01**", "`<ID> pass:", "Verdict: pass", "read-only", "Intent: sessions."):
+                       "**AS-01**", "`<ID> pass:", "Verdict: pass", "read-only", "Intent: sessions.",
+                       "[scope:in|change]", "operator's own words", "| D-004 | sessions expire |", "`[medium]` finding",
+                       "failure scenario", f"`{ROOT}/lens.md` naming the largest deletion", "simplify: none"):
             self.assertIn(needle, text)
         self.assertNotIn("handoff", text.lower(), "never the implementer's account or transcript")
 
     def test_spec_asks_missing_extra_misunderstood(self) -> None:
         text = review.build_spec_instructions(ticket=T(blast=Blast.B2), ticket_text="# 01", base="b" * 40, files=["a.py"],
-                                              handoff_path=".scratch/demo/handoffs/01.md", review_root=ROOT)
-        for needle in ("**Missing**", "**Extra**", "**Misunderstood**", f"{ROOT}/spec-verdict.md", "Verdict: fail", "never evidence"):
+                                              handoff_path=".scratch/demo/handoffs/01.md", review_root=ROOT, decisions=[])
+        for needle in ("**Missing**", "**Extra**", "**Misunderstood**", f"{ROOT}/spec-verdict.md", "Verdict: fail", "never evidence",
+                       "`Evidence:` lines", "[scope:in|change]", f"`{ROOT}/spec-verdict.md` naming the largest deletion"):
             self.assertIn(needle, text)
+        self.assertNotIn("Decisions this change must honor", text, "no Depends-on rows, no section")
 
     def test_test_author_writes_tests_only_from_ticket_and_checklist(self) -> None:
         text = review.build_test_author_instructions(ticket=T(blast=Blast.B3), ticket_text="# 01\n\nIntent: x.", test_globs=["**/test_*.py"],
-                                                     verify=["make test"], checklists={"auth-sessions": CHECKLIST}, agents_md=True)
+                                                     verify=["make test"], checklists={"auth-sessions": CHECKLIST}, agents_md=True,
+                                                     decisions=["| ID | Decision |", "|---|---|", "| D-009 | x |"])
         for needle in ("BEFORE anyone implements", "`**/test_*.py`", "`src/auth/**`", "Never write implementation", "**AS-02**",
-                       "Do not commit", "Intent: x.", "AGENTS.md"):
+                       "Do not commit", "Intent: x.", "AGENTS.md", "operator's own words", "| D-009 | x |"):
             self.assertIn(needle, text)
 
     def test_merge_carries_the_discipline_both_tickets_and_the_rebase(self) -> None:

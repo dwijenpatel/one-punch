@@ -298,6 +298,25 @@ implementation. A fallback is always ledgered. A delta-only re-review stays
 deferred until reviewer-yield data exists. Evidence:
 [2026-11-18 subagent folding](../evidence/2026-11-18-subagent-folding-and-reviewer-count.md).
 
+**v4.12 (2026-11-18, review quality).** Adversarial review stays; its setup
+changes so the cost pays:
+- reviewers judge against the operator's own words (the ticket's
+  `Operator:` and `Serves:` lines) and the ticket's `Depends-on` ledger rows;
+- every finding is tagged `scope:in` or `scope:change`, and scope changes
+  are the operator's call, batched with defaults, never cut into tickets by
+  the planner;
+- complexity is a finding: each review names the largest deletion the
+  change allows;
+- the implementer proves each claim in the handoff's `Evidence:` field, an
+  unproven claim is a finding, and a high finding without a failure
+  scenario routes as medium;
+- retro measures reviewer yield: findings raised against findings
+  confirmed by a red-then-green test.
+
+Source: an operator-supplied practitioner report on adversarial review
+(2026-11-18). In one effort, planner-cut follow-up tickets took 63% of
+ticket hours.
+
 ## 4. Human-touchpoint policy
 
 *Supersedes v3 §4*, which held that more, smaller touchpoints were "the
