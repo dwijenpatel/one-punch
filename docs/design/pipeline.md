@@ -284,6 +284,20 @@ and a full tier. Hardening waits behind the demo path unless a high finding
 names a realistic threat. Evidence:
 [2026-11-18 agent-time retro](../evidence/2026-11-18-resonance-agent-time-retro.md).
 
+**v4.11 (2026-11-18, subagent folding).** Agents stay separate only where
+separation buys something: parallel independent work, a context that would
+otherwise bloat, or independent verification (the test author, a
+decorrelated lens). Sequential agents split by problem type are folded:
+- without a lens from another model family, B3 gets one top-tier `review`
+  dispatch that writes both the spec verdict and the lens report;
+- a fix round goes back to the implementer that wrote the ticket.
+
+The lens smoke is a record pinned to the model and the vendor build, checked
+at a Build-start gate that puts a failure to the operator before any
+implementation. A fallback is always ledgered. A delta-only re-review stays
+deferred until reviewer-yield data exists. Evidence:
+[2026-11-18 subagent folding](../evidence/2026-11-18-subagent-folding-and-reviewer-count.md).
+
 ## 4. Human-touchpoint policy
 
 *Supersedes v3 §4*, which held that more, smaller touchpoints were "the
