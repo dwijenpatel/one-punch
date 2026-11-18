@@ -47,6 +47,11 @@ verify targets. This is gate integrity, not adversarial containment: agents
 loosen their own checks to reach green, and a worker that edits the
 instruction surfaces steers every later spawn. Such a diff never merges
 without the operator.
+**Checks a project builds for itself are not rule surfaces.** A custom lint
+rule, guard test or scanner that only adds strictness is B1, unless it
+decides a gate: the verify command list, a pass or fail threshold, or an
+exemption list. Loosening the verify command list stays B3. Removing such a
+check, or weakening it, is a loosening.
 
 ## Assignment — maximum of three sources
 
@@ -201,6 +206,10 @@ has a line and none says `fail` (exact grammar in the format reference).
 - **Decorrelated lens (B3)** — a different model family when the harness can
   launch one, else a fresh top-tier reviewer that sees code, ticket and diff
   but never the implementer's transcript; answers every checklist item.
+  An adversarial reviewer always finds something, so its severities carry
+  the stopping rule. High and medium findings route fixes. Low and info
+  findings are accepted residuals unless the planner batches them, one
+  follow-up per surface per milestone.
 - **Operator** — answers the map question (which zones wait for their
   read), owns every lowering, reads every diff that holds in an
   `operator_review` zone.

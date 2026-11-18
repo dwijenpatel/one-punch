@@ -274,6 +274,16 @@ A2 **isolates the blast**: B3 code sits behind narrow seams and is touched by
 as few, as small tickets as possible, with B3 core and its B1 surroundings in
 separate tickets.
 
+**v4.10 (2026-11-18 retro).** The B3 share cap binds: a graph above it does
+not release without explicit operator ratification, and the cap covers
+follow-ups too. Lens findings stop at medium: lows and infos are accepted
+residuals by default, batched at most once per surface per milestone, at
+their own diff's level. Checks a project builds for itself are B1 unless
+they decide a gate. A full verify over ~10 minutes is split into a fast tier
+and a full tier. Hardening waits behind the demo path unless a high finding
+names a realistic threat. Evidence:
+[2026-11-18 agent-time retro](../evidence/2026-11-18-resonance-agent-time-retro.md).
+
 ## 4. Human-touchpoint policy
 
 *Supersedes v3 §4*, which held that more, smaller touchpoints were "the

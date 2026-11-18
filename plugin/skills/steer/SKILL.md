@@ -241,7 +241,11 @@ The planner turns ratified decisions into an explicit build. In order:
    them few and small. **Check the B3 share** before showing the graph: above
    ~20% of the milestone's tickets, recut the seams, narrow over-broad
    content patterns (`blast-radius`'s pattern hygiene), or propose moving
-   zones to checked-without-a-read — and say which you did.
+   zones to checked-without-a-read — and say which you did. **The cap
+   binds:** a graph still above ~20% B3 after that does not release the
+   build. It names, per B3 ticket, the concrete damage that makes it B3,
+   and the operator ratifies that share explicitly. The cap also applies to
+   every ticket cut later in the milestone, follow-ups included.
 5. **Milestones.** A destination larger than one build batch (rule of thumb:
    more than 15 tickets or more than a day of worker time) splits into
    milestones; cut tickets for the current milestone only.
@@ -269,7 +273,10 @@ The planner turns ratified decisions into an explicit build. In order:
      implementers') together with its `lens_smoke` command — the lens is
      used only while that smoke passes, else B3 lens reviews fall back to the
      top ladder rung. Keys and defaults: that skill's configuration
-     reference;
+     reference. **Verify budget:** if the full verify runs over ~10 minutes,
+     split it into tiers. A fast tier runs every round; the full tier runs
+     once, at `integrate`. Cut a ticket for that split before more feature
+     tickets;
    - the worktree directory (`.worktrees/` by default) git-ignored before the
      first run.
 7. **Cut the integration branch** `integrate/<effort>` from `main`. `main`
@@ -323,7 +330,13 @@ still land only through `integrate`.
    operator reads the diff and approves or rejects; the harness merges on
    approval.
 5. Field-guide proposals — curate via `field-guide`.
-6. **Patch-class check — before cutting any fix round or follow-up.**
+6. **Review findings: severity decides what moves.** High and medium
+   findings route a fix round, or block the merge. Low and info findings are
+   recorded on the ticket as **accepted residuals** by default; they never
+   spawn a ticket on their own. At most one batched follow-up per surface
+   per milestone collects the lows worth fixing. It is cut at the blast
+   level its own diff earns, not at its parent's level.
+7. **Patch-class check — before cutting any fix round or follow-up.**
    Count, from the review files and the ticket graph:
    - a ticket entering its third review round, where each round's findings
      hit the same surface (one input, boundary, file format or protocol);
@@ -337,9 +350,11 @@ still land only through `integrate`.
    for the operator when it touches B3 or a one-way door; otherwise the
    planner decides and records it. Pending fix rounds on that surface wait
    for the answer. Follow-ups the redesign makes moot are closed, not built.
-7. Recut, split or add tickets the handoffs call for (a megafile flag
+8. Recut, split or add tickets the handoffs call for (a megafile flag
    becomes a decompose ticket that blocks further work on that file).
-8. Rewrite `planner-scratchpad.md`, then relaunch.
+   **Critical path first:** a hardening or follow-up ticket waits behind the
+   milestone's demo path, unless a high finding names a realistic threat.
+9. Rewrite `planner-scratchpad.md`, then relaunch.
 
 Operator actions here are interventions; the harness ledgers them so
 `retro` can compute the headline metric.
