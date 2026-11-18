@@ -257,7 +257,7 @@ decide; these are the mechanics:
 | `blocked` | Its handoff says BLOCKED or NEEDS_CONTEXT |
 | `escalation` | Two failed attempts |
 | `blast-b3` | Its diff escalated to B3; relaunch runs the B3 path with salvage |
-| `stage` | A test-author, spec, lens or merge dispatch was rejected twice |
+| `stage` | A test-author, spec, lens, review or merge dispatch was rejected twice |
 | `conflict` | Three rebase conflicts in one implementer attempt |
 | `head-moved` | The integration head moved under two judgements in a row |
 | `refused` | Integrate refused for a cause a retry cannot fix, or the launch failed |

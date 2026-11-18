@@ -9,7 +9,7 @@ Preflight — <date>
 git repo on main ............ present | missing → git init -b main
 <skill or plugin> ........... present <version> | missing → <install command> | stale <installed> < <available> → <update command> | unchecked (<why>)
 issue tracker ............... configured (<kind>) | missing → setup-matt-pocock-skills
-worker harness .............. runnable | missing <requirement> → build degrades to sequential tickets
+worker harness .............. runnable | missing <requirement> → build degrades to light mode
 ```
 
 End with one line: `Restart needed before H1: yes | no`. Updates to skills and

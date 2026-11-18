@@ -32,7 +32,7 @@ The caller (the harness) prepares it with exactly:
 
 `contract` is the bundle's major version: a launcher refuses an unknown major fail-closed;
 absence means major 1. `result.json` carries the same field back. `role` is one of `author`,
-`test_author`, `spec_verdict`, `lens`, `merge`; `attempt` is informational (it lets launchers
+`test_author`, `spec_verdict`, `lens`, `review`, `merge`; `attempt` is informational (it lets launchers
 and transcripts distinguish retries). `worker.effort` is optional and tool-interpreted.
 
 ## Isolation: there are no walls

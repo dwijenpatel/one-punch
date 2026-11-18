@@ -40,7 +40,7 @@ audiences — not the first one), and ask only what it leaves open. A question
 the brief already answers is a framing error, not a follow-up. When no
 brief exists, say so in the opening and start from the operator's words.
 
-The question list below is YOUR checklist, never a pasted wall of text. Open
+The question list below is your checklist, never a pasted wall of text. Open
 in a few lines: what this is, that candor is safe, the scope restatement
 when there is a brief, then the first question the brief leaves open, alone.
 Example shape:
@@ -87,7 +87,7 @@ Follow-ups only where an answer changes a foreseeable decision.
 ## Privacy — structural, fails closed, offered not forced
 
 State the limit honestly before asking: elicitation works only with candor,
-and some intents are private. ACTIVELY ENCOURAGE candor: the goals people
+and some intents are private. Encourage candor: the goals people
 hesitate to state — career positioning, impressing a specific company, proving
 a point, money — are usually the highest-fan-out answers in the whole
 elicitation. Never react to a motive with judgment; mine it for design

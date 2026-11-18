@@ -14,9 +14,8 @@ ticket's local, reversible option and flag the gap — never to grant itself an
 exception by inventing a ledger entry (see the exception convention below).
 
 Evidence for the shape of this skill lives in the process-authority repo's
-`docs/evidence/` — the 2026-09-24 code-style canon memo and the companion
-critiques-and-agents memo. Cite them from a decision or a rule change; don't
-re-derive or restate their content here.
+evidence memos. Cite them from a decision or a rule change; don't re-derive
+or restate their content here.
 
 ## Layer 1 — stated
 
@@ -24,8 +23,7 @@ At plan-compile time (A2), install [references/template.md](references/template.
 — the default `Code style` section — into the repo's `AGENTS.md`,
 filling the `<…>` slots (which directories are the pure core, which are the
 shell, a reference file that shows the pattern). Keep the preamble (constraints
-not a checklist, the tie-break, structure first) and all 14 rules; the section
-runs to roughly 46 lines. When the effort deploys a long-running service, also
+not a checklist, the tie-break, structure first) and all 14 rules. When the effort deploys a long-running service, also
 install the template's conditional service-rules block (rules 15–17). Positive phrasing, one clause of *why* per rule, no
 MUST/CRITICAL. The section is operator-owned once installed — the planner may
 propose edits, but does not unilaterally rewrite it. A controlled trial run on

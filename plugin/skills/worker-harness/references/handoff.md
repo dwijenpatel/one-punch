@@ -72,8 +72,9 @@ They, and the handoff, are exempt from the Touches check.
 | `checklist-<id>.md` | lens reviewer | B3, one per domain checklist of the B2+ zones the diff hits | One answer line per checklist item, `<ID> pass\|fail\|n/a: <evidence>`, per the blast-radius skill's checklist answer grammar |
 
 `Verdict: fail` fails the attempt (`SCRUTINY-FAILED`); `concerns` passes and is
-carried into the B3 review packet. A checklist `fail` answer is a finding for
-the operator, not a rejection of the review.
+carried into the B3 review packet. A checklist `fail` answer does not reject
+the review; it fails the implementer's attempt (`CHECKLIST-UNANSWERED`)
+unless the line carries `allow(checklist): D-NNN` citing an active row.
 
 **Tests first (B3).** The first commit on the ticket branch that touches
 anything besides the handoff and review files may touch only `test_globs`

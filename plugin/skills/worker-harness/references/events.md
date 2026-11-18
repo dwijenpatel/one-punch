@@ -10,7 +10,7 @@ every run stop commits a snapshot of it to the integration branch at
 
 Every event has `event` and `ts` (UTC, `YYYY-MM-DDTHH:MM:SSZ`); run-loop events
 also carry `t` (epoch seconds). `role` is one of `author`, `test_author`,
-`spec_verdict`, `lens`, `merge`; absent means `author`.
+`spec_verdict`, `lens`, `review`, `merge`; absent means `author`.
 
 | Event | Written when | Fields |
 |---|---|---|

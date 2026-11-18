@@ -40,7 +40,7 @@ A parked ticket holds its dependents; the rest of the frontier keeps going.
 | `blocked` | Its handoff says BLOCKED or NEEDS_CONTEXT | Supply what it asks for (ticket edit, ledger row), then `relaunch T --note …` |
 | `escalation` | Two failed attempts (the second one tier up) | Read the root cause in `resume`/the ledger; recut or clarify the ticket; `relaunch T` resets the counter |
 | `blast-b3` | Its diff escalated to B3; the work predates an independent tests-first commit | `relaunch T`: the B3 path runs, the old work kept as salvage |
-| `stage` | A test-author, spec-verdict, lens or merge dispatch was rejected twice | Read the rejection reasons; fix the cause (e.g. B3 Touches without a test path); `relaunch T` retries the same stage |
+| `stage` | A test-author, spec-verdict, lens, review or merge dispatch was rejected twice | Read the rejection reasons; fix the cause (e.g. B3 Touches without a test path); `relaunch T` retries the same stage |
 | `conflict` | Three rebase conflicts in one implementer attempt | Resolve or re-sequence the overlapping tickets; `relaunch T` returns it to the merge agent |
 | `head-moved` | The integration head moved under two judgements in a row | `relaunch T` |
 | `refused` | Integrate refused for a reason a retry cannot fix (missing ticket, bad config), or the launch failed | Fix the named cause; `relaunch T` |
@@ -82,7 +82,7 @@ Refusal tokens: `HANDOFF-MISSING`, `HANDOFF-STATUS`, `TICKET-MISSING`,
 | `SCRUTINY-MISSING` | scrutiny | A required review file (spec verdict, lens) is absent or has no `Verdict:` line, or a checklist source is missing |
 | `SCRUTINY-FAILED` | scrutiny | A review says `Verdict: fail` |
 | `TESTS-NOT-FIRST` | scrutiny | At B3, the first non-evidence commit touches more than test files |
-| `CHECKLIST-UNANSWERED` | scrutiny | A required domain checklist lacks an answer line per item |
+| `CHECKLIST-UNANSWERED` | scrutiny | A required domain checklist lacks an answer line per item, or answers an item `fail` without an active `allow(checklist): D-NNN` waiver |
 | `ATTRIBUTION-MISSING` | attribution | A `port`/`fork` reference has no notices entry |
 | `ATTRIBUTION-LICENSE` | attribution | Its license is not in `allowed_licenses` |
 | `LINT` | lint | A hard lint command reports a violation new in the changed code |

@@ -23,7 +23,7 @@ exists.
 
 ## Conversation surface
 
-Tables and taxonomies in this file are YOUR reference, never pasted at the
+Tables and taxonomies in this file are your reference, never pasted at the
 operator. Goal-typing and gate-setting happen conversationally: one question
 at a time, threading from answers; menus and mechanics surface only when a
 concrete choice needs them.
@@ -32,8 +32,8 @@ concrete choice needs them.
 
 | Type | Primary mechanism | Gate |
 |---|---|---|
-| **Conceptual understanding** | Build against it + write the explainer (when intent includes publishing, the article section IS the artifact) | Blind-graded draft + short spoken/written Q&A |
-| **Tradeoff mastery** | Operator OWNS the project's relevant harness (e.g. an eval matrix): designs it, predicts results before each run, interprets divergence — reality is the answer key | Defend the tradeoff writeup to a blind grader; capstone artifact per intent |
+| **Conceptual understanding** | Build against it + write the explainer (when intent includes publishing, the article section is the artifact) | Blind-graded draft + short spoken/written Q&A |
+| **Tradeoff mastery** | Operator owns the project's relevant harness (e.g. an eval matrix): designs it, predicts results before each run, interprets divergence — reality is the answer key | Defend the tradeoff writeup to a blind grader; capstone artifact per intent |
 | **Skill acquisition (near-zero start)** | Operator-implements tickets on a difficulty gradient (start low/medium code-complete, climb), agent as reviewer/pair | TREND gate: N merged tickets with review findings-per-ticket declining |
 | **Gap-closing against a bar** | Baseline mock → gap map → drill blocks → transfer re-measure | Re-measure at/above the pre-registered bar, blind-graded, on a DIFFERENT problem class |
 
@@ -58,7 +58,7 @@ project-native, ungameable.
 - **Grader separation**: the assessment is graded by a fresh session blind to
   the coaching history. Coach and examiner are never the same context.
 - **Transfer-only**: never assess on the drilled material itself.
-- **Load-bearing forms are strongest** — gates that ARE work the project
+- **Load-bearing forms are strongest** — gates that are work the project
   needs: operator-authored test suites verified by seeded-defect mutation
   (agent plants N known violations; the suite must catch ≥ k), prediction-first
   game days, operator runbooks verified by literal execution, operator tickets

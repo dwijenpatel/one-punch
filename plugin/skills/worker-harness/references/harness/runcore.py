@@ -511,8 +511,8 @@ def plan_round(
 
 
 LEVEL_STEPS = {
-    Blast.B0: ["The project's verify commands pass. Nothing further is required."],
-    Blast.B1: ["Test-driven at the ticket's seams (the red → green rule below)."],
+    Blast.B0: ["The project's verify commands pass."],
+    Blast.B1: ["Test-driven at the ticket's seams (the red → green rule under Rules)."],
     Blast.B2: [
         "Test the edge and error paths at the public seam, not only the happy path; coverage on the files you touch must not drop.",
         "Keep decision logic in the pure core, side effects in a thin shell. A spec-verdict review against the ticket follows.",
@@ -521,7 +521,7 @@ LEVEL_STEPS = {
         "Acceptance tests written first by an independent agent are already committed on your branch: make them pass; never weaken, skip or delete them.",
         "Add adversarial and negative tests for every checklist item below that applies to your change.",
         "Decision logic pure and property-tested on its own; the effectful shell thin enough to review line by line.",
-        "Prefer a vetted library or the ticket's Reference over hand-rolling. A decorrelated lens reviews the diff and the operator reads it before it merges.",
+        "Prefer a vetted library or the ticket's Reference over hand-rolling. Independent review follows; the diff may wait for the operator's read before it merges.",
     ],
 }
 TDD_RULE = (
