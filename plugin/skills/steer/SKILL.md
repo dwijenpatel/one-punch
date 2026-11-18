@@ -137,7 +137,8 @@ harness: [references/prerequisites.md](references/prerequisites.md).
 5. **Worker harness runnable** (checked now, needed at Build): the
    `worker-harness` skill's own requirements. A missing launcher CLI → note
    it; the build degrades to light mode (see Build). Light mode still needs
-   `integrate` itself to run.
+   `integrate` itself to run. The lens CLI's smoke is checked at the Build
+   lens gate, not here, so a vendor update in between is caught.
 
 ## H1 — intent sitting
 
@@ -296,6 +297,15 @@ The planner turns ratified decisions into an explicit build. In order:
    reopens a default holds the build only until that default is resettled.
 
 ## Build — hand off to the harness
+
+**Lens gate — before the first dispatch, every Build start.** When the
+milestone has a B3 ticket, run `[run] lens_smoke`. On a failure, stop and
+put it to the operator before any implementation starts: the smoke's own
+error (`smoke_workers.sh codex --review --record …` prints it), the likely
+fix (update the vendor CLI; check the model id in its model list; log in),
+and a choice: fix it now and re-run the smoke, or proceed with the
+same-family fallback recorded as a ledger row. Never start the build on a
+failing smoke without that answer.
 
 Start the harness's parallel run as a background process from the planner
 session (`worker-harness`: `run --parallel N`, default 4) and let it notify

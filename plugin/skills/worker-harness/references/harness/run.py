@@ -81,8 +81,9 @@ harness.toml `[run]` (ladder required; the rest default):
   lens              {tool, model, effort?}: the decorrelated lens (a model
                     family other than the implementers', e.g. codex); needs
   lens_smoke        a shell command run once per run; exit 0 = the lens
-                    launcher's smoke passes (e.g. a check of the recorded
-                    `smoke_workers.sh codex --review` result)
+                    launcher's smoke passes (a check of the record that
+                    `smoke_workers.sh codex --review --record FILE` writes,
+                    pinned to the model and the codex build)
 """
 
 from __future__ import annotations

@@ -94,7 +94,8 @@ def test_example_lens_block_parses_once_uncommented() -> None:
 
     assert rc.lens is not None
     assert (rc.lens.tool, rc.lens.model) == ("codex", "gpt-lens")
-    assert rc.lens_smoke == "test -f .scratch/m1/lens-smoke-ok"  # {effort} expands
+    # {effort} expands; the record is pinned to the model and the codex build
+    assert rc.lens_smoke == 'test "$(cat .scratch/m1/lens-smoke-ok 2>/dev/null)" = "codex gpt-lens $(codex --version)"'
 
 
 def test_example_effort_placeholder_is_load_bearing() -> None:

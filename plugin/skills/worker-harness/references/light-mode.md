@@ -31,6 +31,31 @@ mode is a documented degrade, not a silent default.
   token** (`TOUCHES-OUTSIDE`, `BLAST-ESCALATION`, `VERIFY-FAILED`, …) are
   unchanged — they live in `integrate`, which light mode still calls.
 
+## The B3 lens in light mode
+
+Light mode moves dispatch to the planner, but the lens stays decorrelated:
+an in-session agent of the implementers' family is not the lens.
+
+1. **Smoke first, once per session.** Run `[run] lens_smoke` from the repo
+   root. If it fails, re-run `smoke_workers.sh codex --review --record
+   .scratch/<effort>/lens-smoke-ok --i-understand-this-spends-quota` (with
+   `SMOKE_CODEX_MODEL` set to the configured lens model).
+2. **Dispatch the lens through its launcher**, not as an in-session agent.
+   Write a bundle with `instructions.md` (the lens prompt: ticket, the diff
+   against the integration head, the domain checklists, the review files to
+   write; never the implementer's handoff or transcript) and `params.json`:
+   `{"contract": 1, "role": "lens", "worker": {"tool": "codex", "model":
+   "<lens model>", "effort": "high"}, "isolation": {"sandbox": true,
+   "network": true}, "cwd": "<the ticket's worktree>", "timeout_s": 1800}`.
+   Then run `python3 <this skill>/references/harness/launchers/codex_p.py
+   <bundle>` in the background. Its `result.json` says whether it finished;
+   the review files are in the worktree's review dir; commit exactly those.
+3. **A fallback is a ledger row.** If the smoke fails and cannot be fixed now,
+   B3 lens reviews run on the top ladder rung, and the planner records that
+   as a decision-ledger row naming the failing smoke output. Never a silent
+   fallback: a retro must be able to tell a decorrelated lens from a second
+   same-family reviewer.
+
 ## What is lost
 
 - **Automatic dispatch.** Nothing picks the frontier, routes a ticket to a

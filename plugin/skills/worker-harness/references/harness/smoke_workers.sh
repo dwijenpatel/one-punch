@@ -9,16 +9,24 @@
 #   smoke_workers.sh claude [--n N]  --rehearse                        # FREE: build + launcher --dry-run
 #   smoke_workers.sh claude [--n N]  --i-understand-this-spends-quota  # P1 (n=1), P2 (n=2, n=4)
 #   smoke_workers.sh codex --review  --rehearse | --i-understand-...   # P3: codex as read-only lens
+#   smoke_workers.sh codex --review --record FILE --i-understand-...   # P3, and record a pass for lens_smoke
 #
-# Models: SMOKE_CLAUDE_MODEL (default sonnet), SMOKE_CODEX_MODEL (default gpt-5.6-sol).
+# Models: SMOKE_CLAUDE_MODEL (default sonnet), SMOKE_CODEX_MODEL (default gpt-6.2-astra).
+#
+# --record FILE: on a passing lens smoke (launcher ok, review.md written, nothing
+# else touched) write one line `codex <model> <codex --version>` to FILE and exit
+# 0; on any failure remove FILE and exit 1. `[run] lens_smoke` compares that line
+# with the configured model and the installed build, so a vendor update or a
+# model change makes the record stale until the smoke is re-run.
 set -eu
 
 TOOL="${1:-}"; shift || true
-N=1; REVIEW=0; MODE=""
+N=1; REVIEW=0; MODE=""; RECORD=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --n) N="$2"; shift 2 ;;
     --review) REVIEW=1; shift ;;
+    --record) RECORD="$2"; shift 2 ;;
     --rehearse|--i-understand-this-spends-quota) MODE="$1"; shift ;;
     *) echo "unknown arg: $1" >&2; exit 2 ;;
   esac
@@ -28,6 +36,7 @@ if [ "$TOOL" != "claude" ] && [ "$TOOL" != "codex" ]; then
 fi
 [ -n "$MODE" ] || { echo "pass --rehearse (free) or --i-understand-this-spends-quota" >&2; exit 2; }
 if [ "$TOOL" = "codex" ] && [ "$REVIEW" -ne 1 ]; then echo "codex runs only as --review (the B3 lens)" >&2; exit 2; fi
+if [ -n "$RECORD" ] && [ "$TOOL" != "codex" ]; then echo "--record is for the codex lens smoke only" >&2; exit 2; fi
 
 HERE=$(cd "$(dirname "$0")" && pwd)
 ROOT=$(mktemp -d "${TMPDIR:-/tmp}/smoke-workers.XXXXXX")
@@ -92,7 +101,7 @@ MD
   done
   LAUNCHER="$HERE/launchers/claude_p.py"
 else
-  MODEL="${SMOKE_CODEX_MODEL:-gpt-5.6-sol}"
+  MODEL="${SMOKE_CODEX_MODEL:-gpt-6.2-astra}"
   git -C "$REPO" switch -q -c t/review
   cat > "$REPO/calc.py" <<'PY'
 def add(a, b):
@@ -129,8 +138,10 @@ fi
 # --- launch all workers concurrently -------------------------------------------
 T0=$(date +%s)
 for w in $WORKERS; do
-  ( python3 "$LAUNCHER" "$ROOT/bundles/$w" > "$ROOT/bundles/$w/launcher.out" 2> "$ROOT/bundles/$w/launcher.err"; \
-    echo $? > "$ROOT/bundles/$w/launcher.exit" ) &
+  # `|| rc=$?`: under set -e a failing launcher would end the subshell before
+  # its exit code is written.
+  ( rc=0; python3 "$LAUNCHER" "$ROOT/bundles/$w" > "$ROOT/bundles/$w/launcher.out" 2> "$ROOT/bundles/$w/launcher.err" || rc=$?; \
+    echo "$rc" > "$ROOT/bundles/$w/launcher.exit" ) &
 done
 wait
 T1=$(date +%s)
@@ -156,3 +167,19 @@ PY
   [ -s "$B/launcher.err" ] && { echo "launcher stderr:"; tail -20 "$B/launcher.err"; }
 done
 echo; echo "artifacts: $ROOT (bundles/*/{result.json,transcript.txt})"
+
+if [ -n "$RECORD" ]; then
+  WT="$REPO/.worktrees/review"
+  if [ "$(cat "$ROOT/bundles/review/launcher.exit")" = "0" ] && [ -s "$WT/review.md" ] \
+     && [ "$(git -C "$WT" status --porcelain)" = "?? review.md" ]; then
+    mkdir -p "$(dirname "$RECORD")"
+    echo "codex $MODEL $(codex --version)" > "$RECORD"
+    echo "lens smoke PASSED; recorded: $(cat "$RECORD") -> $RECORD"
+  else
+    rm -f "$RECORD"
+    echo "lens smoke FAILED; $RECORD removed (the lens falls back to the top ladder rung)" >&2
+    echo "  cause: error_summary above. model_not_found -> update codex, then check the id in" >&2
+    echo "  \`codex debug models\`; auth errors -> \`codex login\`; then re-run this command." >&2
+    exit 1
+  fi
+fi

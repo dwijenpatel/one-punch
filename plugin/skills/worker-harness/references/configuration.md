@@ -17,8 +17,8 @@ lint_hard = ["ruff check --output-format=concise ."]
 
 [run]
 parallel = 4
-lens = { tool = "codex", model = "<codex model id>" }
-lens_smoke = "test -f .scratch/m1/lens-smoke-ok"
+lens = { tool = "codex", model = "gpt-6.2-astra" }
+lens_smoke = 'test "$(cat .scratch/m1/lens-smoke-ok 2>/dev/null)" = "codex gpt-6.2-astra $(codex --version)"'
 
 [run.ladder]
 T0 = [{ tool = "claude", model = "opus", effort = "high" }]
@@ -88,7 +88,7 @@ violations new in the changed code count.
 | `field_guide` | `docs/field-guide/index.md` | Inlined into every worker preamble |
 | `field_guide_budget` | 150 | Lines; over budget refuses the run |
 | `lens` | unset | `{tool, model, effort?}`: the decorrelated B3 lens, a model family other than the implementers'; needs `lens_smoke` |
-| `lens_smoke` | `""` | Shell command run once per run; exit 0 means the lens launcher's smoke passes and the lens is used, else the lens falls back to the top ladder rung |
+| `lens_smoke` | `""` | Shell command run once per run; exit 0 means the lens launcher's smoke passes and the lens is used, else the lens falls back to the top ladder rung (a `lens-smoke` event either way). Check a recorded smoke pinned to model and build, as in the example; a bare marker file never goes stale and once let a whole milestone run with an unrecorded fallback |
 
 ## Routing floors
 

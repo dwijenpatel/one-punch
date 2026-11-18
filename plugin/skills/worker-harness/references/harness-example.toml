@@ -57,12 +57,16 @@ parallel = 4
 
 # The decorrelated B3 lens: a model family other than the implementers',
 # used only while its own smoke check (lens_smoke) exits 0 — otherwise the
-# lens falls back to the top ladder rung. Uncomment both lines together
+# lens falls back to the top ladder rung. lens_smoke checks the record that
+# `smoke_workers.sh codex --review --record .scratch/<effort>/lens-smoke-ok`
+# writes on a passing smoke: one line naming the model and the codex build.
+# A codex update or a model change makes the record stale, so the lens falls
+# back until the smoke is re-run. Uncomment both lines together
 # (lens without lens_smoke is CONFIG-INVALID), and keep them above
 # [run.ladder] below — TOML does not allow a bare table's own keys after one
 # of its subtables has opened.
 # lens = { tool = "codex", model = "<CODEX_MODEL_ID>" }
-# lens_smoke = "test -f .scratch/{effort}/lens-smoke-ok"
+# lens_smoke = 'test "$(cat .scratch/{effort}/lens-smoke-ok 2>/dev/null)" = "codex <CODEX_MODEL_ID> $(codex --version)"'
 
 # The tier ladder: every candidate names its tool and model (a model whose
 # name contains "fable" is refused — no Fable model is ever routed

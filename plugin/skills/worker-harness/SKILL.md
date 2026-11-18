@@ -327,7 +327,10 @@ servers, slash commands, memory and session persistence. Vendor CLIs are the
 fastest-decaying dependency. Before first use, and after every tool update,
 run the harness's `smoke_workers.sh claude|codex … --rehearse` (free,
 `--dry-run` only). Then run it with `--i-understand-this-spends-quota`, and
-record the dated, build-pinned result.
+record the dated, build-pinned result. For the lens, `--record FILE` writes
+that record itself (model and codex build) and `[run] lens_smoke` checks it,
+so a tool update or a model change sends the lens to the fallback until the
+smoke is re-run. Check the model id against `codex debug models` first.
 
 ## Worker handoff
 
