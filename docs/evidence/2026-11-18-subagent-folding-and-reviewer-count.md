@@ -29,7 +29,7 @@ than once.
 | Parallel implementers; A1 lanes | 2 | keep |
 | Independent B3 test author | 4 | keep |
 | Planner that never implements | 1 (the planner compacted repeatedly) | keep |
-| Inline worker preambles instead of skill loading | 3 (spike 02: skills loaded unreliably headless) | keep; recheck pending (F4) |
+| Inline worker preambles instead of skill loading | 3 (spike 02); also launcher isolation by design (F4) | keep |
 | Spec verdict + lens of the same model family | none | **fold (F1)** |
 | A new implementer agent per fix round | none | **fold (F2)** |
 | A new reviewer per re-review | partly 4 | **deferred (F3)** |
@@ -69,8 +69,14 @@ than once.
   - **F3, delta-only re-review.** The risk is delayed discovery. It waits for
     reviewer-yield data: medium-or-higher findings per review role that a
     regression test confirmed.
-  - **F4, headless skill loading.** The spike is blocked: the headless CLI was
-    logged out.
+  - **F4, headless skill loading: kept inline, now by decision.** A smoke on
+    2026-11-18 (claude 2.1.327, sonnet) passed in 12s and committed its
+    work, but reported `skill tdd => unavailable`. That is by design:
+    `claude_p` passes `--setting-sources ""` and `--disable-slash-commands` to
+    keep ambient configuration away from workers. Progressive disclosure
+    would mean reopening that isolation. Inline preambles also stay
+    model-neutral for a lens on another model family, so the preamble rule
+    stands.
   - **F5, prompt audit of the skills.** It runs separately.
 
 ## F1 trial protocol (operator design, 2026-11-18)
